@@ -49,10 +49,6 @@ Namespace único por enquanto: `licita`.
 | `integracoes` | clients HTTP para PNCP e compras.gov.br, isolados do resto (mockáveis nos testes) |
 | `core` | settings, healthcheck, exceptions/handlers comuns da API |
 
-Autenticação: DRF + `djangorestframework-simplejwt` (access/refresh token).
-Sessão de admin do Django continua disponível em `/admin/` só para operação
-interna, não para os clients.
-
 ### Frontend — organização Angular
 
 - Standalone components (padrão atual do Angular), lazy-loaded por feature:
@@ -62,6 +58,46 @@ interna, não para os clients.
 - Um `ApiService`/`HttpInterceptor` central cuida do token JWT e do refresh.
 - Consome só a API DRF — nenhuma lógica de negócio (matching de filtro,
   parsing de catálogo) duplicada no frontend.
+
+## Autenticação
+
+Angular é client puro da API DRF — não há sessão server-side compartilhada, o
+que combina com o requisito de pods efêmeros/escaláveis. Mecanismo:
+`djangorestframework-simplejwt` (access + refresh token).
+
+### Fluxo
+
+1. `POST /api/auth/login/` — recebe `email`/senha, devolve `access` (curta
+   duração, ~5–15 min) no corpo da resposta e seta o `refresh` (~7 dias) como
+   cookie `httpOnly`, `Secure`, `SameSite=Lax`.
+2. Angular guarda o `access` **em memória** (campo privado do `AuthService`),
+   nunca em `localStorage`/`sessionStorage` — reduz o que um XSS consegue
+   roubar de forma persistente.
+3. `HttpInterceptor` injeta `Authorization: Bearer <access>` em toda chamada
+   à API.
+4. Request que volta `401` dispara `POST /api/auth/refresh/` (o cookie
+   `httpOnly` vai junto automaticamente, sem o JS tocar nele); o interceptor
+   trava chamadas concorrentes de refresh para não disparar várias em
+   paralelo, aplica o `access` novo e repete o request original.
+5. `POST /api/auth/logout/` invalida o `refresh` (blacklist do
+   `simplejwt`) e o Angular descarta o `access` da memória.
+6. Rotas protegidas usam `canActivate` (functional guard) checando se há
+   `access` válido em memória; sem ele, redireciona para `/login`.
+
+### Implicações de infraestrutura
+
+- Cookie `httpOnly` exige `withCredentials: true` no Angular e
+  `CORS_ALLOW_CREDENTIALS = True` + `CORS_ALLOWED_ORIGINS` explícito no
+  Django (nunca `*` quando `credentials` está ligado).
+- `/api/auth/refresh/` fica sujeito a CSRF (é o único endpoint de auth que
+  depende de cookie); os demais usam só o header `Authorization` e não
+  precisam de CSRF token.
+- `Filtro` (ver [`DOMINIO.md`](DOMINIO.md)) ganha `owner = FK User`; todo
+  `ViewSet` de `filtros`/`alertas` usa `permission_classes = [IsAuthenticated]`
+  e filtra o queryset por `request.user`.
+- Sessão de admin do Django continua disponível em `/admin/` (cookie de
+  sessão padrão), só para operação interna — não é o mecanismo usado pelos
+  clients.
 
 ## Pods
 
@@ -118,6 +154,34 @@ sobrevive a múltiplas réplicas do pod da API.
 | `ConfigMap` `backend-config` | `DJANGO_SETTINGS_MODULE`, URLs internas de serviço, feature flags |
 | `Secret` `backend-secrets` | `SECRET_KEY`, credenciais do Postgres, credenciais RabbitMQ, credenciais do provedor de e-mail |
 | `Secret` `postgres-secrets` | usuário/senha do banco |
+
+## Estratégia de testes
+
+**Nenhum código de funcionalidade entra sem teste antes dele.** Isso vale
+para todo item de "Próximos passos" abaixo: os testes que especificam o
+comportamento são escritos e revisados antes de escrever a implementação —
+não depois, "para cobrir". Um PR que só adiciona teste depois do código é
+retrabalho, não é o processo.
+
+Ferramental é o padrão nativo de cada framework — sem introduzir runner
+alternativo por preferência pessoal:
+
+### Por camada
+
+| Camada | Ferramenta | Escopo mínimo |
+|---|---|---|
+| Backend (models, serializers, regras) | `django.test.TestCase` (test runner padrão do Django, via `manage.py test`) | toda regra de `docs/DOMINIO.md` (matching de filtro, fallback catálogo↔PNCP, geração de `Alerta`) tem teste antes de existir código |
+| Backend (endpoints DRF) | `rest_framework.test.APITestCase` (extensão do `TestCase` padrão, já pensada para DRF) | autenticação (login, refresh, 401 sem token, logout invalida refresh), permissão (dono só vê seu próprio `Filtro`), contrato de cada endpoint |
+| Clients de integração (`integracoes/`) | `TestCase` + `unittest.mock`/`requests-mock` | **sem rede real nos testes** — mesma disciplina do protótipo (`tests/conftest.py` já desligava a busca do PNCP por padrão); contrato mockado a partir do `api-spec.json` e dos comportamentos documentados em `DOMINIO.md` (paginação 10–500, `/api/search/` etc.) |
+| Tasks Celery | `TestCase` com `CELERY_TASK_ALWAYS_EAGER=True` | `sincronizar_catalogo_pdm`, `verificar_filtros_ativos`, `enviar_email_alerta` rodam síncronas no teste, sem broker real |
+| Frontend (Angular) | Karma/Jasmine gerado pelo próprio `ng generate` (`*.spec.ts` ao lado de cada arquivo, `ng test`) | `AuthService`/interceptor (refresh automático, fila de requests em 401, logout limpa estado), guards de rota, componentes de `oportunidades`/`filtros`/`alertas` |
+| Frontend (fluxo ponta a ponta) | a definir (Playwright é o candidato natural — não tem padrão nativo do Angular CLI para e2e desde a remoção do Protractor) | login → criar filtro → alerta aparece — pelo menos o caminho feliz, antes de considerar uma feature "pronta" |
+
+### CI
+
+Pipeline bloqueia merge se os testes não passarem — a definir plataforma
+(GitHub Actions é o candidato natural dado o remoto já ser GitHub) quando o
+harness de código for gerado.
 
 ## O que falta definir (bloqueado em decisão externa, não técnica)
 
