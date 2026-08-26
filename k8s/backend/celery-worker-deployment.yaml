@@ -36,10 +36,14 @@ spec:
             - secretRef:
                 name: rabbitmq-secrets
           readinessProbe:
+            # timeoutSeconds explícito: o default (1s) é curto demais para um
+            # round-trip real via broker — mesma classe de bug já vista no
+            # probe do RabbitMQ (ver k8s/rabbitmq/statefulset.yaml).
             exec:
               command: ["celery", "-A", "config", "inspect", "ping"]
             initialDelaySeconds: 15
             periodSeconds: 30
+            timeoutSeconds: 10
           resources:
             requests:
               cpu: 100m
