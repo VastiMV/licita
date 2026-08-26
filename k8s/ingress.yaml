@@ -1,15 +1,12 @@
 # /api/* vai pro backend (ainda sem Deployment — ver k8s/backend/service.yaml);
-# todo o resto vai pro frontend. Mesmo padrão de annotation/TLS já usado
-# pelo namespace site-security-trak neste cluster (cert-manager +
-# letsencrypt-staging; trocar pra letsencrypt-prod depois de confirmar que
-# o desafio HTTP-01 resolve certo pra licita.derla.com.br).
+# todo o resto vai pro frontend.
 apiVersion: networking.k8s.io/v1
 kind: Ingress
 metadata:
   name: licita
   namespace: inside-solutions-licita
   annotations:
-    cert-manager.io/cluster-issuer: letsencrypt-staging
+    cert-manager.io/cluster-issuer: letsencrypt-prod
 spec:
   ingressClassName: traefik
   rules:
