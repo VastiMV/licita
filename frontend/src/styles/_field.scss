@@ -1,0 +1,48 @@
+// Chrome compartilhado dos campos de formulário (input-text, select).
+// Um só lugar define como rótulo, controle e mensagem de erro se parecem —
+// os componentes de átomo só aplicam esses mixins, nunca redeclaram a regra.
+@use "mixins" as *;
+
+@mixin field-wrapper {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-1);
+}
+
+@mixin field-label {
+  @include uppercase-label;
+}
+
+@mixin field-control {
+  font: inherit;
+  font-size: var(--font-size-base);
+  padding: 0.55rem 0.7rem;
+  border-radius: var(--radius-sm);
+  border: 1px solid var(--color-border);
+  background: var(--color-surface);
+  color: var(--color-fg);
+  transition: border-color var(--transition-fast), box-shadow var(--transition-fast);
+
+  &::placeholder {
+    color: var(--color-placeholder);
+  }
+
+  &:focus-visible {
+    @include focus-ring;
+  }
+
+  &:disabled {
+    background: var(--color-bg);
+    color: var(--color-muted);
+    cursor: not-allowed;
+  }
+
+  &.has-error {
+    border-color: var(--color-danger);
+  }
+}
+
+@mixin field-error {
+  font-size: var(--font-size-xs);
+  color: var(--color-danger);
+}

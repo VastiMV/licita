@@ -1,0 +1,25 @@
+<section class="login">
+  <h1>Entrar</h1>
+  <form [formGroup]="form" (ngSubmit)="entrar()" class="login-form" novalidate>
+    <app-input-text
+      label="E-mail"
+      type="email"
+      formControlName="email"
+      [error]="form.controls.email.touched && form.controls.email.invalid ? 'Informe um e-mail válido.' : null"
+    />
+    <app-input-text
+      label="Senha"
+      type="password"
+      formControlName="password"
+      [error]="form.controls.password.touched && form.controls.password.invalid ? 'Informe sua senha.' : null"
+    />
+
+    @if (erro()) {
+      <p class="login-erro">{{ erro() }}</p>
+    }
+
+    <app-button type="submit" [disabled]="enviando()">
+      {{ enviando() ? 'Entrando…' : 'Entrar' }}
+    </app-button>
+  </form>
+</section>

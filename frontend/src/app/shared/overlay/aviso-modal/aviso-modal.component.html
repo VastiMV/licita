@@ -1,0 +1,4 @@
+<app-modal-shell [titulo]="data.titulo ?? 'Aviso'" (fechar)="fechar()">
+  <p>{{ data.mensagem }}</p>
+  <app-button modalFooter variant="primary" (click)="fechar()">OK</app-button>
+</app-modal-shell>

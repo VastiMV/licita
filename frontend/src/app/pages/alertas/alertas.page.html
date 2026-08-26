@@ -1,0 +1,32 @@
+<h1>Alertas</h1>
+<p class="muted">Toda vez que um filtro ativo casa com uma licitação nova, ela aparece aqui.</p>
+
+@if (carregando()) {
+  <p class="muted">Carregando…</p>
+} @else if (alertas().length === 0) {
+  <p class="muted">
+    Nenhum alerta ainda. Crie um <a routerLink="/filtros">filtro</a> para começar a
+    monitorar licitações novas.
+  </p>
+} @else {
+  <table class="alertas-tabela">
+    <thead>
+      <tr>
+        <th>Quando</th>
+        <th>Filtro</th>
+        <th>Objeto</th>
+        <th>UASG</th>
+      </tr>
+    </thead>
+    <tbody>
+      @for (alerta of alertas(); track alerta.id) {
+        <tr>
+          <td>{{ alerta.criado_em | date: 'dd/MM/yyyy HH:mm' }}</td>
+          <td>{{ alerta.filtro.nome }}</td>
+          <td>{{ alerta.licitacao.objeto ?? '—' }}</td>
+          <td>{{ alerta.licitacao.uasg }}</td>
+        </tr>
+      }
+    </tbody>
+  </table>
+}

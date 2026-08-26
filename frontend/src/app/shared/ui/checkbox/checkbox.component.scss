@@ -1,0 +1,20 @@
+@use "mixins" as *;
+
+.checkbox {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-2);
+  font-size: var(--font-size-base);
+  color: var(--color-fg);
+  cursor: pointer;
+}
+
+input[type="checkbox"] {
+  width: 1rem;
+  height: 1rem;
+  accent-color: var(--color-blue);
+
+  &:focus-visible {
+    @include focus-ring;
+  }
+}

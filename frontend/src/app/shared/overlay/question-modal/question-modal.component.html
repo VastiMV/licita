@@ -1,0 +1,7 @@
+<app-modal-shell [titulo]="data.titulo ?? 'Confirmar'" (fechar)="cancelar()">
+  <p>{{ data.mensagem }}</p>
+  <app-button modalFooter variant="ghost" (click)="cancelar()">{{ data.cancelarLabel ?? 'Cancelar' }}</app-button>
+  <app-button modalFooter [variant]="data.variantConfirmar ?? 'primary'" (click)="confirmar()">
+    {{ data.confirmarLabel ?? 'Confirmar' }}
+  </app-button>
+</app-modal-shell>

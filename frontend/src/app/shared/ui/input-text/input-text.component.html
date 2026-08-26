@@ -1,0 +1,19 @@
+<label class="field" [for]="inputId">
+  @if (label()) {
+    <span class="field-label">{{ label() }}</span>
+  }
+  <input
+    [id]="inputId"
+    [type]="type()"
+    [placeholder]="placeholder()"
+    [attr.maxlength]="maxlength()"
+    [disabled]="disabled()"
+    [value]="value()"
+    [class.has-error]="error()"
+    (input)="handleInput($any($event.target).value)"
+    (blur)="handleBlur()"
+  />
+  @if (error()) {
+    <span class="field-error">{{ error() }}</span>
+  }
+</label>

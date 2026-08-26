@@ -1,0 +1,54 @@
+<h1>Filtros</h1>
+<p class="muted">Cada filtro ativo gera um alerta quando surge uma licitação nova compatível.</p>
+
+<form [formGroup]="form" (ngSubmit)="salvar()" class="form-grid" novalidate>
+  <app-input-text
+    label="Nome"
+    formControlName="nome"
+    placeholder="ex: Notebooks SP"
+    [error]="form.controls.nome.touched && form.controls.nome.invalid ? 'Dê um nome para reconhecer o filtro.' : null"
+  />
+  <app-input-text label="Palavras-chave" formControlName="palavras_chave" placeholder="separadas por vírgula" />
+  <app-select label="Modalidade" [options]="modalidades" formControlName="modalidade" />
+  <app-input-text label="UF" formControlName="uf" placeholder="ex: SP" />
+  <app-input-text label="UASG" formControlName="uasg" placeholder="opcional" />
+  <app-input-text
+    label="E-mail para avisos"
+    type="email"
+    formControlName="email_notificacao"
+    [error]="
+      form.controls.email_notificacao.touched && form.controls.email_notificacao.invalid
+        ? 'Informe um e-mail válido.'
+        : null
+    "
+  />
+  <app-checkbox label="Ativo" formControlName="ativo" />
+  <app-button type="submit" [disabled]="salvando()">{{ salvando() ? 'Salvando…' : 'Salvar filtro' }}</app-button>
+</form>
+
+<h2>Seus filtros</h2>
+@if (carregando()) {
+  <p class="muted">Carregando…</p>
+} @else if (filtros().length === 0) {
+  <p class="muted">Nenhum filtro cadastrado ainda.</p>
+} @else {
+  <ul class="filtros-lista">
+    @for (filtro of filtros(); track filtro.id) {
+      <li class="filtro-item">
+        <div>
+          <strong>{{ filtro.nome }}</strong>
+          <span class="muted">
+            {{ filtro.palavras_chave || 'sem palavra-chave' }}
+            @if (filtro.uf) {
+              · {{ filtro.uf }}
+            }
+            @if (filtro.uasg) {
+              · UASG {{ filtro.uasg }}
+            }
+          </span>
+        </div>
+        <app-button variant="ghost" (click)="remover(filtro)">Remover</app-button>
+      </li>
+    }
+  </ul>
+}

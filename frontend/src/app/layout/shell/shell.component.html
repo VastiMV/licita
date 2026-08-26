@@ -1,0 +1,25 @@
+<header class="topbar">
+  <a class="brand" routerLink="/">
+    <svg class="brand-mark" viewBox="0 0 40 40" aria-hidden="true">
+      <path d="M4 2 L18 2 L38 20 L24 20 Z" fill="var(--color-navy)" />
+      <path d="M24 20 L38 20 L18 38 L4 38 Z" fill="var(--color-blue)" />
+    </svg>
+    <span class="brand-name">
+      <span class="brand-inside">INSIDE</span>
+      <span class="brand-solutions">solutions</span>
+    </span>
+  </a>
+  <nav>
+    <a routerLink="/oportunidades" routerLinkActive="active">Oportunidades</a>
+    <a routerLink="/alertas" routerLinkActive="active">Alertas</a>
+    <a routerLink="/filtros" routerLinkActive="active">Filtros</a>
+  </nav>
+</header>
+
+<main class="container">
+  <router-outlet />
+</main>
+
+<footer class="rodape">
+  <span>SOLUÇÕES QUE TRANSFORMAM A GESTÃO PÚBLICA.</span>
+</footer>

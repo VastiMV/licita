@@ -1,0 +1,98 @@
+<h1>Oportunidades</h1>
+<p class="muted">
+  Busca item a item nas contratações do compras.gov.br (Lei 14.133). Informe uma
+  palavra-chave para casar com o objeto do edital, ou deixe em branco para listar
+  as contratações do período.
+</p>
+
+<form [formGroup]="form" (ngSubmit)="buscar()" class="form-grid" novalidate>
+  <app-input-text
+    label="Palavra-chave"
+    formControlName="palavra_chave"
+    placeholder="ex: notebook, cimento, uniforme..."
+  />
+  <app-select label="Modalidade" [options]="modalidades" formControlName="modalidade" />
+  <app-input-text label="UF" formControlName="uf" placeholder="ex: SP" />
+  <app-input-text label="UASG" formControlName="codigo_unidade" placeholder="opcional" />
+  <app-input-text label="Publicadas de" type="date" formControlName="data_inicial" />
+  <app-input-text label="até" type="date" formControlName="data_final" />
+  <app-button type="submit" [disabled]="buscando()">{{ buscando() ? 'Buscando…' : 'Buscar' }}</app-button>
+</form>
+
+@if (erro()) {
+  <p class="erro">{{ erro() }}</p>
+}
+
+@if (buscou() && !erro() && !buscando()) {
+  @if (resultados().length === 0) {
+    <p class="muted">
+      Nenhum item encontrado. Tente ampliar o período, trocar a modalidade ou usar
+      uma palavra-chave mais genérica.
+    </p>
+  } @else {
+    <p class="muted">{{ resultados().length }} item(ns) encontrado(s).</p>
+    <div class="oportunidades">
+      @for (op of resultados(); track op.contratacao_uasg + '-' + op.numero_item) {
+        <a class="oportunidade-card" [href]="op.link_compras_gov" target="_blank" rel="noopener">
+          <div class="oportunidade-topo">
+            <app-badge>{{ op.contratacao_uf ?? '—' }}</app-badge>
+            <app-badge>{{ op.contratacao_modalidade ?? '—' }}</app-badge>
+            @if (op.contratacao_srp) {
+              <app-badge>SRP</app-badge>
+            }
+            <app-badge>{{ op.situacao_item ?? op.contratacao_situacao ?? '—' }}</app-badge>
+            <span class="oportunidade-data">
+              @if (op.contratacao_data_encerramento_proposta) {
+                propostas até {{ op.contratacao_data_encerramento_proposta }}
+              } @else {
+                pub. {{ op.contratacao_data_publicacao ?? '—' }}
+              }
+            </span>
+          </div>
+
+          <div class="oportunidade-orgao">
+            {{ op.contratacao_orgao_nome ?? '—' }}
+            @if (op.contratacao_municipio) {
+              · {{ op.contratacao_municipio }}
+            }
+            @if (op.contratacao_uasg) {
+              · UASG {{ op.contratacao_uasg }}
+            }
+          </div>
+
+          <div class="oportunidade-objeto">{{ op.contratacao_objeto ?? '—' }}</div>
+
+          <div class="oportunidade-item">
+            <div class="item-titulo">
+              Item {{ op.numero_item ?? '—' }} — {{ op.descricao_resumida ?? 'sem descrição' }}
+            </div>
+            @if (op.descricao_detalhada) {
+              <div class="item-descricao">{{ op.descricao_detalhada }}</div>
+            }
+          </div>
+
+          <div class="oportunidade-rodape">
+            @if (op.quantidade) {
+              <span>Qtd: {{ op.quantidade }} {{ op.unidade_medida }}</span>
+            }
+            @if (op.valor_unitario_estimado) {
+              <span>Unit. est.: R$ {{ op.valor_unitario_estimado | number: '1.2-2' }}</span>
+            }
+            @if (op.valor_total) {
+              <span>Total est.: R$ {{ op.valor_total | number: '1.2-2' }}</span>
+            }
+            @if (op.tipo_beneficio) {
+              <span>{{ op.tipo_beneficio }}</span>
+            }
+            <span class="oportunidade-link">Abrir no compras.gov.br →</span>
+          </div>
+        </a>
+        @if (op.link_pncp) {
+          <div class="oportunidade-extra">
+            <a [href]="op.link_pncp" target="_blank" rel="noopener">ver edital no PNCP</a>
+          </div>
+        }
+      }
+    </div>
+  }
+}

@@ -1,0 +1,73 @@
+// Tokens de identidade visual "Inside Solutions" — únicos valores de cor,
+// espaçamento, tipografia e elevação do projeto. Nenhum componente declara
+// uma cor ou medida solta: tudo referencia uma dessas custom properties.
+//
+// Herdado do protótipo (app/static/style.css nas branches
+// claude/siga-pregao-tool-6o8zbs e claude/tenta-de-novo-xu2sxb).
+
+:root {
+  // ---------- Cor ----------
+  --color-navy: #16294d;
+  --color-navy-light: #24406f;
+  --color-blue: #2b7cc4;
+  --color-blue-light: #4ba3dc;
+  --color-blue-soft: #eaf2fa;
+
+  --color-bg: #f4f7fa;
+  --color-surface: #ffffff;
+  --color-fg: #16294d;
+  --color-muted: #66788f;
+  --color-border: #dbe3ec;
+  --color-placeholder: #a8b4c4;
+
+  --color-danger: #c0392b;
+  --color-danger-bg: #fdf0ee;
+  --color-warn: #b8791d;
+  --color-warn-bg: #fdf7ec;
+  --color-success: #2f7d4f;
+  --color-success-bg: #eaf6ef;
+
+  // ---------- Elevação ----------
+  --shadow-sm: 0 1px 3px rgba(22, 41, 77, 0.07), 0 1px 2px rgba(22, 41, 77, 0.04);
+  --shadow-md: 0 6px 18px rgba(22, 41, 77, 0.11);
+  --shadow-modal: 0 20px 48px rgba(22, 41, 77, 0.24);
+
+  // ---------- Tipografia ----------
+  --font-family-base: "Montserrat", -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+
+  --font-size-xs: 0.72rem;
+  --font-size-sm: 0.85rem;
+  --font-size-base: 0.9rem;
+  --font-size-md: 1rem;
+  --font-size-lg: 1.15rem;
+  --font-size-xl: 1.7rem;
+
+  --font-weight-regular: 400;
+  --font-weight-medium: 500;
+  --font-weight-semibold: 600;
+  --font-weight-bold: 700;
+
+  --line-height-base: 1.5;
+
+  // ---------- Espaçamento (escala de 4px) ----------
+  --space-1: 0.25rem;
+  --space-2: 0.5rem;
+  --space-3: 0.75rem;
+  --space-4: 1rem;
+  --space-5: 1.25rem;
+  --space-6: 1.5rem;
+  --space-8: 2rem;
+
+  // ---------- Forma ----------
+  --radius-sm: 6px;
+  --radius-md: 8px;
+  --radius-lg: 10px;
+  --radius-pill: 999px;
+
+  // ---------- Movimento ----------
+  --transition-fast: 0.15s ease;
+
+  // ---------- Camadas ----------
+  --z-modal-backdrop: 1000;
+  --z-modal: 1001;
+}

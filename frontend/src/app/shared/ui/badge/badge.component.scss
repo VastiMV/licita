@@ -1,0 +1,14 @@
+:host {
+  display: inline-flex;
+}
+
+.badge {
+  font-size: var(--font-size-xs);
+  font-weight: var(--font-weight-semibold);
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  padding: 0.2rem 0.55rem;
+  border-radius: var(--radius-sm);
+  background: var(--color-blue-soft);
+  color: var(--color-navy);
+}

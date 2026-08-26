@@ -1,0 +1,12 @@
+<div class="modal-shell" role="document">
+  <header class="modal-header">
+    <h2>{{ titulo() }}</h2>
+    <button type="button" class="modal-close" aria-label="Fechar" (click)="fechar.emit()">×</button>
+  </header>
+  <div class="modal-body">
+    <ng-content />
+  </div>
+  <footer class="modal-footer">
+    <ng-content select="[modalFooter]" />
+  </footer>
+</div>
