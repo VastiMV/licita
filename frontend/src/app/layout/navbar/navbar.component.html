@@ -1,8 +1,15 @@
 <header class="topbar">
-  <app-brand />
-  <nav>
-    @for (link of links; track link.path) {
-      <app-nav-item [path]="link.path" [label]="link.label" />
-    }
-  </nav>
+  <button
+    type="button"
+    class="hamburger"
+    (click)="sidebarState.toggleMobile()"
+    aria-label="Abrir menu"
+    [attr.aria-expanded]="sidebarState.mobileOpen()"
+  >
+    <app-icon name="menu" />
+  </button>
+
+  <app-brand class="topbar-brand" [compact]="true" />
+
+  <app-profile-menu class="account" />
 </header>

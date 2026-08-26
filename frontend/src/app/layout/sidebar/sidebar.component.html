@@ -1,0 +1,28 @@
+@if (state.mobileOpen()) {
+  <div class="backdrop" (click)="state.closeMobile()"></div>
+}
+
+<aside class="sidebar" [class.collapsed]="state.iconOnly()" [class.open]="state.mobileOpen()">
+  <div class="sidebar-header">
+    <app-brand [compact]="state.iconOnly()" (click)="state.closeMobile()" />
+    <button
+      type="button"
+      class="collapse-toggle"
+      (click)="state.toggleCollapsed()"
+      [attr.aria-label]="state.collapsed() ? 'Expandir menu' : 'Recolher menu'"
+    >
+      <app-icon [name]="state.collapsed() ? 'chevron-right' : 'chevron-left'" />
+    </button>
+  </div>
+
+  <nav aria-label="Menu principal" (click)="state.closeMobile()">
+    @for (link of links; track link.path) {
+      <app-nav-item
+        [path]="link.path"
+        [label]="link.label"
+        [icon]="link.icon"
+        [compact]="state.iconOnly()"
+      />
+    }
+  </nav>
+</aside>

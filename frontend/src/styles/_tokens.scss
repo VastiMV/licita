@@ -71,6 +71,8 @@
   --transition-fast: 0.15s ease;
 
   // ---------- Camadas ----------
+  --z-sidebar-backdrop: 900;
+  --z-sidebar: 901;
   --z-modal-backdrop: 1000;
   --z-modal: 1001;
 }

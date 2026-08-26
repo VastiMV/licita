@@ -4,6 +4,19 @@ import { Observable, tap } from 'rxjs';
 import { ApiClient } from '../api/api-client';
 import { ENDPOINTS } from '../api/endpoints';
 import type { LoginRequest, LoginResponse, RefreshResponse } from '../../contracts/auth/auth.contracts';
+import { decodeJwtPayload } from './jwt';
+
+/**
+ * Claims que esperamos encontrar no payload do `access` token, pra exibir
+ * nome/e-mail no menu de perfil sem outro request. Nenhuma delas é
+ * garantida — o backend ainda não emite token nenhum de verdade (ver
+ * docs/ARQUITETURA.md), então tudo aqui é opcional e a UI trata a ausência
+ * como "sem dado", nunca como erro.
+ */
+export interface UsuarioClaims {
+  readonly email?: string;
+  readonly nome?: string;
+}
 
 /**
  * Dono do `access` token em memória — nunca `localStorage`/`sessionStorage`,
@@ -20,6 +33,12 @@ export class AuthService {
 
   private readonly accessToken = signal<string | null>(null);
   readonly isAuthenticated = computed(() => this.accessToken() !== null);
+
+  /** Nome/e-mail lidos do `access` token, pro menu de perfil. `null` sem sessão ou sem claims. */
+  readonly usuario = computed<UsuarioClaims | null>(() => {
+    const token = this.accessToken();
+    return token ? decodeJwtPayload<UsuarioClaims>(token) : null;
+  });
 
   getAccessToken(): string | null {
     return this.accessToken();

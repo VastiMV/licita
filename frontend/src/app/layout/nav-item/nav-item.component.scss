@@ -1,19 +1,36 @@
 @use "mixins" as *;
 
 a {
+  display: flex;
+  align-items: center;
+  gap: 0.65rem;
   color: var(--color-muted);
   text-decoration: none;
   font-size: var(--font-size-sm);
   font-weight: var(--font-weight-medium);
-  padding: 0.45rem 0.85rem;
+  padding: 0.55rem 0.85rem;
   border-radius: var(--radius-sm);
   transition: background var(--transition-fast), color var(--transition-fast);
+  white-space: nowrap;
 
-  &:hover,
-  &.active {
-    background: var(--color-blue-soft);
+  // Mesma tinta de azul do :focus-ring (ver mixins.scss) — mais escuro que
+  // --color-blue-soft, que ficava fraco demais pra sinalizar hover.
+  &:hover {
+    background: rgba(43, 124, 196, 0.18);
     color: var(--color-navy);
   }
+
+  // Mesmo contraste do botão primário (ver ButtonComponent) — o hover sozinho
+  // (fundo claro) não distinguia bem qual item está selecionado.
+  &.active {
+    background: var(--color-navy);
+    color: #fff;
+  }
+}
+
+.label {
+  overflow: hidden;
+  text-overflow: ellipsis;
 }
 
 @include reduced-motion {
