@@ -1,0 +1,34 @@
+<button
+  type="button"
+  class="trigger"
+  (click)="alternar()"
+  [attr.aria-expanded]="aberto()"
+  aria-haspopup="menu"
+  aria-label="Menu de conta"
+>
+  <app-icon name="user" />
+  <app-icon class="chevron" name="chevron-down" />
+</button>
+
+@if (aberto()) {
+  <div class="dropdown" role="menu">
+    <div class="dropdown-header">
+      <strong class="nome">{{ usuario()?.nome || 'Usuário' }}</strong>
+      @if (usuario()?.email) {
+        <span class="email">{{ usuario()!.email }}</span>
+      }
+    </div>
+
+    <div class="dropdown-divider"></div>
+
+    <button type="button" class="dropdown-item" disabled title="Em breve">
+      <app-icon name="edit" />
+      Editar perfil
+    </button>
+
+    <button type="button" class="dropdown-item danger" (click)="sair()">
+      <app-icon name="logout" />
+      Sair
+    </button>
+  </div>
+}

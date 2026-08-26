@@ -1,1 +1,6 @@
-<a [routerLink]="path()" routerLinkActive="active">{{ label() }}</a>
+<a [routerLink]="path()" routerLinkActive="active" [attr.title]="compact() ? label() : null">
+  <app-icon [name]="icon()" />
+  @if (!compact()) {
+    <span class="label">{{ label() }}</span>
+  }
+</a>

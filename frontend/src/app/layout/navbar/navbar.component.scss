@@ -1,22 +1,56 @@
+@use "mixins" as *;
+
 .topbar {
   display: flex;
   align-items: center;
-  justify-content: space-between;
   gap: var(--space-4);
-  flex-wrap: wrap;
   padding: 0.9rem var(--space-8);
   background: var(--color-surface);
   border-bottom: 1px solid var(--color-border);
   box-shadow: var(--shadow-sm);
 }
 
-nav {
-  display: flex;
-  gap: 0.35rem;
+.hamburger {
+  appearance: none;
+  display: none;
+  align-items: center;
+  justify-content: center;
+  width: 34px;
+  height: 34px;
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-sm);
+  background: transparent;
+  color: var(--color-navy);
+  cursor: pointer;
+  flex-shrink: 0;
+
+  &:hover {
+    background: var(--color-blue-soft);
+  }
+
+  &:focus-visible {
+    @include focus-ring;
+  }
+}
+
+.topbar-brand {
+  display: none;
+}
+
+.account {
+  margin-left: auto;
 }
 
 @media (max-width: 640px) {
   .topbar {
     padding: 0.8rem var(--space-4);
+  }
+
+  .hamburger {
+    display: flex;
+  }
+
+  .topbar-brand {
+    display: flex;
   }
 }

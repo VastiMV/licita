@@ -1,0 +1,118 @@
+@use "mixins" as *;
+
+.sidebar {
+  position: sticky;
+  top: 0;
+  align-self: flex-start;
+  flex-shrink: 0;
+  display: flex;
+  flex-direction: column;
+  width: 232px;
+  height: 100vh;
+  background: var(--color-surface);
+  border-right: 1px solid var(--color-border);
+  box-shadow: var(--shadow-sm);
+  transition: width var(--transition-fast);
+  z-index: var(--z-sidebar);
+
+  &.collapsed {
+    width: 76px;
+  }
+}
+
+.sidebar-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-2);
+  padding: var(--space-4) var(--space-4) var(--space-3);
+  border-bottom: 1px solid var(--color-border);
+
+  .collapsed & {
+    flex-direction: column;
+    justify-content: center;
+  }
+}
+
+.collapse-toggle {
+  appearance: none;
+  flex-shrink: 0;
+  width: 28px;
+  height: 28px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-sm);
+  background: var(--color-surface);
+  color: var(--color-muted);
+  cursor: pointer;
+  transition: background var(--transition-fast), color var(--transition-fast);
+
+  &:hover {
+    background: var(--color-blue-soft);
+    color: var(--color-navy);
+  }
+
+  &:focus-visible {
+    @include focus-ring;
+  }
+}
+
+nav {
+  display: flex;
+  flex-direction: column;
+  gap: 0.2rem;
+  padding: var(--space-3);
+  overflow-y: auto;
+}
+
+.backdrop {
+  position: fixed;
+  inset: 0;
+  display: none;
+  background: rgba(22, 41, 77, 0.35);
+  z-index: var(--z-sidebar-backdrop);
+}
+
+@include reduced-motion {
+  .sidebar {
+    transition: none;
+  }
+}
+
+@media (max-width: 640px) {
+  .sidebar {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 260px;
+    box-shadow: var(--shadow-md);
+    transform: translateX(-100%);
+    transition: transform var(--transition-fast);
+
+    &.collapsed {
+      // Recolher é conceito só de desktop (trilho de ícones); em mobile a
+      // Sidebar é off-canvas e sempre abre na largura cheia.
+      width: 260px;
+    }
+
+    &.open {
+      transform: translateX(0);
+    }
+  }
+
+  .collapse-toggle {
+    display: none;
+  }
+
+  .backdrop {
+    display: block;
+  }
+
+  @include reduced-motion {
+    .sidebar {
+      transition: none;
+    }
+  }
+}

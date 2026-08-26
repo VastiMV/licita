@@ -43,6 +43,20 @@ describe('AuthService', () => {
     expect(service.getAccessToken()).toBe('token-novo');
   });
 
+  it('usuario lê as claims do access token', () => {
+    const payload = { email: 'user@licita.dev', nome: 'Fulano' };
+    const token = `header.${btoa(JSON.stringify(payload))}.signature`;
+
+    service.login({ email: 'user@licita.dev', password: 'segredo' }).subscribe();
+    httpMock.expectOne(`/api/${ENDPOINTS.auth.login}`).flush({ access: token });
+
+    expect(service.usuario()).toEqual(payload);
+  });
+
+  it('usuario é null sem sessão', () => {
+    expect(service.usuario()).toBeNull();
+  });
+
   it('logout limpa a sessão', () => {
     service.login({ email: 'user@licita.dev', password: 'segredo' }).subscribe();
     httpMock.expectOne(`/api/${ENDPOINTS.auth.login}`).flush({ access: 'token-abc' });

@@ -1,19 +1,28 @@
 @use "mixins" as *;
 
 a {
+  display: flex;
+  align-items: center;
+  gap: 0.65rem;
   color: var(--color-muted);
   text-decoration: none;
   font-size: var(--font-size-sm);
   font-weight: var(--font-weight-medium);
-  padding: 0.45rem 0.85rem;
+  padding: 0.55rem 0.85rem;
   border-radius: var(--radius-sm);
   transition: background var(--transition-fast), color var(--transition-fast);
+  white-space: nowrap;
 
   &:hover,
   &.active {
     background: var(--color-blue-soft);
     color: var(--color-navy);
   }
+}
+
+.label {
+  overflow: hidden;
+  text-overflow: ellipsis;
 }
 
 @include reduced-motion {

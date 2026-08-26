@@ -25,4 +25,12 @@ describe('BrandComponent', () => {
     const link = fixture.debugElement.query(By.css('a.brand'));
     expect(link.attributes['href']).toBe('/');
   });
+
+  it('em modo compact, mostra só a marca (sem o nome)', () => {
+    fixture.componentRef.setInput('compact', true);
+    fixture.detectChanges();
+
+    expect(fixture.nativeElement.textContent).not.toContain('INSIDE');
+    expect(fixture.debugElement.query(By.css('svg.brand-mark'))).toBeTruthy();
+  });
 });
