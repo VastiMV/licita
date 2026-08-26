@@ -1,0 +1,23 @@
+@use "mixins" as *;
+
+a {
+  color: var(--color-muted);
+  text-decoration: none;
+  font-size: var(--font-size-sm);
+  font-weight: var(--font-weight-medium);
+  padding: 0.45rem 0.85rem;
+  border-radius: var(--radius-sm);
+  transition: background var(--transition-fast), color var(--transition-fast);
+
+  &:hover,
+  &.active {
+    background: var(--color-blue-soft);
+    color: var(--color-navy);
+  }
+}
+
+@include reduced-motion {
+  a {
+    transition: none;
+  }
+}

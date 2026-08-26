@@ -16,7 +16,7 @@ describe('App', () => {
     fixture.detectChanges();
   });
 
-  it('renderiza a casca da aplicação (app-shell)', () => {
-    expect(fixture.debugElement.query(By.css('app-shell'))).toBeTruthy();
+  it('é só o router-outlet — quem decide o layout é cada rota', () => {
+    expect(fixture.debugElement.query(By.css('router-outlet'))).toBeTruthy();
   });
 });

@@ -3,12 +3,17 @@ import { FormBuilder, ReactiveFormsModule, Validators } from '@angular/forms';
 import { Router } from '@angular/router';
 
 import { AuthService } from '../../../core/auth/auth.service';
+import { BrandComponent } from '../../../layout/brand/brand.component';
 import { ButtonComponent } from '../../../shared/ui/button/button.component';
 import { InputTextComponent } from '../../../shared/ui/input-text/input-text.component';
 
+/**
+ * Página independente — não é filha do `ShellComponent` em app.routes.ts,
+ * então não tem `Navbar`/menu nenhum. Só a `Brand`.
+ */
 @Component({
   selector: 'app-login-page',
-  imports: [ReactiveFormsModule, InputTextComponent, ButtonComponent],
+  imports: [ReactiveFormsModule, BrandComponent, InputTextComponent, ButtonComponent],
   templateUrl: './login.page.html',
   styleUrl: './login.page.scss',
 })

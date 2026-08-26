@@ -1,10 +1,18 @@
 import { Component } from '@angular/core';
-import { RouterLink, RouterLinkActive, RouterOutlet } from '@angular/router';
+import { RouterOutlet } from '@angular/router';
 
-/** Casca da aplicação: topbar com a marca "Inside Solutions", navegação e rodapé. */
+import { FooterComponent } from '../footer/footer.component';
+import { NavbarComponent } from '../navbar/navbar.component';
+
+/**
+ * Layout das páginas de módulo — usado como componente de uma rota pai em
+ * `app.routes.ts`, nunca envolvendo o login (que é uma rota independente,
+ * sem essa casca). Só compõe: quem sabe desenhar navbar/rodapé são os
+ * componentes deles.
+ */
 @Component({
   selector: 'app-shell',
-  imports: [RouterLink, RouterLinkActive, RouterOutlet],
+  imports: [NavbarComponent, FooterComponent, RouterOutlet],
   templateUrl: './shell.component.html',
   styleUrl: './shell.component.scss',
 })

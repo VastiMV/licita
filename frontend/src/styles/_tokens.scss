@@ -13,7 +13,10 @@
   --color-blue-light: #4ba3dc;
   --color-blue-soft: #eaf2fa;
 
-  --color-bg: #f4f7fa;
+  // Mais escuro que --color-surface de propósito — é o que faz a navbar e
+  // os cards (ambos --color-surface) se destacarem do fundo em vez de se
+  // misturar (o #f4f7fa antigo tinha contraste quase nenhum com branco).
+  --color-bg: #dde5ef;
   --color-surface: #ffffff;
   --color-fg: #16294d;
   --color-muted: #66788f;

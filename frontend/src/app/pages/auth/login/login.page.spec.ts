@@ -28,6 +28,11 @@ describe('LoginPage', () => {
     fixture.detectChanges();
   }
 
+  it('mostra a marca e nenhum menu — página independente, sem Navbar', () => {
+    expect(fixture.debugElement.query(By.css('.brand'))).toBeTruthy();
+    expect(fixture.debugElement.query(By.css('nav'))).toBeNull();
+  });
+
   it('não chama o AuthService e mostra os erros de campo quando o form é inválido', () => {
     submeter();
 

@@ -1,0 +1,22 @@
+.topbar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-4);
+  flex-wrap: wrap;
+  padding: 0.9rem var(--space-8);
+  background: var(--color-surface);
+  border-bottom: 1px solid var(--color-border);
+  box-shadow: var(--shadow-sm);
+}
+
+nav {
+  display: flex;
+  gap: 0.35rem;
+}
+
+@media (max-width: 640px) {
+  .topbar {
+    padding: 0.8rem var(--space-4);
+  }
+}

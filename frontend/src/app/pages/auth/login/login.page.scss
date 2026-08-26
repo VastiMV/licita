@@ -1,3 +1,17 @@
+// Página independente (não é filha do ShellComponent) — dona do próprio
+// layout de página inteira, não herda o :host flex do Shell.
+:host {
+  display: block;
+  min-height: 100vh;
+}
+
+.login-topbar {
+  padding: 0.9rem var(--space-8);
+  background: var(--color-surface);
+  border-bottom: 1px solid var(--color-border);
+  box-shadow: var(--shadow-sm);
+}
+
 .login {
   max-width: 360px;
   margin: 3rem auto 0;

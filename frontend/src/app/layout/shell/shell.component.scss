@@ -1,76 +1,7 @@
-@use "mixins" as *;
-
 :host {
   display: flex;
   flex-direction: column;
   min-height: 100vh;
-}
-
-.topbar {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: var(--space-4);
-  flex-wrap: wrap;
-  padding: 0.9rem var(--space-8);
-  background: var(--color-surface);
-  border-bottom: 1px solid var(--color-border);
-  box-shadow: var(--shadow-sm);
-}
-
-.brand {
-  display: flex;
-  align-items: center;
-  gap: 0.7rem;
-  text-decoration: none;
-}
-
-.brand-mark {
-  width: 30px;
-  height: 30px;
-  flex-shrink: 0;
-}
-
-.brand-name {
-  display: flex;
-  flex-direction: column;
-  line-height: 1;
-}
-
-.brand-inside {
-  font-size: var(--font-size-lg);
-  font-weight: var(--font-weight-bold);
-  letter-spacing: 0.14em;
-  color: var(--color-navy);
-}
-
-.brand-solutions {
-  font-size: var(--font-size-xs);
-  font-weight: var(--font-weight-regular);
-  letter-spacing: 0.28em;
-  color: var(--color-blue);
-  margin-top: 2px;
-}
-
-nav {
-  display: flex;
-  gap: 0.35rem;
-}
-
-nav a {
-  color: var(--color-muted);
-  text-decoration: none;
-  font-size: var(--font-size-sm);
-  font-weight: var(--font-weight-medium);
-  padding: 0.45rem 0.85rem;
-  border-radius: var(--radius-sm);
-  transition: background var(--transition-fast), color var(--transition-fast);
-
-  &:hover,
-  &.active {
-    background: var(--color-blue-soft);
-    color: var(--color-navy);
-  }
 }
 
 .container {
@@ -81,28 +12,7 @@ nav a {
   padding: var(--space-8) var(--space-6) 3rem;
 }
 
-.rodape {
-  padding: var(--space-5) var(--space-8);
-  border-top: 1px solid var(--color-border);
-  background: var(--color-surface);
-  color: var(--color-muted);
-  font-size: 0.68rem;
-  font-weight: var(--font-weight-medium);
-  letter-spacing: 0.18em;
-  text-align: center;
-}
-
-@include reduced-motion {
-  nav a {
-    transition: none;
-  }
-}
-
 @media (max-width: 640px) {
-  .topbar {
-    padding: 0.8rem var(--space-4);
-  }
-
   .container {
     padding: var(--space-5) var(--space-4) var(--space-8);
   }

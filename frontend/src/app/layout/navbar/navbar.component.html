@@ -1,0 +1,8 @@
+<header class="topbar">
+  <app-brand />
+  <nav>
+    @for (link of links; track link.path) {
+      <app-nav-item [path]="link.path" [label]="link.label" />
+    }
+  </nav>
+</header>
