@@ -178,11 +178,12 @@ achados novos:
   relação ao PNCP — uma janela de 30 dias no modo navegação veio vazia; 90
   dias trouxe resultado normal. Não é bug, é característica do mirror —
   o default de janela do modo navegação deve considerar isso.
-- **A busca textual via PNCP é lenta para termo genérico** (~2min para
-  "cafe", que casou ~50 editais e disparou uma chamada de itens por
-  edital) — funciona e devolve dado certo, mas a experiência não é boa.
-  Fica como pendência de performance (reduzir `MAX_EDITAIS_PNCP`, ou
-  paralelizar mais agressivo).
+- **A busca textual via PNCP era lenta para termo genérico** (~2min para
+  "cafe", que casava ~50 editais e disparava uma chamada de itens por
+  edital, em rodadas de 8 por vez). Corrigido em 26/08/2026 (relatado como
+  bug pelo usuário): `MAX_EDITAIS_PNCP` 50 → 20 e `MAX_WORKERS` 8 → 20
+  (`apps/licitacoes/services.py`) — mesma chamada, menos editais
+  inspecionados e quase tudo numa rodada só de paralelismo em vez de ~7.
 - **Este ambiente de sandbox alcançou `pncp.gov.br` e
   `dadosabertos.compras.gov.br` normalmente** (diferente do bloqueio
   relatado nas sessões do protótipo) — pode variar por sessão/ambiente,
@@ -198,10 +199,18 @@ achados novos:
   dados reais: só 4 devolvem registro (`MODALIDADES_CONTRATACOES`, no mesmo
   módulo) — os outros 9 são aceitos pela API sem erro, mas nunca trazem
   nada. Corrigido o default do modo navegação (era "6", virou "5") e o
-  dropdown do frontend. **Não confirmado**: se a busca textual do PNCP
-  (`/api/search/`, parâmetro `modalidades`) usa a tabela do PNCP (a
-  "oficial") ou também tem numeração própria — testado rapidamente sem
-  resultado conclusivo, fica como próximo passo.
+  dropdown do frontend. **Confirmado em 26/08/2026**: a busca textual do
+  PNCP (`/api/search/`, parâmetro `modalidades`) usa a tabela "oficial" do
+  PNCP (`MODALIDADES`), não a de `MODALIDADES_CONTRATACOES` — testado ao
+  vivo variando o parâmetro e conferindo `modalidade_licitacao_nome` nos
+  resultados ("5" só devolvia "Concorrência - Presencial", "6" só
+  "Pregão - Eletrônico" etc.). Isso fazia o filtro de modalidade na busca
+  por palavra filtrar pela modalidade errada sem erro nenhum — bug real
+  relatado pelo usuário (selecionava uma modalidade específica e via
+  resultado de outra). Corrigido com uma tabela de tradução,
+  `MODALIDADE_CONTRATACOES_PARA_PNCP` em
+  `apps/integracoes/clients/compras_gov.py`, aplicada em
+  `apps/licitacoes/services.py::_buscar_no_pncp` antes de chamar o PNCP.
 
 ## O que muda do protótipo para a stack de produção
 
