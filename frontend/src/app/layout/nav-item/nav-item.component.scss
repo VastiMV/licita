@@ -13,8 +13,10 @@ a {
   transition: background var(--transition-fast), color var(--transition-fast);
   white-space: nowrap;
 
+  // Mesma tinta de azul do :focus-ring (ver mixins.scss) — mais escuro que
+  // --color-blue-soft, que ficava fraco demais pra sinalizar hover.
   &:hover {
-    background: var(--color-blue-soft);
+    background: rgba(43, 124, 196, 0.18);
     color: var(--color-navy);
   }
 
