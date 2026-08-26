@@ -67,6 +67,30 @@ kubectl create secret generic postgres-secrets \
   --from-literal=POSTGRES_DB=licita
 ```
 
+## RabbitMQ
+
+```bash
+kubectl apply -f k8s/rabbitmq/service.yaml
+kubectl apply -f k8s/rabbitmq/statefulset.yaml
+```
+
+`rabbitmq-secrets` tem que existir **antes** do primeiro boot — mesma lógica
+do `postgres-secrets`, mas aqui uma secret só serve dois propósitos:
+credenciais do próprio RabbitMQ (`RABBITMQ_DEFAULT_USER`/`RABBITMQ_DEFAULT_PASS`,
+lidas pela imagem oficial) e a URL de conexão que backend/worker/beat usam
+(`RABBITMQ_URL`, lida por `Environment` — ver `config/settings/environment.py`).
+As duas coisas têm que bater:
+
+```bash
+kubectl create secret generic rabbitmq-secrets \
+  --namespace inside-solutions-licita \
+  --from-literal=RABBITMQ_DEFAULT_USER=licita \
+  --from-literal=RABBITMQ_DEFAULT_PASS=<gerar uma senha forte> \
+  --from-literal=RABBITMQ_URL="amqp://licita:<a mesma senha>@rabbitmq:5672//"
+```
+
+Sem PVC — fila é descartável (ver comentário em `k8s/rabbitmq/statefulset.yaml`).
+
 ## Backend
 
 ```bash
@@ -75,8 +99,8 @@ kubectl apply -f k8s/backend/deployment.yaml
 kubectl apply -f k8s/backend/service.yaml
 ```
 
-Depende de `backend-secrets` (`DJANGO_SECRET_KEY`) e de `postgres-secrets`
-já existirem:
+Depende de `backend-secrets` (`DJANGO_SECRET_KEY`), `postgres-secrets` e
+`rabbitmq-secrets` já existirem:
 
 ```bash
 kubectl create secret generic backend-secrets \
@@ -95,4 +119,24 @@ kubectl rollout status deployment/backend -n inside-solutions-licita
 O Deployment roda `manage.py migrate` num `initContainer` antes do
 container principal subir — funciona com 1 réplica (nosso caso); mais que
 isso precisa virar um `Job` separado, senão duas migrações correm em
-paralelo.
+paralelo. Essa migração inclui `CREATE EXTENSION pg_trgm` (busca do
+catálogo, ver `apps/catalogo`) — o usuário `licita` do Postgres precisa de
+privilégio para criar extensão, senão o `initContainer` falha nesse passo.
+
+## Celery (worker + beat)
+
+Mesma imagem do backend, nenhum build separado — só o `command` muda (ver
+os manifests). `celery-beat` é singleton: **nunca** escalar
+`replicas` além de 1.
+
+```bash
+kubectl apply -f k8s/backend/celery-worker-deployment.yaml
+kubectl apply -f k8s/backend/celery-beat-deployment.yaml
+```
+
+Dependem dos mesmos Secrets do backend, mais `rabbitmq-secrets`. Depois de
+rebuildar a imagem `backend`, force o rollout dos três juntos:
+
+```bash
+kubectl rollout restart deployment/backend deployment/celery-worker deployment/celery-beat -n inside-solutions-licita
+```

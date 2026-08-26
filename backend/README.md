@@ -50,11 +50,12 @@ config/
   urls.py
 apps/
   accounts/           User (login por e-mail) — primeiro model, AUTH_USER_MODEL
+  integracoes/        Clients HTTP (compras.gov.br, PNCP) — isolados, mockáveis nos testes
+  catalogo/           Model Pdm, sync assíncrono (Celery) e busca por similaridade
 ```
 
-Próximos apps de domínio (`catalogo`, `licitacoes`, `filtros`, `alertas`,
-`integracoes`) entram um de cada vez conforme documentado em
-`docs/ARQUITETURA.md` — ainda não existem.
+Próximos apps de domínio (`licitacoes`, `filtros`, `alertas`) entram um de
+cada vez conforme documentado em `docs/ARQUITETURA.md`.
 
 ## Variáveis de ambiente
 

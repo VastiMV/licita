@@ -18,13 +18,21 @@ permitir busca por nome de produto.
 |---|---|---|
 | `codigo_pdm` | int (PK) | código do produto no catálogo oficial |
 | `nome_pdm` | string | nome como veio da API |
-| `nome_normalizado` | string, indexado | caixa alta, sem acento — usado na busca |
+| `nome_normalizado` | string, indexado (trigram) | caixa alta, sem acento — busca por produto (camada 1) |
 | `codigo_classe`, `nome_classe` | int / string, opcionais | |
+| `nome_classe_normalizado` | string, indexado (trigram), opcional | busca por categoria (camada 2) |
 | `codigo_grupo`, `nome_grupo` | int / string, opcionais | |
+| `nome_grupo_normalizado` | string, indexado (trigram), opcional | busca por categoria (camada 2) |
 | `atualizado_em` | datetime | |
 
-Alimentado por uma task periódica (`sincronizar_catalogo`), não por escrita de
-usuário.
+Tabela única, denormalizada de propósito — sem `Grupo`/`Grupo` como tabelas à
+parte. Em ~20 mil linhas, um JOIN não compensa o ganho de normalização, e a
+busca interativa fica mais rápida lendo uma tabela só. Ver "Busca textual —
+camadas" abaixo para o motivo dos três índices trigram.
+
+Alimentado por uma task periódica (`sincronizar_catalogo_pdm`, Celery Beat),
+não por escrita de usuário — e por um `management command` equivalente
+(`sincronizar_catalogo`) para rodar fora do agendamento.
 
 ### `Licitacao`
 Cache local de uma licitação/contratação já vista, identificada por
@@ -90,14 +98,62 @@ reabrir a investigação:
 ### Busca de oportunidades (fluxo, não persiste)
 
 1. Usuário informa palavra-chave (opcional), UF, modalidade, UASG, período.
-2. Se há palavra-chave: tenta casar no objeto do edital via busca textual do
+2. Sem palavra-chave: modo navegação — lista as contratações do período pela
+   modalidade escolhida, sem depender de PNCP nem de `Pdm`.
+3. Com palavra-chave: tenta casar no objeto do edital via busca textual do
    PNCP.
-3. Se o PNCP não responde ou não acha nada, cai para o índice local de `Pdm`
-   — a palavra vira um ou mais `codigo_pdm`, que filtram a chamada ao
-   compras.gov.br.
-4. Resultado é por **item da contratação** (não a contratação inteira):
+4. Se o PNCP não responde ou não acha nada, cai para a busca em `Pdm` (ver
+   "Busca textual — camadas" abaixo) — a palavra vira um ou mais
+   `codigo_pdm`, que filtram a chamada ao compras.gov.br.
+5. Resultado é por **item da contratação** (não a contratação inteira):
    número do item, descrição, quantidade, valor unitário/total estimado,
    link para abrir a compra no compras.gov.br e o edital no PNCP.
+
+### Busca textual — camadas
+
+Decisão de arquitetura (25/08/2026): a busca por palavra-chave é
+**determinística, em camadas — nunca um agente de IA decidindo livremente**.
+Um agente com uma tool de busca no banco pode inventar/citar um código de
+PDM que não existe, é não-determinístico (quebra o padrão de testes sem rede
+já estabelecido — ver "Estratégia de testes" em `docs/ARQUITETURA.md`), e
+adiciona latência/custo por busca numa tela que responde ao vivo. Nenhuma das
+camadas abaixo gera texto livre: todas apenas ranqueiam linhas que já existem
+de verdade no catálogo.
+
+1. **Busca textual do PNCP** — objeto do edital, ver acima. Cobre material e
+   serviço, mas depende de um endpoint não documentado (ver "Precisa de rede
+   real para testar" acima e o histórico de instabilidade nos branches do
+   protótipo).
+2. **Catálogo local (`Pdm`), por similaridade** — quando o PNCP falha ou não
+   acha nada. Dois casos, cobertos pelos três índices trigram (`pg_trgm`) do
+   model:
+   - **Erro de digitação / variação** ("cafe" vs "café" vs "cafezinho"):
+     casa contra `nome_normalizado` (nome do produto).
+   - **Categoria, não produto** ("material de escritório" quando o catálogo
+     tem "CAFÉ", "PAPEL A4" etc. como PDMs individuais, agrupados sob uma
+     classe/grupo do próprio governo): casa contra `nome_classe_normalizado`/
+     `nome_grupo_normalizado`. Aproveita a categorização que a API já
+     entrega — sem manter um dicionário de sinônimos próprio (trabalho que
+     cabe a quem já cataloga isso oficialmente, não a este sistema).
+   Só cobre material — catálogo de serviço tem estrutura própria, não
+   integrada.
+3. **Busca semântica por embedding — fora do escopo da primeira versão.**
+   Fecha o caso que trigram não cobre: termo sem raiz textual em comum com o
+   nome do produto/categoria (ex.: "bebida quente de escritório" → "café").
+   Desenho já decidido, implementação futura:
+   - O modelo de embedding roda num **pod separado** (não no backend/worker
+     Django) — isola o consumo de memória do peso do modelo e permite
+     escalar/trocar o modelo sem tocar no resto. Candidato a fine-tuning
+     posterior para o vocabulário de licitação em português.
+   - O vetor de cada `Pdm` é calculado **uma vez, no sync do catálogo**
+     (task assíncrona), não por busca — a busca interativa só embeda o termo
+     do usuário (uma chamada rápida ao pod) e faz *nearest neighbor* contra
+     vetores já salvos.
+   - Exige a extensão `pgvector` no Postgres (não instalada ainda — checar
+     antes de implementar) e uma coluna de vetor em `Pdm`.
+   - Como as camadas 1+2 já resolvem a maior parte dos casos reais, essa
+     camada só entra se o uso mostrar que ainda sobra volume relevante de
+     buscas por categoria/sinônimo que trigram não pega.
 
 ## Integrações externas (async, via Celery)
 
@@ -106,6 +162,11 @@ reabrir a investigação:
 | `compras.gov.br` (`dadosabertos.compras.gov.br`) | catálogo de materiais (PDM), contratações/itens |
 | PNCP (`pncp.gov.br/api/...`) | busca textual de editais, itens da contratação |
 | E-mail (provedor a definir) | notificação de `Alerta` |
+
+O sync do catálogo (~41 páginas de 500 registros) roda **sequencial, com um
+intervalo entre páginas** (`catalogo_sync_intervalo_segundos` em
+`Environment`) — de propósito mais lento que o necessário, para não gerar uma
+rajada de requisições numa API pública e gratuita do governo.
 
 ## O que muda do protótipo para a stack de produção
 

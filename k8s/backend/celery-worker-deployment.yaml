@@ -1,0 +1,49 @@
+# Mesma imagem do backend (nenhum Dockerfile novo) — só troca o `command`.
+# Sem initContainer de migração: o Deployment do backend já garante o schema
+# antes de qualquer worker precisar dele; rodar `migrate` de novo aqui só
+# daria corrida com o initContainer do backend em deploys simultâneos.
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: celery-worker
+  namespace: inside-solutions-licita
+  labels:
+    app: celery-worker
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: celery-worker
+  template:
+    metadata:
+      labels:
+        app: celery-worker
+    spec:
+      imagePullSecrets:
+        - name: ghcr-pull-secret
+      containers:
+        - name: celery-worker
+          image: ghcr.io/vastimv/licita-backend:latest
+          imagePullPolicy: Always
+          command: ["celery", "-A", "config", "worker", "--loglevel=INFO"]
+          envFrom:
+            - configMapRef:
+                name: backend-config
+            - secretRef:
+                name: backend-secrets
+            - secretRef:
+                name: postgres-secrets
+            - secretRef:
+                name: rabbitmq-secrets
+          readinessProbe:
+            exec:
+              command: ["celery", "-A", "config", "inspect", "ping"]
+            initialDelaySeconds: 15
+            periodSeconds: 30
+          resources:
+            requests:
+              cpu: 100m
+              memory: 192Mi
+            limits:
+              cpu: 500m
+              memory: 384Mi

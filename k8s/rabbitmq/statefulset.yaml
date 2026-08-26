@@ -1,0 +1,48 @@
+# StatefulSet (não Deployment) pela mesma razão do Postgres — DNS estável via
+# Service headless. 1 réplica: fila única, sem cluster (ver docs/ARQUITETURA.md).
+# Sem PVC dedicado de propósito: ao contrário do Postgres, o conteúdo da fila é
+# descartável — se o pod reiniciar e perder mensagens em trânsito, a próxima
+# rodada do Celery Beat ou a próxima chamada síncrona resolve; não guardamos
+# histórico aqui. Credenciais via `rabbitmq-secrets`, nunca em ConfigMap.
+apiVersion: apps/v1
+kind: StatefulSet
+metadata:
+  name: rabbitmq
+  namespace: inside-solutions-licita
+spec:
+  serviceName: rabbitmq
+  replicas: 1
+  selector:
+    matchLabels:
+      app: rabbitmq
+  template:
+    metadata:
+      labels:
+        app: rabbitmq
+    spec:
+      containers:
+        - name: rabbitmq
+          image: rabbitmq:4-alpine
+          ports:
+            - name: amqp
+              containerPort: 5672
+          envFrom:
+            - secretRef:
+                name: rabbitmq-secrets
+          readinessProbe:
+            exec:
+              command: ["rabbitmq-diagnostics", "-q", "check_port_connectivity"]
+            initialDelaySeconds: 10
+            periodSeconds: 10
+          livenessProbe:
+            exec:
+              command: ["rabbitmq-diagnostics", "-q", "check_running"]
+            initialDelaySeconds: 30
+            periodSeconds: 20
+          resources:
+            requests:
+              cpu: 100m
+              memory: 256Mi
+            limits:
+              cpu: 500m
+              memory: 512Mi

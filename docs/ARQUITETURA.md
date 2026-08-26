@@ -26,7 +26,8 @@ Stack construída sobre um cluster Kubernetes. Domínio de negócio em
                                           (worker/beat consomem do broker)
 ```
 
-Namespace único por enquanto: `licita`.
+Namespace único por enquanto: `inside-solutions-licita` (ver `k8s/namespace.yaml` —
+manifests já usam esse nome; o valor `licita` que aparecia aqui antes nunca foi o real).
 
 ## Framework
 

@@ -68,6 +68,25 @@ class Environment:
         default_factory=lambda: os.environ.get("RABBITMQ_URL", "amqp://guest:guest@localhost:5672//")
     )
 
+    # Integrações externas (ver apps/integracoes e docs/DOMINIO.md).
+    compras_gov_base_url: str = field(
+        default_factory=lambda: os.environ.get(
+            "COMPRAS_GOV_BASE_URL", "https://dadosabertos.compras.gov.br"
+        )
+    )
+    pncp_base_url: str = field(
+        default_factory=lambda: os.environ.get("PNCP_BASE_URL", "https://pncp.gov.br")
+    )
+    # Endpoint não documentado (ver docs/DOMINIO.md) — permite desligar em
+    # produção se ele mudar/sumir sem aviso, caindo direto no catálogo local.
+    usar_busca_pncp: bool = field(default_factory=lambda: _get_bool("USAR_BUSCA_PNCP", default=True))
+    # Intervalo entre páginas no sync do catálogo de PDM — de propósito maior
+    # que zero, para não gerar rajada de requisições numa API pública do
+    # governo (ver docs/DOMINIO.md, seção "Integrações externas").
+    catalogo_sync_intervalo_segundos: float = field(
+        default_factory=lambda: float(os.environ.get("CATALOGO_SYNC_INTERVALO_SEGUNDOS", "0.3"))
+    )
+
     # JWT (ver docs/ARQUITETURA.md — seção "Autenticação")
     jwt_access_lifetime_minutes: int = field(
         default_factory=lambda: _get_int("JWT_ACCESS_LIFETIME_MINUTES", default=15)
