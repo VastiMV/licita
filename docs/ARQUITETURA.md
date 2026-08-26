@@ -193,9 +193,9 @@ harness de código for gerado.
 
 ## CI e imagens
 
-Build manual, não em cada push — `.github/workflows/build-frontend.yml` e
-`build-backend.yml` (`workflow_dispatch`, acionados em Actions → Run
-workflow). Cada um builda a imagem (`frontend/Dockerfile`,
+Build manual, não em cada push — `.github/workflows/build-image.yml`
+(`workflow_dispatch` com um dropdown `frontend`/`backend`/`both`, acionado em
+Actions → Run workflow). Builda a imagem (`frontend/Dockerfile`,
 `backend/Dockerfile`) e publica em `ghcr.io/vastimv/licita-frontend:latest` /
 `licita-backend:latest`. Sem tag por commit ainda — só `:latest`, trocar
 exige `kubectl rollout restart` (ver [`k8s/README.md`](../k8s/README.md)).

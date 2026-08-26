@@ -1,0 +1,64 @@
+name: Build image
+
+# Um workflow só, com dropdown pra escolher qual imagem — em vez de um
+# workflow por imagem aparecendo cada um como uma entrada separada em
+# Actions. Manual de propósito: builda sob pedido, não a cada push.
+on:
+  workflow_dispatch:
+    inputs:
+      image:
+        description: "Qual imagem buildar"
+        required: true
+        type: choice
+        options:
+          - frontend
+          - backend
+          - both
+        default: frontend
+
+permissions:
+  contents: read
+  packages: write
+
+jobs:
+  frontend:
+    if: ${{ inputs.image == 'frontend' || inputs.image == 'both' }}
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Login no GHCR
+        uses: docker/login-action@v3
+        with:
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Build e push (roda os testes como parte do build — ver frontend/Dockerfile)
+        uses: docker/build-push-action@v6
+        with:
+          context: frontend
+          push: true
+          # ghcr.io exige nome de imagem em minúsculo — "vastimv" fixo aqui
+          # em vez de github.repository_owner (que preservaria o "VastiMV").
+          tags: ghcr.io/vastimv/licita-frontend:latest
+
+  backend:
+    if: ${{ inputs.image == 'backend' || inputs.image == 'both' }}
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Login no GHCR
+        uses: docker/login-action@v3
+        with:
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Build e push
+        uses: docker/build-push-action@v6
+        with:
+          context: backend
+          push: true
+          tags: ghcr.io/vastimv/licita-backend:latest
