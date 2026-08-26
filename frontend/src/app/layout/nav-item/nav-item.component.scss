@@ -13,10 +13,16 @@ a {
   transition: background var(--transition-fast), color var(--transition-fast);
   white-space: nowrap;
 
-  &:hover,
-  &.active {
+  &:hover {
     background: var(--color-blue-soft);
     color: var(--color-navy);
+  }
+
+  // Mesmo contraste do botão primário (ver ButtonComponent) — o hover sozinho
+  // (fundo claro) não distinguia bem qual item está selecionado.
+  &.active {
+    background: var(--color-navy);
+    color: #fff;
   }
 }
 
