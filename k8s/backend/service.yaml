@@ -1,0 +1,16 @@
+# Service sem Deployment atrás dele ainda de propósito — o Ingress (/api)
+# já aponta pra cá, então quando o Deployment do backend existir (ver
+# k8s/README.md) o roteamento já está pronto, sem tocar no Ingress de novo.
+# Até lá, /api devolve 503 do Traefik (sem endpoint nenhum atrás do Service).
+apiVersion: v1
+kind: Service
+metadata:
+  name: backend
+  namespace: inside-solutions-licita
+spec:
+  selector:
+    app: backend
+  ports:
+    - name: http
+      port: 8000
+      targetPort: 8000
