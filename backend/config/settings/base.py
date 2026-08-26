@@ -137,6 +137,12 @@ SIMPLE_JWT = {
     "UPDATE_LAST_LOGIN": True,
 }
 
+# Cookie do CSRF (usado só por /api/auth/refresh/ — ver apps/accounts/views.py)
+# e cookie de sessão (usado só pelo /admin/): `Secure` em produção, liberado
+# em DEBUG porque o dev local roda em http:// puro.
+CSRF_COOKIE_SECURE = not DEBUG
+SESSION_COOKIE_SECURE = not DEBUG
+
 
 # Celery + RabbitMQ — ver docs/ARQUITETURA.md, seção "Assíncrono".
 # Nenhuma task ainda: só o app Celery instanciado (config/celery.py) e o
