@@ -1,0 +1,19 @@
+# Dependências diretas, versão travada. Sub-dependências ficam a cargo do
+# pip a partir destas — ver .venv/ (não versionado) para o que foi
+# efetivamente resolvido numa instalação.
+
+Django==6.0.8
+djangorestframework==3.18.0
+djangorestframework-simplejwt==5.5.1
+
+# Daphne primeiro em INSTALLED_APPS (settings/base.py) é o que liga o
+# `manage.py runserver` a ASGI — necessário para `async def` e Channels.
+channels==4.3.2
+daphne==4.2.3
+
+# Driver do PostgreSQL (StatefulSet no Kubernetes — ver docs/ARQUITETURA.md).
+psycopg[binary]==3.3.4
+
+# Assíncrono — ver docs/ARQUITETURA.md, seção "Assíncrono".
+celery==5.6.3
+django-celery-beat==2.9.0

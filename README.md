@@ -29,4 +29,11 @@ dados e manifests de infraestrutura.
 
 ## Status
 
-Fase de especificação — ainda sem código da nova stack neste repositório.
+- **`frontend/`** — Angular: design system, autenticação e as quatro telas
+  (oportunidades, filtros, alertas, login). Ver [`frontend/README.md`](frontend/README.md).
+- **`backend/`** — Django/DRF: projeto criado, autenticação por e-mail
+  (`apps/accounts`) como primeiro model, Daphne/Channels e Celery já
+  conectados na configuração. Os demais apps de domínio (catálogo,
+  licitações, filtros, alertas, integrações) ainda não existem. Ver
+  [`backend/README.md`](backend/README.md).
+- Manifests Kubernetes ainda não existem.
