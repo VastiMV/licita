@@ -213,6 +213,26 @@ class BuscaTextualPncpTests(SimpleTestCase):
                     _montar_handler_pncp(resposta_busca=vazio), palavra_chave="xyzabc", codigos_pdm=[]
                 )
 
+    def test_modalidade_e_traduzida_para_o_codigo_do_pncp(self):
+        """Regressão: o dropdown manda o código de `MODALIDADES_CONTRATACOES`
+        ("5" = Pregão Eletrônico), mas o `/api/search/` do PNCP espera o
+        código da tabela `MODALIDADES` ("6") — ver docs/DOMINIO.md, achado de
+        26/08/2026. Mandar o código errado filtrava silenciosamente por outra
+        modalidade em vez da escolhida."""
+
+        capturado = {}
+
+        def handler(request: httpx.Request) -> httpx.Response:
+            if request.url.path == "/api/search/":
+                capturado["modalidades"] = request.url.params.get("modalidades")
+                return httpx.Response(200, json=RESPOSTA_BUSCA)
+            return httpx.Response(200, json=RESPOSTA_ITENS_PNCP)
+
+        with _pncp(True):
+            _buscar_com_pncp(handler, palavra_chave="café", codigos_pdm=[], codigo_modalidade="5")
+
+        self.assertEqual(capturado["modalidades"], "6")
+
     def test_filtro_de_unidade_aplicado_sobre_o_resultado_do_pncp(self):
         with _pncp(True):
             self.assertEqual(

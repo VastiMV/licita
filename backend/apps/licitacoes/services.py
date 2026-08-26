@@ -33,6 +33,7 @@ from typing import Any
 from config.settings.environment import env
 
 from apps.integracoes.clients.compras_gov import (
+    MODALIDADE_CONTRATACOES_PARA_PNCP,
     ComprasGovClient,
     ComprasGovClientError,
     montar_link_compras_gov,
@@ -46,8 +47,13 @@ logger = logging.getLogger(__name__)
 MAX_CODIGOS_CATALOGO = 25  # códigos PDM inspecionados por busca
 MAX_CONTRATACOES = 60  # teto de contratações no modo navegação
 MAX_COMPRAS_DETALHADAS = 100  # teto de contratações detalhadas na busca por palavra
-MAX_WORKERS = 8
-MAX_EDITAIS_PNCP = 50  # editais trazidos por busca textual (1 página do portal)
+# Pendência de performance anotada em docs/DOMINIO.md: termo genérico ("cafe")
+# levava ~2min, porque MAX_EDITAIS_PNCP editais viravam MAX_EDITAIS_PNCP
+# chamadas de listar_itens, rodando em rodadas de MAX_WORKERS por vez. Editais
+# reduzidos de 50 -> 20 e workers de 8 -> 20 deixa isso numa rodada só (contra
+# ~7 antes), sem trocar o contrato da API nem da tela.
+MAX_WORKERS = 20
+MAX_EDITAIS_PNCP = 20  # editais trazidos por busca textual (a 1ª página do portal traz até 50)
 
 
 class BuscaSemCorrespondenciaNoCatalogo(Exception):
@@ -147,7 +153,15 @@ def _buscar_no_pncp(
             termo,
             tamanho_pagina=MAX_EDITAIS_PNCP,
             uf=uf,
-            codigo_modalidade=codigo_modalidade or None,
+            # Traduzido: o código vem na tabela de `MODALIDADES_CONTRATACOES`
+            # (dropdown do frontend / compras.gov.br), mas este endpoint
+            # espera a tabela `MODALIDADES` do PNCP — ver comentário na
+            # tradução. Código desconhecido (não deveria acontecer, o
+            # dropdown só manda os 4 mapeados) cai em "sem filtro" em vez de
+            # filtrar errado.
+            codigo_modalidade=MODALIDADE_CONTRATACOES_PARA_PNCP.get(codigo_modalidade)
+            if codigo_modalidade
+            else None,
         )
         if not editais:
             return None

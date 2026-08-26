@@ -84,6 +84,20 @@ MODALIDADES_CONTRATACOES = {
     "7": "Inexigibilidade",
 }
 
+# Tradução do código acima (o que o dropdown do frontend manda) para o código
+# que a busca textual do PNCP espera no parâmetro `modalidades` de
+# `/api/search/` (ver apps/integracoes/clients/pncp.py) — que usa a tabela
+# MODALIDADES, não esta. Confirmado contra a API real em 26/08/2026 (ver
+# docs/DOMINIO.md): mandar o código deste módulo direto pro PNCP filtrava
+# silenciosamente pela modalidade errada (ex.: "5" = Pregão Eletrônico aqui,
+# mas Concorrência - Presencial lá) — sem erro, só resultado errado.
+MODALIDADE_CONTRATACOES_PARA_PNCP: dict[str, str] = {
+    "3": "4",  # Concorrência - Eletrônica
+    "5": "6",  # Pregão - Eletrônico
+    "6": "8",  # Dispensa (lá é "Dispensa de Licitação")
+    "7": "9",  # Inexigibilidade
+}
+
 
 class ComprasGovClientError(RuntimeError):
     pass
