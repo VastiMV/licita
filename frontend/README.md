@@ -7,12 +7,24 @@ de negócio.
 
 ## Rodando localmente
 
+Gerenciador de pacotes é **pnpm**, não npm — o projeto usa Angular 22, cujo
+`ng serve`/`ng test` já carrega Vite/Rolldown por baixo dos panos; o npm tem
+um bug conhecido (npm/cli#4828) com dependência opcional nativa aninhada
+nesse cenário, especialmente no Windows. pnpm não sofre disso.
+
 ```bash
-npm install
-npm start        # ng serve — http://localhost:4200, com proxy de /api para o backend local (proxy.conf.json)
-npm test         # ng test — Vitest, roda uma vez (sem watch em CI; watch é o padrão local)
-npm run build    # ng build — build de produção em dist/frontend
+npm install -g pnpm   # se ainda não tiver
+pnpm install
+pnpm start        # ng serve — http://localhost:4200, com proxy de /api para o backend local (proxy.conf.json)
+pnpm test         # ng test — Vitest, roda uma vez (sem watch em CI; watch é o padrão local)
+pnpm run build    # ng build — build de produção em dist/frontend
 ```
+
+Na primeira instalação o pnpm pode listar `@parcel/watcher`, `esbuild`,
+`lmdb` e `msgpackr-extract` como scripts de build pendentes de aprovação —
+isso já está resolvido em `pnpm-workspace.yaml` (`allowBuilds`), commitado no
+repo; se aparecer de novo (ex.: após atualizar alguma dessas dependências),
+rode `pnpm approve-builds --all` depois de revisar o que mudou.
 
 `proxy.conf.json` encaminha `/api` para `http://localhost:8000` (backend
 Django local). Ajuste o `target` se o backend rodar em outra porta.
