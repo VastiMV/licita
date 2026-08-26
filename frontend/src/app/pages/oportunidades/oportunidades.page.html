@@ -16,8 +16,21 @@
   <app-input-text label="UASG" formControlName="codigo_unidade" placeholder="opcional" />
   <app-input-text label="Publicadas de" type="date" formControlName="data_inicial" />
   <app-input-text label="até" type="date" formControlName="data_final" />
-  <app-button type="submit" [disabled]="buscando()">{{ buscando() ? 'Buscando…' : 'Buscar' }}</app-button>
+  <div class="form-acoes">
+    <app-button type="submit" [disabled]="buscando()">{{ buscando() ? 'Buscando…' : 'Buscar' }}</app-button>
+    <app-button type="button" variant="ghost" [disabled]="buscando()" (click)="limpar()">Limpar</app-button>
+  </div>
 </form>
+
+@if (buscando()) {
+  <div class="loading-overlay">
+    <div class="loading-caixa">
+      <app-icon name="spinner" class="loading-spinner" />
+      <p>Acessando servidores gov.br. A pesquisa pode demorar um pouco.</p>
+      <button type="button" class="loading-cancelar" (click)="cancelarBusca()">Cancelar busca</button>
+    </div>
+  </div>
+}
 
 @if (erro()) {
   <p class="erro">{{ erro() }}</p>

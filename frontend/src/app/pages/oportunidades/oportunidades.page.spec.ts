@@ -1,6 +1,6 @@
 import { ComponentFixture, TestBed } from '@angular/core/testing';
 import { By } from '@angular/platform-browser';
-import { of, throwError } from 'rxjs';
+import { Subject, of, throwError } from 'rxjs';
 
 import { OportunidadeResponse } from '../../contracts/licitacoes/oportunidade.contracts';
 import { LicitacoesService } from '../../services/licitacoes/licitacoes.service';
@@ -81,5 +81,43 @@ describe('OportunidadesPage', () => {
       'Não foi possível buscar agora',
     );
     expect(fixture.debugElement.query(By.css('.oportunidades'))).toBeNull();
+  });
+
+  it('enquanto busca, mostra o overlay de carregamento com o aviso de demora', () => {
+    licitacoes.buscarOportunidades.mockReturnValue(new Subject()); // nunca emite — fica "buscando" pra sempre
+
+    buscar();
+
+    const overlay = fixture.debugElement.query(By.css('.loading-overlay'));
+    expect(overlay).not.toBeNull();
+    expect(overlay.nativeElement.textContent).toContain('Acessando servidores gov.br');
+  });
+
+  it('"Cancelar busca" desfaz a inscrição (aborta a requisição) e esconde o overlay', () => {
+    const chamada = new Subject<OportunidadeResponse[]>();
+    licitacoes.buscarOportunidades.mockReturnValue(chamada);
+
+    buscar();
+    fixture.debugElement.query(By.css('.loading-cancelar')).triggerEventHandler('click');
+    fixture.detectChanges();
+
+    expect(chamada.observed).toBe(false); // ninguém mais escutando -> unsubscribe aconteceu de verdade
+    expect(fixture.debugElement.query(By.css('.loading-overlay'))).toBeNull();
+  });
+
+  it('"Limpar" volta a tela ao estado inicial', () => {
+    licitacoes.buscarOportunidades.mockReturnValue(of([OPORTUNIDADE]));
+    buscar();
+    expect(fixture.debugElement.query(By.css('.oportunidade-card'))).not.toBeNull();
+
+    fixture.debugElement
+      .queryAll(By.css('app-button'))
+      .find((el) => el.nativeElement.textContent.includes('Limpar'))!
+      .triggerEventHandler('click');
+    fixture.detectChanges();
+
+    expect(fixture.debugElement.query(By.css('.oportunidades'))).toBeNull();
+    expect(fixture.debugElement.query(By.css('.erro'))).toBeNull();
+    expect(fixture.debugElement.nativeElement.textContent).not.toContain('Nenhum item encontrado');
   });
 });
