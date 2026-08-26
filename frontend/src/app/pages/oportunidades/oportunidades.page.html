@@ -37,74 +37,136 @@
 }
 
 @if (buscou() && !erro() && !buscando()) {
-  @if (resultados().length === 0) {
+  @if (editais().length === 0) {
     <p class="muted">
       Nenhum item encontrado. Tente ampliar o período, trocar a modalidade ou usar
       uma palavra-chave mais genérica.
     </p>
   } @else {
-    <p class="muted">{{ resultados().length }} item(ns) encontrado(s).</p>
+    <p class="muted">{{ editais().length }} edital(is) encontrado(s).</p>
     <div class="oportunidades">
-      @for (op of resultados(); track op.contratacao_uasg + '-' + op.numero_item) {
-        <a class="oportunidade-card" [href]="op.link_compras_gov" target="_blank" rel="noopener">
-          <div class="oportunidade-topo">
-            <app-badge>{{ op.contratacao_uf ?? '—' }}</app-badge>
-            <app-badge>{{ op.contratacao_modalidade ?? '—' }}</app-badge>
-            @if (op.contratacao_srp) {
+      @for (card of editais(); track card.chave) {
+        <article class="edital-card">
+          <div class="edital-topo">
+            <app-badge>{{ card.contratacao.contratacao_uf ?? '—' }}</app-badge>
+            <app-badge>{{ card.contratacao.contratacao_modalidade ?? '—' }}</app-badge>
+            @if (card.contratacao.contratacao_srp) {
               <app-badge>SRP</app-badge>
             }
-            <app-badge>{{ op.situacao_item ?? op.contratacao_situacao ?? '—' }}</app-badge>
-            <span class="oportunidade-data">
-              @if (op.contratacao_data_encerramento_proposta) {
-                propostas até {{ op.contratacao_data_encerramento_proposta }}
+            <app-badge>{{ card.contratacao.contratacao_situacao ?? '—' }}</app-badge>
+            @if (detalheDe(card.chave)?.dados?.capag; as capag) {
+              <span [class]="'capag-selo capag-' + capag.cor">CAPAG {{ capag.nota }}</span>
+            }
+            <span class="edital-data">
+              @if (card.contratacao.contratacao_data_encerramento_proposta) {
+                propostas até {{ card.contratacao.contratacao_data_encerramento_proposta }}
               } @else {
-                pub. {{ op.contratacao_data_publicacao ?? '—' }}
+                pub. {{ card.contratacao.contratacao_data_publicacao ?? '—' }}
               }
             </span>
           </div>
 
-          <div class="oportunidade-orgao">
-            {{ op.contratacao_orgao_nome ?? '—' }}
-            @if (op.contratacao_municipio) {
-              · {{ op.contratacao_municipio }}
+          <div class="edital-orgao">
+            {{ card.contratacao.contratacao_orgao_nome ?? '—' }}
+            @if (card.contratacao.contratacao_municipio) {
+              · {{ card.contratacao.contratacao_municipio }}
             }
-            @if (op.contratacao_uasg) {
-              · UASG {{ op.contratacao_uasg }}
+            @if (card.contratacao.contratacao_uasg) {
+              · UASG {{ card.contratacao.contratacao_uasg }}
             }
           </div>
 
-          <div class="oportunidade-objeto">{{ op.contratacao_objeto ?? '—' }}</div>
+          <div class="edital-objeto">{{ card.contratacao.contratacao_objeto ?? '—' }}</div>
 
-          <div class="oportunidade-item">
-            <div class="item-titulo">
-              Item {{ op.numero_item ?? '—' }} — {{ op.descricao_resumida ?? 'sem descrição' }}
+          <div class="edital-acoes">
+            <app-button type="button" variant="ghost" (click)="alternarItens(card.chave)">
+              {{ itensAbertosPara(card.chave) ? 'Ocultar itens' : 'Ver itens (' + card.itens.length + ')' }}
+            </app-button>
+            <app-button type="button" variant="ghost" (click)="alternarDocumentos(card)">
+              {{ documentosAbertosPara(card.chave) ? 'Ocultar documentos' : 'Baixar edital' }}
+            </app-button>
+            @if (card.contratacao.link_compras_gov) {
+              <a
+                class="edital-link-secundario"
+                [href]="card.contratacao.link_compras_gov"
+                target="_blank"
+                rel="noopener"
+              >
+                Abrir no compras.gov.br
+              </a>
+            }
+            @if (card.contratacao.link_pncp) {
+              <a class="edital-link-secundario" [href]="card.contratacao.link_pncp" target="_blank" rel="noopener">
+                Ver no PNCP
+              </a>
+            }
+          </div>
+
+          @if (itensAbertosPara(card.chave)) {
+            <div class="edital-itens">
+              @for (item of card.itens; track $index) {
+                <div class="oportunidade-item">
+                  <div class="item-titulo">
+                    Item {{ item.numero_item ?? '—' }} — {{ item.descricao_resumida ?? 'sem descrição' }}
+                  </div>
+                  @if (item.descricao_detalhada) {
+                    <div class="item-descricao">{{ item.descricao_detalhada }}</div>
+                  }
+                  <div class="item-rodape">
+                    @if (item.quantidade) {
+                      <span>Qtd: {{ item.quantidade }} {{ item.unidade_medida }}</span>
+                    }
+                    @if (item.valor_unitario_estimado) {
+                      <span>Unit. est.: R$ {{ item.valor_unitario_estimado | number: '1.2-2' }}</span>
+                    }
+                    @if (item.valor_total) {
+                      <span>Total est.: R$ {{ item.valor_total | number: '1.2-2' }}</span>
+                    }
+                    @if (item.tipo_beneficio) {
+                      <span>{{ item.tipo_beneficio }}</span>
+                    }
+                  </div>
+                </div>
+              }
             </div>
-            @if (op.descricao_detalhada) {
-              <div class="item-descricao">{{ op.descricao_detalhada }}</div>
-            }
-          </div>
+          }
 
-          <div class="oportunidade-rodape">
-            @if (op.quantidade) {
-              <span>Qtd: {{ op.quantidade }} {{ op.unidade_medida }}</span>
-            }
-            @if (op.valor_unitario_estimado) {
-              <span>Unit. est.: R$ {{ op.valor_unitario_estimado | number: '1.2-2' }}</span>
-            }
-            @if (op.valor_total) {
-              <span>Total est.: R$ {{ op.valor_total | number: '1.2-2' }}</span>
-            }
-            @if (op.tipo_beneficio) {
-              <span>{{ op.tipo_beneficio }}</span>
-            }
-            <span class="oportunidade-link">Abrir no compras.gov.br →</span>
-          </div>
-        </a>
-        @if (op.link_pncp) {
-          <div class="oportunidade-extra">
-            <a [href]="op.link_pncp" target="_blank" rel="noopener">ver edital no PNCP</a>
-          </div>
-        }
+          @if (documentosAbertosPara(card.chave)) {
+            <div class="edital-documentos">
+              @let detalhe = detalheDe(card.chave);
+              @if (detalhe?.carregando) {
+                <p class="muted">Buscando documentos no PNCP…</p>
+              } @else if (detalhe?.erro) {
+                <p class="erro">Não foi possível buscar os documentos agora.</p>
+              } @else if (detalhe?.dados?.documentos?.length) {
+                <table class="documentos-tabela">
+                  <thead>
+                    <tr>
+                      <th>Título</th>
+                      <th>Tipo</th>
+                      <th></th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    @for (doc of detalhe!.dados!.documentos; track $index) {
+                      <tr>
+                        <td>{{ doc.titulo ?? '—' }}</td>
+                        <td>{{ doc.tipo_documento ?? '—' }}</td>
+                        <td>
+                          @if (doc.url) {
+                            <a [href]="doc.url" target="_blank" rel="noopener">Abrir</a>
+                          }
+                        </td>
+                      </tr>
+                    }
+                  </tbody>
+                </table>
+              } @else {
+                <p class="muted">Nenhum documento encontrado para este edital.</p>
+              }
+            </div>
+          }
+        </article>
       }
     </div>
   }

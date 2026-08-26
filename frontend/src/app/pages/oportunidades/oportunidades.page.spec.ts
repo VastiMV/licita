@@ -2,7 +2,10 @@ import { ComponentFixture, TestBed } from '@angular/core/testing';
 import { By } from '@angular/platform-browser';
 import { Subject, of, throwError } from 'rxjs';
 
-import { OportunidadeResponse } from '../../contracts/licitacoes/oportunidade.contracts';
+import {
+  CompraDetalheResponse,
+  OportunidadeResponse,
+} from '../../contracts/licitacoes/oportunidade.contracts';
 import { LicitacoesService } from '../../services/licitacoes/licitacoes.service';
 import { OportunidadesPage } from './oportunidades.page';
 
@@ -26,16 +29,41 @@ const OPORTUNIDADE: OportunidadeResponse = {
   contratacao_municipio: 'Campinas',
   contratacao_uasg: '925123',
   contratacao_objeto: 'Aquisição de equipamentos de informática',
+  contratacao_cnpj_orgao: '12345678000199',
+  contratacao_ano_compra: '2026',
+  contratacao_sequencial_compra: '5',
   link_compras_gov: 'https://compras.gov.br/x',
   link_pncp: null,
 };
 
+// Segundo item do MESMO edital — casa por cnpj+ano+sequencial (ver
+// `chaveEdital` em oportunidades.page.ts).
+const OPORTUNIDADE_2: OportunidadeResponse = {
+  ...OPORTUNIDADE,
+  numero_item: '13',
+  descricao_resumida: 'Mouse óptico USB',
+};
+
+const DETALHE: CompraDetalheResponse = {
+  documentos: [{ titulo: 'Edital.pdf', tipo_documento: 'Edital', url: 'https://pncp.gov.br/x/1' }],
+  capag: { nota: 'A', cor: 'verde' },
+};
+
+function botao(fixture: ComponentFixture<OportunidadesPage>, texto: string) {
+  return fixture.debugElement
+    .queryAll(By.css('app-button'))
+    .find((el) => el.nativeElement.textContent.includes(texto))!;
+}
+
 describe('OportunidadesPage', () => {
   let fixture: ComponentFixture<OportunidadesPage>;
-  let licitacoes: { buscarOportunidades: ReturnType<typeof vi.fn> };
+  let licitacoes: {
+    buscarOportunidades: ReturnType<typeof vi.fn>;
+    detalharCompra: ReturnType<typeof vi.fn>;
+  };
 
   beforeEach(() => {
-    licitacoes = { buscarOportunidades: vi.fn() };
+    licitacoes = { buscarOportunidades: vi.fn(), detalharCompra: vi.fn() };
     TestBed.configureTestingModule({
       imports: [OportunidadesPage],
       providers: [{ provide: LicitacoesService, useValue: licitacoes }],
@@ -53,14 +81,84 @@ describe('OportunidadesPage', () => {
     expect(fixture.debugElement.query(By.css('.oportunidades'))).toBeNull();
   });
 
-  it('em sucesso, lista os resultados com os dados do item', () => {
+  it('em sucesso, lista 1 card por edital com órgão/objeto visíveis', () => {
     licitacoes.buscarOportunidades.mockReturnValue(of([OPORTUNIDADE]));
 
     buscar();
 
-    const card = fixture.debugElement.query(By.css('.oportunidade-card'));
-    expect(card.nativeElement.textContent).toContain('Notebook Intel i5 8GB 256GB SSD');
-    expect(card.nativeElement.getAttribute('href')).toBe('https://compras.gov.br/x');
+    const card = fixture.debugElement.query(By.css('.edital-card'));
+    expect(card.nativeElement.textContent).toContain('Prefeitura Municipal de Campinas');
+    expect(card.nativeElement.textContent).toContain('Aquisição de equipamentos de informática');
+    const linkSecundario = fixture.debugElement.query(By.css('.edital-link-secundario'));
+    expect(linkSecundario.nativeElement.getAttribute('href')).toBe('https://compras.gov.br/x');
+  });
+
+  it('itens do mesmo edital (mesmo cnpj+ano+sequencial) agrupam num card só', () => {
+    licitacoes.buscarOportunidades.mockReturnValue(of([OPORTUNIDADE, OPORTUNIDADE_2]));
+
+    buscar();
+
+    expect(fixture.debugElement.queryAll(By.css('.edital-card')).length).toBe(1);
+    expect(fixture.debugElement.nativeElement.textContent).toContain('Ver itens (2)');
+  });
+
+  it('"Ver itens" expande a lista de itens já carregada, sem novo request', () => {
+    licitacoes.buscarOportunidades.mockReturnValue(of([OPORTUNIDADE]));
+    buscar();
+
+    expect(fixture.debugElement.query(By.css('.oportunidade-item'))).toBeNull();
+
+    botao(fixture, 'Ver itens').triggerEventHandler('click');
+    fixture.detectChanges();
+
+    const item = fixture.debugElement.query(By.css('.oportunidade-item'));
+    expect(item.nativeElement.textContent).toContain('Notebook Intel i5 8GB 256GB SSD');
+    expect(licitacoes.detalharCompra).not.toHaveBeenCalled();
+  });
+
+  it('"Baixar edital" busca documentos + CAPAG sob demanda e mostra o selo', () => {
+    licitacoes.buscarOportunidades.mockReturnValue(of([OPORTUNIDADE]));
+    licitacoes.detalharCompra.mockReturnValue(of(DETALHE));
+    buscar();
+
+    botao(fixture, 'Baixar edital').triggerEventHandler('click');
+    fixture.detectChanges();
+
+    expect(licitacoes.detalharCompra).toHaveBeenCalledWith('12345678000199', '2026', '5');
+    const selo = fixture.debugElement.query(By.css('.capag-selo'));
+    expect(selo.nativeElement.textContent).toContain('A');
+    expect(selo.nativeElement.className).toContain('capag-verde');
+    const doc = fixture.debugElement.query(By.css('.documentos-tabela a'));
+    expect(doc.nativeElement.getAttribute('href')).toBe('https://pncp.gov.br/x/1');
+  });
+
+  it('reabrir "Baixar edital" não busca de novo (cache)', () => {
+    licitacoes.buscarOportunidades.mockReturnValue(of([OPORTUNIDADE]));
+    licitacoes.detalharCompra.mockReturnValue(of(DETALHE));
+    buscar();
+
+    // Abre, fecha, reabre.
+    botao(fixture, 'Baixar edital').triggerEventHandler('click');
+    fixture.detectChanges();
+    botao(fixture, 'Ocultar documentos').triggerEventHandler('click');
+    fixture.detectChanges();
+    botao(fixture, 'Baixar edital').triggerEventHandler('click');
+    fixture.detectChanges();
+
+    expect(licitacoes.detalharCompra).toHaveBeenCalledTimes(1);
+  });
+
+  it('falha ao buscar documentos mostra mensagem de erro, sem derrubar a tela', () => {
+    licitacoes.buscarOportunidades.mockReturnValue(of([OPORTUNIDADE]));
+    licitacoes.detalharCompra.mockReturnValue(throwError(() => new Error('falhou')));
+    buscar();
+
+    botao(fixture, 'Baixar edital').triggerEventHandler('click');
+    fixture.detectChanges();
+
+    expect(fixture.debugElement.query(By.css('.edital-documentos .erro')).nativeElement.textContent).toContain(
+      'Não foi possível buscar os documentos',
+    );
   });
 
   it('sem resultados, mostra mensagem de nada encontrado', () => {
@@ -108,7 +206,7 @@ describe('OportunidadesPage', () => {
   it('"Limpar" volta a tela ao estado inicial', () => {
     licitacoes.buscarOportunidades.mockReturnValue(of([OPORTUNIDADE]));
     buscar();
-    expect(fixture.debugElement.query(By.css('.oportunidade-card'))).not.toBeNull();
+    expect(fixture.debugElement.query(By.css('.edital-card'))).not.toBeNull();
 
     fixture.debugElement
       .queryAll(By.css('app-button'))

@@ -33,6 +33,34 @@ export interface OportunidadeResponse {
   readonly contratacao_municipio: string | null;
   readonly contratacao_uasg: string | null;
   readonly contratacao_objeto: string | null;
+  /** Identificam a compra no PNCP — usados pra agrupar itens do mesmo
+   * edital num card só e pra buscar `CompraDetalheResponse` sob demanda. */
+  readonly contratacao_cnpj_orgao: string | null;
+  readonly contratacao_ano_compra: string | null;
+  readonly contratacao_sequencial_compra: string | null;
   readonly link_compras_gov: string;
   readonly link_pncp: string | null;
+}
+
+/** Um arquivo do edital (aviso, anexo, termo de referência...), com link de
+ * download direto — não precisa passar pelo site do PNCP. */
+export interface DocumentoResponse {
+  readonly titulo: string | null;
+  readonly tipo_documento: string | null;
+  readonly url: string | null;
+}
+
+/** Nota CAPAG do ente responsável pela compra (município OU estado,
+ * conforme a esfera) — `null` quando não há nota (órgão federal, ente não
+ * avaliado, ou base ainda não sincronizada). Ver docs/DOMINIO.md. */
+export interface CapagResponse {
+  readonly nota: string;
+  readonly cor: 'verde' | 'amarelo' | 'vermelho';
+}
+
+/** Resposta de `GET .../compras/<cnpj>/<ano>/<sequencial>/detalhe/` —
+ * buscada sob demanda (1 clique no card), nunca junto da busca. */
+export interface CompraDetalheResponse {
+  readonly documentos: readonly DocumentoResponse[];
+  readonly capag: CapagResponse | null;
 }

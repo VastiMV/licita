@@ -12,10 +12,12 @@ from rest_framework.request import Request
 from rest_framework.response import Response
 from rest_framework.views import APIView
 
+from apps.capag.lookup import nota_para
 from apps.catalogo.search import buscar_pdms
 from apps.integracoes.clients.compras_gov import ComprasGovClient, ComprasGovClientError
+from apps.integracoes.clients.pncp import PncpClient, PncpClientError
 
-from .serializers import OportunidadeSerializer
+from .serializers import CompraDetalheSerializer, OportunidadeSerializer
 from .services import BuscaSemCorrespondenciaNoCatalogo, buscar_oportunidades
 
 # Mesma janela padrão do protótipo (`app/routers/licitacoes.py`) para o modo
@@ -64,4 +66,40 @@ class OportunidadesView(APIView):
             return Response({"detail": str(exc)}, status=502)
 
         serializer = OportunidadeSerializer(resultados, many=True)
+        return Response(serializer.data)
+
+
+class CompraDetalheView(APIView):
+    """`GET /api/licitacoes/compras/<cnpj>/<ano>/<sequencial>/detalhe/` —
+    documentos do edital (com link de download direto) + selo CAPAG de uma
+    compra específica.
+
+    Sob demanda: o frontend só chama isso quando o usuário abre um card
+    (1 clique = 1 chamada), nunca durante a busca — não queremos voltar a
+    disparar N chamadas extras por resultado, depois de já ter corrigido a
+    lentidão da busca por outro motivo (ver docs/DOMINIO.md).
+    """
+
+    def get(self, request: Request, cnpj: str, ano: int, sequencial: int) -> Response:
+        capag = None
+        documentos: list[dict] = []
+
+        with PncpClient() as client:
+            try:
+                detalhe = client.detalhar_compra(cnpj=cnpj, ano=ano, sequencial=sequencial)
+            except PncpClientError:
+                detalhe = None
+            if detalhe:
+                capag = nota_para(
+                    esfera_id=detalhe.get("esfera_id"),
+                    codigo_ibge=detalhe.get("codigo_ibge"),
+                    uf=detalhe.get("uf"),
+                )
+
+            try:
+                documentos = client.listar_arquivos(cnpj=cnpj, ano=ano, sequencial=sequencial)
+            except PncpClientError:
+                documentos = []
+
+        serializer = CompraDetalheSerializer({"documentos": documentos, "capag": capag})
         return Response(serializer.data)
