@@ -1,0 +1,56 @@
+# StatefulSet (não Deployment) por identidade estável de pod+volume — ver
+# docs/ARQUITETURA.md, "Banco de dados". 1 réplica só, propositalmente:
+# escalar Postgres horizontalmente não é esse tipo de escala.
+#
+# POSTGRES_USER/POSTGRES_PASSWORD/POSTGRES_DB vindos de postgres-secrets
+# fazem a imagem oficial criar sozinha, no primeiro boot (volume vazio), o
+# banco `licita` e o usuário `licita` dono dele — não precisa de SQL manual.
+apiVersion: apps/v1
+kind: StatefulSet
+metadata:
+  name: postgres
+  namespace: inside-solutions-licita
+spec:
+  serviceName: postgres
+  replicas: 1
+  selector:
+    matchLabels:
+      app: postgres
+  template:
+    metadata:
+      labels:
+        app: postgres
+    spec:
+      containers:
+        - name: postgres
+          image: postgres:16-alpine
+          ports:
+            - name: postgres
+              containerPort: 5432
+          envFrom:
+            - secretRef:
+                name: postgres-secrets
+          volumeMounts:
+            - name: data
+              mountPath: /var/lib/postgresql/data
+          readinessProbe:
+            exec:
+              command: ["pg_isready", "-U", "$(POSTGRES_USER)", "-d", "$(POSTGRES_DB)"]
+            initialDelaySeconds: 5
+            periodSeconds: 10
+          livenessProbe:
+            exec:
+              command: ["pg_isready", "-U", "$(POSTGRES_USER)", "-d", "$(POSTGRES_DB)"]
+            initialDelaySeconds: 15
+            periodSeconds: 20
+          resources:
+            requests:
+              cpu: 100m
+              memory: 256Mi
+            limits:
+              cpu: 500m
+              memory: 512Mi
+      volumes:
+        - name: data
+          persistentVolumeClaim:
+            claimName: postgres-data

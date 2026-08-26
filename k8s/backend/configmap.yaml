@@ -1,0 +1,12 @@
+# Só o que não é sensível — credenciais ficam nos Secrets (postgres-secrets,
+# backend-secrets), nunca aqui.
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: backend-config
+  namespace: inside-solutions-licita
+data:
+  DJANGO_DEBUG: "false"
+  DJANGO_ALLOWED_HOSTS: "licita.derla.com.br"
+  POSTGRES_HOST: "postgres"
+  POSTGRES_PORT: "5432"

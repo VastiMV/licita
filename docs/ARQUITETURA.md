@@ -213,9 +213,8 @@ imperativamente no cluster.
 
 ## Próximos passos possíveis
 
-1. Manifests que ainda faltam: `StatefulSet` do Postgres + PVC, `RabbitMQ`,
-   Deployment do backend (fica pra quando ele tiver endpoint de verdade —
-   hoje só tem o model de usuário), `Ingress`.
+1. Manifests que ainda faltam: `RabbitMQ`, `celery-worker`/`celery-beat`.
+   Postgres, backend e Ingress já existem (ver [`k8s/README.md`](../k8s/README.md)).
 2. Portar os clients de integração (`PncpClient`, `ComprasGovClient`) do
    protótipo para `integracoes/`, com os aprendizados de
    [`DOMINIO.md`](DOMINIO.md) preservados (paginação 10–500, busca via

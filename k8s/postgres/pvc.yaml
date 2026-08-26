@@ -1,0 +1,16 @@
+# PVC escrito à mão (não um volumeClaimTemplate gerado por chart) — ver
+# docs/ARQUITETURA.md, "Banco de dados". storageClassName aponta pro
+# local-path (provisioner default deste cluster k3s); trocar aqui se um
+# StorageClass dedicado entrar depois.
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: postgres-data
+  namespace: inside-solutions-licita
+spec:
+  accessModes:
+    - ReadWriteOnce
+  storageClassName: local-path
+  resources:
+    requests:
+      storage: 5Gi

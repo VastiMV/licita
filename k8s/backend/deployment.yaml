@@ -1,0 +1,70 @@
+# Imagem em :latest, mesma lógica do frontend — ver k8s/README.md pra como
+# forçar rollout depois de rebuildar.
+#
+# initContainer roda a migração antes do container principal subir: simples
+# e correto com 1 réplica (nosso caso hoje). Escalar o backend pra mais de
+# 1 réplica exige mover isso pra um Job separado, senão dá race de duas
+# migrações simultâneas.
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: backend
+  namespace: inside-solutions-licita
+  labels:
+    app: backend
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: backend
+  template:
+    metadata:
+      labels:
+        app: backend
+    spec:
+      imagePullSecrets:
+        - name: ghcr-pull-secret
+      initContainers:
+        - name: migrate
+          image: ghcr.io/vastimv/licita-backend:latest
+          imagePullPolicy: Always
+          command: ["python", "manage.py", "migrate", "--noinput"]
+          envFrom:
+            - configMapRef:
+                name: backend-config
+            - secretRef:
+                name: backend-secrets
+            - secretRef:
+                name: postgres-secrets
+      containers:
+        - name: backend
+          image: ghcr.io/vastimv/licita-backend:latest
+          imagePullPolicy: Always
+          ports:
+            - containerPort: 8000
+          envFrom:
+            - configMapRef:
+                name: backend-config
+            - secretRef:
+                name: backend-secrets
+            - secretRef:
+                name: postgres-secrets
+          readinessProbe:
+            # tcpSocket, não httpGet: o probe do kubelet manda a porta/IP do
+            # pod como Host, e ALLOWED_HOSTS rejeitaria isso com 400.
+            tcpSocket:
+              port: 8000
+            initialDelaySeconds: 5
+            periodSeconds: 10
+          livenessProbe:
+            tcpSocket:
+              port: 8000
+            initialDelaySeconds: 15
+            periodSeconds: 20
+          resources:
+            requests:
+              cpu: 100m
+              memory: 128Mi
+            limits:
+              cpu: 500m
+              memory: 256Mi
