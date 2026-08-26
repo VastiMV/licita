@@ -191,13 +191,32 @@ harness de código for gerado.
 - Domínio(s) e configuração de TLS no `Ingress`.
 - Estratégia de backup do Postgres (frequência, destino).
 
+## CI e imagens
+
+Build manual, não em cada push — `.github/workflows/build-frontend.yml` e
+`build-backend.yml` (`workflow_dispatch`, acionados em Actions → Run
+workflow). Cada um builda a imagem (`frontend/Dockerfile`,
+`backend/Dockerfile`) e publica em `ghcr.io/vastimv/licita-frontend:latest` /
+`licita-backend:latest`. Sem tag por commit ainda — só `:latest`, trocar
+exige `kubectl rollout restart` (ver [`k8s/README.md`](../k8s/README.md)).
+
+O Dockerfile do frontend roda a suíte de testes como parte do build: a
+imagem só existe se os testes passaram.
+
+## Kubernetes — o que já existe
+
+Namespace `inside-solutions-licita` e o Deployment/Service do frontend, via
+`kubectl apply -f k8s/` (sem GitOps ainda). Ver
+[`k8s/README.md`](../k8s/README.md) para o passo a passo, inclusive como
+criar o `Secret` de pull do GHCR — nunca commitado, sempre criado
+imperativamente no cluster.
+
 ## Próximos passos possíveis
 
-1. Gerar o esqueleto de repositório (`backend/`, `frontend/`, `k8s/`,
-   `docker/`) — escopo separado, sob pedido.
-2. Escrever os manifests Kubernetes (`Deployment`, `StatefulSet`, `Service`,
-   `Ingress`, `ConfigMap`/`Secret`, `PVC`/`StorageClass`).
-3. Portar os clients de integração (`PncpClient`, `ComprasGovClient`) do
+1. Manifests que ainda faltam: `StatefulSet` do Postgres + PVC, `RabbitMQ`,
+   Deployment do backend (fica pra quando ele tiver endpoint de verdade —
+   hoje só tem o model de usuário), `Ingress`.
+2. Portar os clients de integração (`PncpClient`, `ComprasGovClient`) do
    protótipo para `integracoes/`, com os aprendizados de
    [`DOMINIO.md`](DOMINIO.md) preservados (paginação 10–500, busca via
    `/api/search/`, fallback pro catálogo).

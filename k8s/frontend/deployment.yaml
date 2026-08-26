@@ -1,0 +1,47 @@
+# Imagem em :latest de propósito por enquanto — build manual via
+# .github/workflows/build-frontend.yml (ver README.md deste diretório para
+# como forçar o pod a puxar uma imagem nova depois de rebuildar).
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: frontend
+  namespace: inside-solutions-licita
+  labels:
+    app: frontend
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: frontend
+  template:
+    metadata:
+      labels:
+        app: frontend
+    spec:
+      imagePullSecrets:
+        - name: ghcr-pull-secret
+      containers:
+        - name: frontend
+          image: ghcr.io/vastimv/licita-frontend:latest
+          imagePullPolicy: Always
+          ports:
+            - containerPort: 80
+          readinessProbe:
+            httpGet:
+              path: /
+              port: 80
+            initialDelaySeconds: 2
+            periodSeconds: 10
+          livenessProbe:
+            httpGet:
+              path: /
+              port: 80
+            initialDelaySeconds: 5
+            periodSeconds: 20
+          resources:
+            requests:
+              cpu: 50m
+              memory: 64Mi
+            limits:
+              cpu: 250m
+              memory: 128Mi

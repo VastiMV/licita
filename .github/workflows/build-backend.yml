@@ -1,0 +1,31 @@
+name: Build backend image
+
+# Manual de propósito — builda e publica sob pedido, não a cada push.
+on:
+  workflow_dispatch: {}
+
+permissions:
+  contents: read
+  packages: write
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Login no GHCR
+        uses: docker/login-action@v3
+        with:
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Build e push
+        uses: docker/build-push-action@v6
+        with:
+          context: backend
+          push: true
+          # ghcr.io exige nome de imagem em minúsculo — "vastimv" fixo aqui
+          # em vez de github.repository_owner (que preservaria o "VastiMV").
+          tags: ghcr.io/vastimv/licita-backend:latest
