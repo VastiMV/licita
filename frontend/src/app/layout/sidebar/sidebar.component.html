@@ -2,9 +2,9 @@
   <div class="backdrop" (click)="state.closeMobile()"></div>
 }
 
-<aside class="sidebar" [class.collapsed]="state.collapsed()" [class.open]="state.mobileOpen()">
+<aside class="sidebar" [class.collapsed]="state.iconOnly()" [class.open]="state.mobileOpen()">
   <div class="sidebar-header">
-    <app-brand [compact]="state.collapsed()" (click)="state.closeMobile()" />
+    <app-brand [compact]="state.iconOnly()" (click)="state.closeMobile()" />
     <button
       type="button"
       class="collapse-toggle"
@@ -21,7 +21,7 @@
         [path]="link.path"
         [label]="link.label"
         [icon]="link.icon"
-        [compact]="state.collapsed()"
+        [compact]="state.iconOnly()"
       />
     }
   </nav>

@@ -91,11 +91,10 @@ nav {
     transform: translateX(-100%);
     transition: transform var(--transition-fast);
 
-    &.collapsed {
-      // Recolher é conceito só de desktop (trilho de ícones); em mobile a
-      // Sidebar é off-canvas e sempre abre na largura cheia.
-      width: 260px;
-    }
+    // Sem `&.collapsed` aqui de propósito: `SidebarStateService.iconOnly`
+    // já garante que essa classe nunca é aplicada em viewport mobile — o
+    // painel off-canvas sempre abre com o menu completo, mesmo que o
+    // usuário tenha deixado a Sidebar recolhida da última vez em desktop.
 
     &.open {
       transform: translateX(0);
