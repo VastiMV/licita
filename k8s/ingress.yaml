@@ -7,6 +7,10 @@ metadata:
   namespace: inside-solutions-licita
   annotations:
     cert-manager.io/cluster-issuer: letsencrypt-prod
+    # Sem isso, http://licita.derla.com.br serve o site normalmente em
+    # texto puro (sem TLS) em vez de redirecionar — é por isso que o
+    # navegador mostra "não seguro" mesmo com o certificado válido em 443.
+    traefik.ingress.kubernetes.io/router.middlewares: inside-solutions-licita-redirect-https@kubernetescrd
 spec:
   ingressClassName: traefik
   rules:

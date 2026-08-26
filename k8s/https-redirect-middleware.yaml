@@ -1,0 +1,13 @@
+# Referenciado pela annotation router.middlewares no Ingress (k8s/ingress.yaml).
+# redirectScheme não faz nada quando o request já chega em https, então é
+# seguro estar tanto no router :80 quanto no :443 que o Traefik cria pra
+# esse Ingress — na prática só afeta o :80.
+apiVersion: traefik.io/v1alpha1
+kind: Middleware
+metadata:
+  name: redirect-https
+  namespace: inside-solutions-licita
+spec:
+  redirectScheme:
+    scheme: https
+    permanent: true
