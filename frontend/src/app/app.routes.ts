@@ -12,6 +12,10 @@ export const routes: Routes = [
   {
     path: '',
     component: ShellComponent,
+    // No Shell inteiro, não em cada filha — nenhuma rota atrás dele fica
+    // aberta sem login (nova filha entra protegida sem precisar lembrar
+    // de repetir `canActivate` nela).
+    canActivate: [authGuard],
     children: [
       { path: '', pathMatch: 'full', redirectTo: 'oportunidades' },
       {
@@ -21,12 +25,10 @@ export const routes: Routes = [
       },
       {
         path: 'filtros',
-        canActivate: [authGuard],
         loadComponent: () => import('./pages/filtros/filtros.page').then((m) => m.FiltrosPage),
       },
       {
         path: 'alertas',
-        canActivate: [authGuard],
         loadComponent: () => import('./pages/alertas/alertas.page').then((m) => m.AlertasPage),
       },
     ],

@@ -8,10 +8,10 @@ import { decodeJwtPayload } from './jwt';
 
 /**
  * Claims que esperamos encontrar no payload do `access` token, pra exibir
- * nome/e-mail no menu de perfil sem outro request. Nenhuma delas é
- * garantida — o backend ainda não emite token nenhum de verdade (ver
- * docs/ARQUITETURA.md), então tudo aqui é opcional e a UI trata a ausência
- * como "sem dado", nunca como erro.
+ * nome/e-mail no menu de perfil sem outro request — embarcadas por
+ * `LoginSerializer` (ver backend/apps/accounts/serializers.py). Nenhuma
+ * delas é garantida no tipo (ex.: `nome` pode vir vazio), então a UI trata
+ * a ausência como "sem dado", nunca como erro.
  */
 export interface UsuarioClaims {
   readonly email?: string;
