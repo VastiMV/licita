@@ -168,6 +168,41 @@ intervalo entre páginas** (`catalogo_sync_intervalo_segundos` em
 `Environment`) — de propósito mais lento que o necessário, para não gerar uma
 rajada de requisições numa API pública e gratuita do governo.
 
+Validado contra o cluster real (26/08/2026): sync completo trouxe **20.419
+PDMs**, batendo com a estimativa. A busca por categoria (camada 2) também
+confirmada com dado real — "material de escritório" (que não é nome de
+nenhum PDM) achou os produtos certos via `nome_grupo`/`nome_classe`. Dois
+achados novos:
+
+- **O mirror `dadosabertos.compras.gov.br` tem defasagem de ~1 mês** em
+  relação ao PNCP — uma janela de 30 dias no modo navegação veio vazia; 90
+  dias trouxe resultado normal. Não é bug, é característica do mirror —
+  o default de janela do modo navegação deve considerar isso.
+- **A busca textual via PNCP é lenta para termo genérico** (~2min para
+  "cafe", que casou ~50 editais e disparou uma chamada de itens por
+  edital) — funciona e devolve dado certo, mas a experiência não é boa.
+  Fica como pendência de performance (reduzir `MAX_EDITAIS_PNCP`, ou
+  paralelizar mais agressivo).
+- **Este ambiente de sandbox alcançou `pncp.gov.br` e
+  `dadosabertos.compras.gov.br` normalmente** (diferente do bloqueio
+  relatado nas sessões do protótipo) — pode variar por sessão/ambiente,
+  não tratar como garantido.
+- **Achado crítico, 26/08/2026: o filtro `codigoModalidade` do
+  compras.gov.br usa uma tabela de códigos diferente da tabela oficial do
+  PNCP** que o protótipo documentou (`MODALIDADES` em
+  `apps/integracoes/clients/compras_gov.py`). Nessa tabela do PNCP, "6" é
+  Pregão Eletrônico; no filtro do compras.gov.br, "6" é **Dispensa** — e
+  Dispensa não tem sessão de disputa ao vivo no Comprasnet, então o link
+  "abrir no compras.gov.br" sempre dava 404 pra quem caía nesse default
+  errado. Varridos os 13 códigos da tabela do PNCP contra um ano inteiro de
+  dados reais: só 4 devolvem registro (`MODALIDADES_CONTRATACOES`, no mesmo
+  módulo) — os outros 9 são aceitos pela API sem erro, mas nunca trazem
+  nada. Corrigido o default do modo navegação (era "6", virou "5") e o
+  dropdown do frontend. **Não confirmado**: se a busca textual do PNCP
+  (`/api/search/`, parâmetro `modalidades`) usa a tabela do PNCP (a
+  "oficial") ou também tem numeração própria — testado rapidamente sem
+  resultado conclusivo, fica como próximo passo.
+
 ## O que muda do protótipo para a stack de produção
 
 - **Autenticação multiusuário** — `Filtro` passa a ter dono; API protegida

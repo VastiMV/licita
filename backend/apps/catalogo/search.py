@@ -22,7 +22,15 @@ LIMITE_PADRAO = 30
 
 # Abaixo disso, a similaridade é ruído (termos sem nenhuma raiz em comum) —
 # melhor devolver vazio (e cair para o modo navegação) do que lixo.
-SIMILARIDADE_MINIMA = 0.25
+#
+# 0.3, não 0.25: medido contra o catálogo real em 26/08/2026, "material de
+# escritório" x "material hospitalar" (falso positivo real, visto na
+# prática) deu 0.2647 — passava no limiar antigo. O grupo certo ("utensílios
+# de escritório e material de expediente") deu 0.5111, com folga confortável
+# acima de 0.3. Pura coincidência de palavra comum ("material") pontua na
+# faixa ~0.15-0.30 neste catálogo; categoria de fato relacionada fica acima
+# de 0.30 com folga — ver docs/DOMINIO.md.
+SIMILARIDADE_MINIMA = 0.3
 
 
 def buscar_pdms(termo: str, limite: int = LIMITE_PADRAO) -> list[Pdm]:

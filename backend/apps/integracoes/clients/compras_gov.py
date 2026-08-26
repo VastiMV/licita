@@ -48,8 +48,10 @@ def sem_acento(texto: str) -> str:
     return "".join(c for c in decomposto if not unicodedata.combining(c))
 
 
-# Códigos de modalidade usados pelo PNCP. Pregão eletrônico é o caso mais comum
-# para quem vende para o governo.
+# Tabela oficial de modalidades da Lei 14.133, como o PNCP as codifica (usada
+# nos campos de resposta como `modalidade_licitacao_id` da busca textual do
+# PNCP — ver clients/pncp.py). NÃO é o que o filtro `codigoModalidade` deste
+# client (compras.gov.br) espera — ver MODALIDADES_CONTRATACOES abaixo.
 MODALIDADES = {
     "1": "Leilão - Eletrônico",
     "2": "Diálogo Competitivo",
@@ -64,6 +66,22 @@ MODALIDADES = {
     "11": "Pré-qualificação",
     "12": "Credenciamento",
     "13": "Leilão - Presencial",
+}
+
+# Códigos que o filtro `codigoModalidade` de
+# `1_consultarContratacoes_PNCP_14133` (e os demais endpoints deste módulo)
+# realmente espera — confirmado empiricamente contra a API real em
+# 26/08/2026 (ver docs/DOMINIO.md): varridos os 13 códigos de MODALIDADES
+# contra um ano inteiro de dados, só estes quatro devolveram algo; os outros
+# nove aceitam a requisição (sem erro) mas nunca trazem registro — não é a
+# mesma numeração do PNCP (ali "6" é Pregão Eletrônico; aqui é Dispensa).
+# Usar SEMPRE esta tabela para `codigo_modalidade` nas chamadas a este
+# client — nunca a MODALIDADES acima.
+MODALIDADES_CONTRATACOES = {
+    "3": "Concorrência - Eletrônica",
+    "5": "Pregão - Eletrônico",
+    "6": "Dispensa",
+    "7": "Inexigibilidade",
 }
 
 

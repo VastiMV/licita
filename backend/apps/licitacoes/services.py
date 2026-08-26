@@ -72,7 +72,13 @@ def buscar_oportunidades(
             client,
             data_inicial=data_inicial,
             data_final=data_final,
-            codigo_modalidade=codigo_modalidade or "6",
+            # "5" = Pregão Eletrônico NESTA tabela (MODALIDADES_CONTRATACOES
+            # em integracoes/clients/compras_gov.py) — não confundir com "6",
+            # que é o código do PNCP para a mesma modalidade. Usar o código
+            # errado aqui filtra silenciosamente por Dispensa (visto na
+            # prática: causava o link "abrir no compras.gov.br" sempre dar
+            # 404, porque Dispensa não tem sessão de disputa ao vivo).
+            codigo_modalidade=codigo_modalidade or "5",
             uf=uf,
             codigo_unidade=codigo_unidade,
         )
