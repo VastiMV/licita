@@ -92,7 +92,7 @@ class Environment:
         default_factory=lambda: _get_int("JWT_ACCESS_LIFETIME_MINUTES", default=15)
     )
     jwt_refresh_lifetime_days: int = field(
-        default_factory=lambda: _get_int("JWT_REFRESH_LIFETIME_DAYS", default=7)
+        default_factory=lambda: _get_int("JWT_REFRESH_LIFETIME_DAYS", default=30)
     )
 
     @property
