@@ -133,6 +133,63 @@ class PncpClientTests(SimpleTestCase):
         self.assertEqual(itens[0]["tipo_beneficio"], "Participação exclusiva ME/EPP")
         self.assertEqual(itens[0]["valor_unitario_estimado"], 18.5)
 
+    def test_detalhar_compra_monta_o_caminho_documentado(self):
+        capturado = {}
+        resposta = {
+            "orgaoEntidade": {"cnpj": "00326036000160", "esferaId": "E"},
+            "unidadeOrgao": {
+                "ufSigla": "SP",
+                "municipioNome": "São José do Rio Preto",
+                "codigoIbge": "3549805",
+            },
+        }
+
+        def handler(request: httpx.Request) -> httpx.Response:
+            capturado["path"] = request.url.path
+            return httpx.Response(200, json=resposta)
+
+        with _pncp_falso(handler) as client:
+            detalhe = client.detalhar_compra(cnpj="00326036000160", ano="2026", sequencial="43")
+
+        self.assertEqual(capturado["path"], "/api/consulta/v1/orgaos/00326036000160/compras/2026/43")
+        self.assertEqual(detalhe["esfera_id"], "E")
+        self.assertEqual(detalhe["uf"], "SP")
+        self.assertEqual(detalhe["codigo_ibge"], "3549805")
+        self.assertEqual(detalhe["municipio_nome"], "São José do Rio Preto")
+
+    def test_detalhar_compra_sem_orgao_ou_unidade_nao_derruba(self):
+        with _pncp_falso(lambda r: httpx.Response(200, json={})) as client:
+            detalhe = client.detalhar_compra(cnpj="1", ano=2026, sequencial=1)
+
+        self.assertIsNone(detalhe["esfera_id"])
+        self.assertIsNone(detalhe["codigo_ibge"])
+
+    def test_listar_arquivos_monta_o_caminho_e_normaliza(self):
+        capturado = {}
+        resposta = [
+            {
+                "titulo": "Aviso 48-2026 - material de laboratorio.pdf",
+                "tipoDocumentoNome": "Aviso de Contratação Direta",
+                "url": "https://pncp.gov.br/pncp-api/v1/orgaos/1/compras/2026/43/arquivos/1",
+            }
+        ]
+
+        def handler(request: httpx.Request) -> httpx.Response:
+            capturado["path"] = request.url.path
+            return httpx.Response(200, json=resposta)
+
+        with _pncp_falso(handler) as client:
+            arquivos = client.listar_arquivos(cnpj="1", ano="2026", sequencial="43")
+
+        self.assertEqual(capturado["path"], "/api/pncp/v1/orgaos/1/compras/2026/43/arquivos")
+        self.assertEqual(arquivos[0]["titulo"], "Aviso 48-2026 - material de laboratorio.pdf")
+        self.assertEqual(arquivos[0]["tipo_documento"], "Aviso de Contratação Direta")
+        self.assertTrue(arquivos[0]["url"].endswith("/arquivos/1"))
+
+    def test_listar_arquivos_vazio_nao_derruba(self):
+        with _pncp_falso(lambda r: httpx.Response(200, json={"detail": "sem arquivos"})) as client:
+            self.assertEqual(client.listar_arquivos(cnpj="1", ano=2026, sequencial=1), [])
+
     def test_lista_na_raiz_tambem_e_reconhecida(self):
         """A busca devolve {"items": [...]}; a consulta devolve a lista pelada."""
 

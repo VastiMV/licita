@@ -32,6 +32,13 @@ class OportunidadeSerializer(serializers.Serializer):
     contratacao_uasg = serializers.CharField(allow_null=True)
     contratacao_objeto = serializers.CharField(allow_null=True)
 
+    # Identificam a compra no PNCP (cnpj do órgão + ano + sequencial) — é o
+    # que o frontend usa pra agrupar os itens de um mesmo edital num card só
+    # e pra chamar `CompraDetalheView` (documentos + CAPAG, sob demanda).
+    contratacao_cnpj_orgao = serializers.CharField(allow_null=True)
+    contratacao_ano_compra = serializers.CharField(allow_null=True)
+    contratacao_sequencial_compra = serializers.CharField(allow_null=True)
+
     link_compras_gov = serializers.CharField()
     link_pncp = serializers.CharField(allow_null=True)
 
@@ -41,3 +48,27 @@ class OportunidadeSerializer(serializers.Serializer):
 
     def get_contratacao_srp(self, obj: dict) -> bool:
         return bool(obj.get("contratacao_srp"))
+
+
+class DocumentoSerializer(serializers.Serializer):
+    """Um arquivo do edital (aviso, anexo, termo de referência...), com link
+    de download direto — ver `PncpClient.listar_arquivos`."""
+
+    titulo = serializers.CharField(allow_null=True)
+    tipo_documento = serializers.CharField(allow_null=True)
+    url = serializers.CharField(allow_null=True)
+
+
+class CapagSerializer(serializers.Serializer):
+    """Ver `apps.capag.lookup.nota_para`."""
+
+    nota = serializers.CharField()
+    cor = serializers.CharField()
+
+
+class CompraDetalheSerializer(serializers.Serializer):
+    """Resposta de `CompraDetalheView` — buscada sob demanda (1 clique no
+    card), nunca junto da busca (ver docs/DOMINIO.md)."""
+
+    documentos = DocumentoSerializer(many=True)
+    capag = CapagSerializer(allow_null=True)

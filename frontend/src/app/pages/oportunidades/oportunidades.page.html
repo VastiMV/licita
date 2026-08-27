@@ -37,74 +37,150 @@
 }
 
 @if (buscou() && !erro() && !buscando()) {
-  @if (resultados().length === 0) {
+  @if (editais().length === 0) {
     <p class="muted">
       Nenhum item encontrado. Tente ampliar o período, trocar a modalidade ou usar
       uma palavra-chave mais genérica.
     </p>
   } @else {
-    <p class="muted">{{ resultados().length }} item(ns) encontrado(s).</p>
+    <p class="muted">{{ editais().length }} edital(is) encontrado(s).</p>
     <div class="oportunidades">
-      @for (op of resultados(); track op.contratacao_uasg + '-' + op.numero_item) {
-        <a class="oportunidade-card" [href]="op.link_compras_gov" target="_blank" rel="noopener">
-          <div class="oportunidade-topo">
-            <app-badge>{{ op.contratacao_uf ?? '—' }}</app-badge>
-            <app-badge>{{ op.contratacao_modalidade ?? '—' }}</app-badge>
-            @if (op.contratacao_srp) {
+      @for (card of editais(); track card.chave) {
+        @let detalhe = detalheDe(card.chave);
+        <article class="edital-card">
+          <div class="edital-topo">
+            <app-badge>{{ card.contratacao.contratacao_uf ?? '—' }}</app-badge>
+            <app-badge>{{ card.contratacao.contratacao_modalidade ?? '—' }}</app-badge>
+            @if (card.contratacao.contratacao_srp) {
               <app-badge>SRP</app-badge>
             }
-            <app-badge>{{ op.situacao_item ?? op.contratacao_situacao ?? '—' }}</app-badge>
-            <span class="oportunidade-data">
-              @if (op.contratacao_data_encerramento_proposta) {
-                propostas até {{ op.contratacao_data_encerramento_proposta }}
-              } @else {
-                pub. {{ op.contratacao_data_publicacao ?? '—' }}
-              }
-            </span>
-          </div>
-
-          <div class="oportunidade-orgao">
-            {{ op.contratacao_orgao_nome ?? '—' }}
-            @if (op.contratacao_municipio) {
-              · {{ op.contratacao_municipio }}
-            }
-            @if (op.contratacao_uasg) {
-              · UASG {{ op.contratacao_uasg }}
+            <app-badge>{{ card.contratacao.contratacao_situacao ?? '—' }}</app-badge>
+            <span class="edital-topo-espaco"></span>
+            @if (detalhe?.capag; as capag) {
+              <span [class]="'capag-selo capag-' + capag.cor">CAPAG {{ capag.nota }}</span>
+            } @else if (detalhe?.carregando) {
+              <span class="capag-selo capag-carregando">CAPAG…</span>
             }
           </div>
 
-          <div class="oportunidade-objeto">{{ op.contratacao_objeto ?? '—' }}</div>
+          <div class="edital-objeto">{{ card.contratacao.contratacao_objeto ?? '—' }}</div>
 
-          <div class="oportunidade-item">
-            <div class="item-titulo">
-              Item {{ op.numero_item ?? '—' }} — {{ op.descricao_resumida ?? 'sem descrição' }}
+          <dl class="edital-dados">
+            <div>
+              <dt>Órgão</dt>
+              <dd>{{ card.contratacao.contratacao_orgao_nome ?? '—' }}</dd>
             </div>
-            @if (op.descricao_detalhada) {
-              <div class="item-descricao">{{ op.descricao_detalhada }}</div>
-            }
-          </div>
+            <div>
+              <dt>Modalidade</dt>
+              <dd>{{ card.contratacao.contratacao_modalidade ?? '—' }}</dd>
+            </div>
+            <div>
+              <dt>Cidade</dt>
+              <dd>
+                {{ card.contratacao.contratacao_municipio ?? '—' }}
+                @if (card.contratacao.contratacao_uf) {
+                  / {{ card.contratacao.contratacao_uf }}
+                }
+              </dd>
+            </div>
+            <div>
+              <dt>Data de publicação</dt>
+              <dd>{{ card.contratacao.contratacao_data_publicacao ?? '—' }}</dd>
+            </div>
+            <div>
+              <dt>UASG</dt>
+              <dd>{{ card.contratacao.contratacao_uasg ?? '—' }}</dd>
+            </div>
+            <div>
+              <dt>Encerramento de propostas</dt>
+              <dd>{{ card.contratacao.contratacao_data_encerramento_proposta ?? '—' }}</dd>
+            </div>
+          </dl>
 
-          <div class="oportunidade-rodape">
-            @if (op.quantidade) {
-              <span>Qtd: {{ op.quantidade }} {{ op.unidade_medida }}</span>
+          <nav class="edital-navtab">
+            <button
+              type="button"
+              class="edital-navtab-item edital-navtab-item--preenchido"
+              [disabled]="!detalhe?.documentos?.length"
+              (click)="baixarEdital(card.chave)"
+            >
+              Baixar edital
+            </button>
+            <button type="button" class="edital-navtab-item" (click)="alternarItens(card.chave)">
+              {{ itensAbertosPara(card.chave) ? 'Ocultar itens' : 'Ver itens (' + card.itens.length + ')' }}
+            </button>
+            @if (card.contratacao.link_pncp) {
+              <a class="edital-navtab-item edital-navtab-item--link" [href]="card.contratacao.link_pncp" target="_blank" rel="noopener">
+                Site oficial
+              </a>
             }
-            @if (op.valor_unitario_estimado) {
-              <span>Unit. est.: R$ {{ op.valor_unitario_estimado | number: '1.2-2' }}</span>
+          </nav>
+
+          @if (itensAbertosPara(card.chave)) {
+            <table class="edital-tabela edital-tabela-itens">
+              <thead>
+                <tr>
+                  <th>#</th>
+                  <th>Descrição</th>
+                  <th>Qtd.</th>
+                  <th>Unit. est.</th>
+                  <th>Total est.</th>
+                </tr>
+              </thead>
+              <tbody>
+                @for (item of card.itens; track $index) {
+                  <tr>
+                    <td>{{ item.numero_item ?? '—' }}</td>
+                    <td>
+                      {{ item.descricao_resumida ?? 'sem descrição' }}
+                      @if (item.tipo_beneficio) {
+                        <span class="edital-tabela-extra">{{ item.tipo_beneficio }}</span>
+                      }
+                    </td>
+                    <td>{{ item.quantidade ?? '—' }} {{ item.unidade_medida }}</td>
+                    <td>{{ item.valor_unitario_estimado ? ('R$ ' + (item.valor_unitario_estimado | number: '1.2-2')) : '—' }}</td>
+                    <td>{{ item.valor_total ? ('R$ ' + (item.valor_total | number: '1.2-2')) : '—' }}</td>
+                  </tr>
+                }
+              </tbody>
+            </table>
+          }
+
+          <div class="edital-documentos">
+            @if (detalhe?.carregando) {
+              <p class="muted edital-documentos-status">Buscando os documentos no PNCP…</p>
+            } @else if (detalhe?.erro) {
+              <p class="erro edital-documentos-status">Não foi possível buscar os documentos agora.</p>
+            } @else if (detalhe?.documentos?.length) {
+              <table class="edital-tabela edital-tabela-documentos">
+                <thead>
+                  <tr>
+                    <th>#</th>
+                    <th>Título</th>
+                    <th>Tipo</th>
+                    <th></th>
+                  </tr>
+                </thead>
+                <tbody>
+                  @for (doc of detalhe!.documentos; track $index) {
+                    <tr>
+                      <td>{{ $index + 1 }}</td>
+                      <td>{{ doc.titulo ?? '—' }}</td>
+                      <td>{{ doc.tipo_documento ?? '—' }}</td>
+                      <td>
+                        @if (doc.url) {
+                          <a class="edital-tabela-abrir" [href]="doc.url" target="_blank" rel="noopener">Abrir</a>
+                        }
+                      </td>
+                    </tr>
+                  }
+                </tbody>
+              </table>
+            } @else if (detalhe) {
+              <p class="muted edital-documentos-status">Nenhum documento encontrado para este edital.</p>
             }
-            @if (op.valor_total) {
-              <span>Total est.: R$ {{ op.valor_total | number: '1.2-2' }}</span>
-            }
-            @if (op.tipo_beneficio) {
-              <span>{{ op.tipo_beneficio }}</span>
-            }
-            <span class="oportunidade-link">Abrir no compras.gov.br →</span>
           </div>
-        </a>
-        @if (op.link_pncp) {
-          <div class="oportunidade-extra">
-            <a [href]="op.link_pncp" target="_blank" rel="noopener">ver edital no PNCP</a>
-          </div>
-        }
+        </article>
       }
     </div>
   }

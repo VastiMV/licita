@@ -190,6 +190,39 @@ class PncpClient:
         itens, _ = _extrair_lista(payload)
         return [_normalizar_item(i) for i in itens]
 
+    def detalhar_compra(
+        self,
+        *,
+        cnpj: str,
+        ano: str | int,
+        sequencial: str | int,
+    ) -> dict[str, Any]:
+        """Detalhe de uma compra pela API de consulta **documentada** do PNCP
+        (`/api/consulta/v1/...` — diferente de `listar_itens`/`listar_arquivos`,
+        que usam `/api/pncp/v1/...`, sem doc). Usada só pelo que a busca
+        textual não garante: esfera do órgão e código IBGE do município,
+        pra resolver o selo CAPAG (ver `apps.capag.lookup`) sem depender de
+        nome de órgão. Confirmado ao vivo em 26/08/2026 (ver docs/DOMINIO.md).
+        """
+
+        payload = self._get(f"/api/consulta/v1/orgaos/{cnpj}/compras/{ano}/{sequencial}", {})
+        return _normalizar_detalhe_compra(payload if isinstance(payload, dict) else {})
+
+    def listar_arquivos(
+        self,
+        *,
+        cnpj: str,
+        ano: str | int,
+        sequencial: str | int,
+    ) -> list[dict[str, Any]]:
+        """Documentos (edital, anexos, ...) de uma compra, cada um com link de
+        download direto — serve o PDF de verdade (`200`, testado contra a API
+        real), sem precisar mandar o usuário pro site do PNCP pra ver o edital."""
+
+        payload = self._get(f"/api/pncp/v1/orgaos/{cnpj}/compras/{ano}/{sequencial}/arquivos", {})
+        itens = payload if isinstance(payload, list) else []
+        return [_normalizar_arquivo(a) for a in itens]
+
 
 def _extrair_lista(payload: Any) -> tuple[list[dict[str, Any]], int]:
     """A lista de resultados muda de nome conforme o endpoint; acha onde estiver."""
@@ -260,6 +293,29 @@ def _normalizar_item(i: dict[str, Any]) -> dict[str, Any]:
         "criterio_julgamento": _primeiro(i, "criterioJulgamentoNome", "criterioJulgamento"),
         "tipo_beneficio": _primeiro(i, "beneficioNome", "tipoBeneficioNome"),
         "tem_resultado": i.get("temResultado"),
+    }
+
+
+def _normalizar_detalhe_compra(d: dict[str, Any]) -> dict[str, Any]:
+    """Só os campos que `apps.licitacoes` precisa do detalhe de uma compra —
+    o payload real tem muito mais (valores, amparo legal, datas...), fora de
+    escopo aqui."""
+
+    orgao = d.get("orgaoEntidade") or {}
+    unidade = d.get("unidadeOrgao") or {}
+    return {
+        "esfera_id": orgao.get("esferaId"),
+        "uf": unidade.get("ufSigla"),
+        "municipio_nome": unidade.get("municipioNome"),
+        "codigo_ibge": unidade.get("codigoIbge"),
+    }
+
+
+def _normalizar_arquivo(a: dict[str, Any]) -> dict[str, Any]:
+    return {
+        "titulo": a.get("titulo"),
+        "tipo_documento": _primeiro(a, "tipoDocumentoNome", "tipoDocumentoDescricao"),
+        "url": a.get("url") or a.get("uri"),
     }
 
 

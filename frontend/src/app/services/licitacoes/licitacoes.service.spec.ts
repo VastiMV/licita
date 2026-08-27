@@ -21,4 +21,10 @@ describe('LicitacoesService', () => {
 
     expect(api.get).toHaveBeenCalledWith(ENDPOINTS.licitacoes.oportunidades, params);
   });
+
+  it('detalharCompra() chama GET na rota da compra específica', () => {
+    service.detalharCompra('123', 2026, 43).subscribe();
+
+    expect(api.get).toHaveBeenCalledWith(ENDPOINTS.licitacoes.compraDetalhe('123', 2026, 43));
+  });
 });

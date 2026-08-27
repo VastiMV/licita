@@ -44,6 +44,7 @@ INSTALLED_APPS = [
     "apps.accounts",
     "apps.integracoes",
     "apps.catalogo",
+    "apps.capag",
     "apps.licitacoes",
 ]
 

@@ -160,7 +160,8 @@ de verdade no catálogo.
 | Integração | Uso |
 |---|---|
 | `compras.gov.br` (`dadosabertos.compras.gov.br`) | catálogo de materiais (PDM), contratações/itens |
-| PNCP (`pncp.gov.br/api/...`) | busca textual de editais, itens da contratação |
+| PNCP (`pncp.gov.br/api/...`) | busca textual de editais, itens/documentos/detalhe da contratação |
+| Tesouro Transparente (`tesourotransparente.gov.br/ckan/...`) | notas CAPAG (município/estado) — `apps/capag` |
 | E-mail (provedor a definir) | notificação de `Alerta` |
 
 O sync do catálogo (~41 páginas de 500 registros) roda **sequencial, com um
@@ -211,6 +212,32 @@ achados novos:
   `MODALIDADE_CONTRATACOES_PARA_PNCP` em
   `apps/integracoes/clients/compras_gov.py`, aplicada em
   `apps/licitacoes/services.py::_buscar_no_pncp` antes de chamar o PNCP.
+- **Achado, 26/08/2026: além de `/api/search/` (não documentado, usado pra
+  busca textual) e `/api/pncp/v1/orgaos/...` (não documentado, usado pra
+  itens), o PNCP tem uma terceira API, essa sim documentada:
+  `/api/consulta/v1/orgaos/{cnpj}/compras/{ano}/{sequencial}`** (o
+  `/api/pncp/v1/orgaos/.../compras/{ano}/{sequencial}` sem sufixo redireciona
+  `301` pra ela). Devolve `orgaoEntidade.esferaId` (`F`/`E`/`M`) e
+  `unidadeOrgao.codigoIbge` — usados por `apps/capag/lookup.py` pra casar a
+  compra com a nota CAPAG do ente certo (município OU estado, nunca por nome
+  de órgão: um órgão estadual pode ter nome de faculdade/fundação, sem
+  "estado" em lugar nenhum — testado com a Faculdade de Medicina de São José
+  do Rio Preto, `esferaId: "E"`, vinculada ao estado de SP apesar do nome).
+  `/api/pncp/v1/orgaos/.../arquivos` (mesma família não documentada de
+  `/itens`) devolve os documentos do edital com link de download direto —
+  `200`, PDF de verdade, sem precisar do site do PNCP. `PncpClient
+  .detalhar_compra`/`.listar_arquivos` (ver `apps/integracoes/clients/pncp.py`).
+- **CAPAG (Capacidade de Pagamento) não é API — é arquivo estático do
+  Tesouro Nacional**, atualizado ~3x/ano: XLSX de municípios
+  (`tesourotransparente.gov.br/ckan/dataset/capag-municipios`, aba "Prévia
+  da CAPAG", colunas `Código Município Completo` = código IBGE,
+  `Nome_Município`, `UF`, `CAPAG` = nota) e CSV pequeno de estados
+  (`.../capag-estados`, coluna `Classificação da CAPAG`). Nota final numa
+  escala só, `A+ A B+ B C D` (`#N/A`/`n.d.`/`n.e.` = não avaliado, sem
+  selo). URL do arquivo vigente sempre via `package_show` do CKAN (nunca
+  hardcoda nome/data — muda a cada publicação). `apps/capag/sync.py` baixa
+  e grava; agendado no Celery Beat, mensal (folga confortável pra uma fonte
+  que só muda a cada ~4 meses).
 
 ## O que muda do protótipo para a stack de produção
 

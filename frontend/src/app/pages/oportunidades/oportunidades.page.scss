@@ -83,110 +83,207 @@ h1 {
   margin-top: var(--space-4);
 }
 
-.oportunidade-card {
-  display: block;
+// Um card = um edital (ver oportunidades.page.ts, `agruparPorEdital`).
+// Estrutura deliberadamente próxima da referência que o usuário mandou
+// (exemplo.jpg): faixa de topo com os badges + selo CAPAG, objeto em
+// destaque, dados em duas colunas, botões de ação e as tabelas de itens/
+// documentos — documentos carregam sozinhos (ver `carregarDetalhe`), nada
+// fica escondido atrás de clique além da lista de itens (que não custa
+// request nenhum, já veio na busca).
+.edital-card {
   background: var(--color-surface);
   border: 1px solid var(--color-border);
-  border-left: 3px solid var(--color-blue);
   border-radius: var(--radius-lg);
-  padding: var(--space-5);
-  text-decoration: none;
-  color: var(--color-fg);
+  overflow: hidden;
   box-shadow: var(--shadow-sm);
-  transition:
-    box-shadow var(--transition-fast),
-    transform var(--transition-fast),
-    border-left-color var(--transition-fast);
-
-  &:hover {
-    box-shadow: var(--shadow-md);
-    transform: translateY(-1px);
-    border-left-color: var(--color-navy);
-  }
 }
 
-.oportunidade-topo {
+.edital-topo {
   display: flex;
   align-items: center;
   gap: var(--space-2);
   flex-wrap: wrap;
-  margin-bottom: var(--space-2);
-}
-
-.oportunidade-data {
-  margin-left: auto;
-  color: var(--color-muted);
-  font-size: 0.78rem;
-  font-weight: var(--font-weight-medium);
-}
-
-.oportunidade-orgao {
-  color: var(--color-navy);
-  font-size: var(--font-size-sm);
-  font-weight: var(--font-weight-semibold);
-}
-
-.oportunidade-objeto {
-  font-size: var(--font-size-base);
-  color: var(--color-muted);
-  margin: var(--space-1) 0 var(--space-3);
-}
-
-.oportunidade-item {
+  padding: var(--space-3) var(--space-5);
   background: var(--color-blue-soft);
-  border-radius: var(--radius-sm);
-  padding: var(--space-3);
-  margin-bottom: var(--space-3);
+  border-bottom: 1px solid var(--color-border);
 }
 
-.item-titulo {
-  font-size: 0.92rem;
+.edital-topo-espaco {
+  flex: 1 1 auto;
+}
+
+.edital-objeto {
+  font-size: var(--font-size-md);
   font-weight: var(--font-weight-semibold);
   color: var(--color-navy);
+  margin: var(--space-4) var(--space-5) 0;
+  padding-bottom: var(--space-3);
+  border-bottom: 1px solid var(--color-border);
 }
 
-.item-descricao {
-  margin-top: var(--space-2);
-  font-size: var(--font-size-sm);
-  color: #4a5c75;
-  white-space: pre-wrap;
-}
+.edital-dados {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+  gap: var(--space-3) var(--space-5);
+  margin: var(--space-4) var(--space-5) 0;
 
-.oportunidade-rodape {
-  display: flex;
-  gap: var(--space-4);
-  flex-wrap: wrap;
-  align-items: center;
-  font-size: var(--font-size-sm);
-  color: var(--color-muted);
-  font-weight: var(--font-weight-medium);
-}
-
-.oportunidade-link {
-  margin-left: auto;
-  color: var(--color-blue);
-  font-weight: var(--font-weight-semibold);
-}
-
-.oportunidade-extra {
-  margin: -0.5rem 0 var(--space-1);
-  padding-left: var(--space-5);
-  font-size: 0.78rem;
-
-  a {
+  dt {
+    font-size: var(--font-size-xs);
     color: var(--color-muted);
-    text-decoration: none;
+    font-weight: var(--font-weight-medium);
+  }
 
-    &:hover {
-      color: var(--color-blue);
-      text-decoration: underline;
-    }
+  dd {
+    margin: 0;
+    font-size: var(--font-size-sm);
+    color: var(--color-fg);
+    font-weight: var(--font-weight-semibold);
   }
 }
 
+// Selo CAPAG — nota do ente responsável pela compra (ver apps/capag no
+// backend). Carrega junto com a busca, sem precisar de clique.
+.capag-selo {
+  display: inline-flex;
+  align-items: center;
+  padding: 0.15rem var(--space-3);
+  border-radius: var(--radius-pill);
+  font-size: var(--font-size-xs);
+  font-weight: var(--font-weight-semibold);
+  white-space: nowrap;
+
+  &.capag-verde {
+    color: var(--color-success);
+    background: var(--color-success-bg);
+  }
+
+  &.capag-amarelo {
+    color: var(--color-warn);
+    background: var(--color-warn-bg);
+  }
+
+  &.capag-vermelho {
+    color: var(--color-danger);
+    background: var(--color-danger-bg);
+  }
+
+  &.capag-carregando {
+    color: var(--color-muted);
+    background: var(--color-bg);
+  }
+}
+
+// Barra de ações "nav tab" — um grupo só, segmentos colados (não botões
+// soltos com espaço entre eles), igual à referência que o usuário mandou
+// (exemplo.jpg): "Baixar edital" preenchido, "Ver itens"/"Site oficial"
+// como abas do mesmo grupo, arredondado só nas pontas.
+.edital-navtab {
+  display: flex;
+  align-items: stretch;
+  width: fit-content;
+  margin: var(--space-4) var(--space-5) 0;
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-pill);
+  overflow: hidden;
+}
+
+.edital-navtab-item {
+  appearance: none;
+  display: inline-flex;
+  align-items: center;
+  font: inherit;
+  font-size: var(--font-size-sm);
+  font-weight: var(--font-weight-semibold);
+  white-space: nowrap;
+  padding: 0.65rem 1.4rem;
+  border: none;
+  border-right: 1px solid var(--color-border);
+  background: var(--color-surface);
+  color: var(--color-navy);
+  text-decoration: none;
+  cursor: pointer;
+  transition: background var(--transition-fast);
+
+  &:last-child {
+    border-right: none;
+  }
+
+  &:hover:not(:disabled) {
+    background: var(--color-blue-soft);
+  }
+
+  &:disabled {
+    opacity: 0.5;
+    cursor: not-allowed;
+  }
+
+  &--preenchido {
+    background: var(--color-navy);
+    color: #fff;
+
+    &:hover:not(:disabled) {
+      background: var(--color-navy-light);
+    }
+  }
+
+  &--link {
+    color: var(--color-blue);
+    text-decoration: underline;
+  }
+}
+
+.edital-tabela {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: var(--font-size-sm);
+
+  th {
+    text-align: left;
+    color: var(--color-muted);
+    font-weight: var(--font-weight-semibold);
+    font-size: var(--font-size-xs);
+    padding: var(--space-2) var(--space-5);
+    border-top: 1px solid var(--color-border);
+    border-bottom: 1px solid var(--color-border);
+    background: var(--color-bg);
+  }
+
+  td {
+    padding: var(--space-2) var(--space-5);
+    border-bottom: 1px solid var(--color-border);
+    vertical-align: top;
+  }
+
+  tr:last-child td {
+    border-bottom: none;
+  }
+}
+
+.edital-tabela-extra {
+  display: block;
+  margin-top: var(--space-1);
+  color: var(--color-muted);
+  font-size: var(--font-size-xs);
+}
+
+.edital-tabela-abrir {
+  color: var(--color-blue);
+  font-weight: var(--font-weight-semibold);
+  text-decoration: none;
+
+  &:hover {
+    text-decoration: underline;
+  }
+}
+
+.edital-documentos-status {
+  padding: var(--space-3) var(--space-5);
+  margin: 0;
+}
+
 @media (max-width: 640px) {
-  .oportunidade-data,
-  .oportunidade-link {
-    margin-left: 0;
+  .edital-tabela {
+    display: block;
+    overflow-x: auto;
   }
 }

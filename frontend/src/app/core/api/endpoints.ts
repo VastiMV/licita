@@ -15,6 +15,8 @@ export const ENDPOINTS = {
   },
   licitacoes: {
     oportunidades: 'licitacoes/oportunidades/',
+    compraDetalhe: (cnpj: string, ano: string | number, sequencial: string | number) =>
+      `licitacoes/compras/${cnpj}/${ano}/${sequencial}/detalhe/`,
   },
   alertas: {
     lista: 'alertas/',
