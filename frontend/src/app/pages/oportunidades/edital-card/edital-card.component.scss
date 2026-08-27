@@ -82,7 +82,9 @@
 }
 
 .tag {
-  font: 600 10.5px/1 inherit;
+  font-weight: 600;
+  font-size: 10.5px;
+  line-height: 1;
   letter-spacing: 0.07em;
   text-transform: uppercase;
   color: var(--ec-texto-sobre-navy);
@@ -103,7 +105,9 @@
   display: inline-flex;
   align-items: center;
   gap: 6px;
-  font: 700 10.5px/1 inherit;
+  font-weight: 700;
+  font-size: 10.5px;
+  line-height: 1;
   letter-spacing: 0.06em;
   color: var(--ec-dourado);
   white-space: nowrap;
@@ -146,7 +150,9 @@
 }
 
 .eyebrow {
-  font: 600 11px/1 inherit;
+  font-weight: 600;
+  font-size: 11px;
+  line-height: 1;
   letter-spacing: 0.08em;
   text-transform: uppercase;
   color: var(--ec-eyebrow);
@@ -155,7 +161,9 @@
 
 .titulo {
   margin: 0;
-  font: 800 21px/1.35 inherit;
+  font-weight: 800;
+  font-size: 21px;
+  line-height: 1.35;
   letter-spacing: -0.01em;
   color: var(--ec-navy);
   text-wrap: pretty;
@@ -170,7 +178,9 @@
 }
 
 .dado-rotulo {
-  font: 500 10.5px/1 inherit;
+  font-weight: 500;
+  font-size: 10.5px;
+  line-height: 1;
   letter-spacing: 0.06em;
   text-transform: uppercase;
   color: var(--ec-rotulo);
@@ -178,7 +188,9 @@
 }
 
 .dado-valor {
-  font: 700 13.5px/1.2 inherit;
+  font-weight: 700;
+  font-size: 13.5px;
+  line-height: 1.2;
   color: var(--ec-navy);
 }
 
@@ -216,7 +228,9 @@
 }
 
 .prazo-rotulo {
-  font: 500 10.5px/1 inherit;
+  font-weight: 500;
+  font-size: 10.5px;
+  line-height: 1;
   letter-spacing: 0.06em;
   text-transform: uppercase;
   color: var(--ec-eyebrow);
@@ -228,7 +242,9 @@
 }
 
 .prazo-data {
-  font: 800 19px/1 inherit;
+  font-weight: 800;
+  font-size: 19px;
+  line-height: 1;
   color: var(--ec-navy);
 }
 
@@ -251,7 +267,9 @@
 
 .prazo-contagem {
   margin-top: 8px;
-  font: 700 11.5px/1 inherit;
+  font-weight: 700;
+  font-size: 11.5px;
+  line-height: 1;
   color: var(--ec-ambar-texto);
 
   .urgente & {
@@ -268,7 +286,9 @@
 }
 
 .prazo-pill {
-  font: 700 11px/1 inherit;
+  font-weight: 700;
+  font-size: 11px;
+  line-height: 1;
   color: var(--ec-ambar-texto);
   background: var(--ec-superficie);
   border: 1px solid var(--ec-ambar-borda);
@@ -307,7 +327,9 @@
 
 .btn-selecionar {
   flex: 1;
-  font: 800 13.5px/1 inherit;
+  font-weight: 800;
+  font-size: 13.5px;
+  line-height: 1;
   background: var(--ec-dourado);
   border-right: none;
   padding: 0 12px;
@@ -343,7 +365,9 @@
   justify-content: center;
   gap: 8px;
   height: 54px;
-  font: 800 13.5px/1 inherit;
+  font-weight: 800;
+  font-size: 13.5px;
+  line-height: 1;
   color: var(--ec-ambar-texto);
   background: var(--ec-superficie);
   border: 1.5px solid var(--ec-dourado-borda);
@@ -360,7 +384,9 @@
   appearance: none;
   border: none;
   background: none;
-  font: 600 12px/1 inherit;
+  font-weight: 600;
+  font-size: 12px;
+  line-height: 1;
   color: var(--ec-texto-secundario);
   cursor: pointer;
   padding: 2px 0;
@@ -404,7 +430,9 @@
   flex: none;
   border-radius: 7px;
   background: rgba(255, 255, 255, 0.12);
-  font: 800 9px/1 inherit;
+  font-weight: 800;
+  font-size: 9px;
+  line-height: 1;
   letter-spacing: 0.04em;
   color: var(--ec-texto-sobre-navy);
 }
@@ -418,12 +446,16 @@
 }
 
 .btn-baixar-titulo {
-  font: 700 12.5px/1.2 inherit;
+  font-weight: 700;
+  font-size: 12.5px;
+  line-height: 1.2;
   color: #fff;
 }
 
 .btn-baixar-meta {
-  font: 500 11px/1.2 inherit;
+  font-weight: 500;
+  font-size: 11px;
+  line-height: 1.2;
   color: rgba(207, 218, 238, 0.75);
   margin-top: 3px;
 }
@@ -461,7 +493,9 @@
   justify-content: center;
   height: 22px;
   flex: none;
-  font: 700 9.5px/1 inherit;
+  font-weight: 700;
+  font-size: 9.5px;
+  line-height: 1;
   letter-spacing: 0.07em;
   color: var(--ec-texto-secundario);
   background: var(--ec-superficie-5);
@@ -472,7 +506,9 @@
 
 .link-pncp-texto {
   flex: 1;
-  font: 600 12px/22px inherit;
+  font-weight: 600;
+  font-size: 12px;
+  line-height: 22px;
   color: var(--ec-link);
 }
 
@@ -500,7 +536,9 @@
   align-items: center;
   gap: 7px;
   padding: 13px 2px;
-  font: 600 13px/1 inherit;
+  font-weight: 600;
+  font-size: 13px;
+  line-height: 1;
   color: var(--ec-texto-secundario);
   background: none;
   border: none;
@@ -520,7 +558,9 @@
 }
 
 .aba-contador {
-  font: 700 11px/1 inherit;
+  font-weight: 700;
+  font-size: 11px;
+  line-height: 1;
   color: var(--ec-texto-secundario);
   background: var(--ec-superficie-5);
   padding: 3px 6px;
@@ -537,7 +577,9 @@
 .painel-status {
   margin: 0;
   padding: 12px 0;
-  font: 500 12.5px/1.4 inherit;
+  font-weight: 500;
+  font-size: 12.5px;
+  line-height: 1.4;
   color: var(--ec-rotulo);
 
   &.painel-status-erro {
@@ -563,7 +605,9 @@
 .tabela-cabecalho {
   align-items: center;
   background: var(--ec-superficie-4);
-  font: 600 10.5px/1 inherit;
+  font-weight: 600;
+  font-size: 10.5px;
+  line-height: 1;
   letter-spacing: 0.06em;
   text-transform: uppercase;
   color: var(--ec-rotulo);
@@ -577,7 +621,9 @@
 .col-num {
   width: 22px;
   flex: none;
-  font: 700 12.5px/1.4 inherit;
+  font-weight: 700;
+  font-size: 12.5px;
+  line-height: 1.4;
   color: var(--ec-rotulo);
 }
 
@@ -589,7 +635,9 @@
 .col-unidade {
   width: 96px;
   flex: none;
-  font: 500 12.5px/1.4 inherit;
+  font-weight: 500;
+  font-size: 12.5px;
+  line-height: 1.4;
   color: var(--ec-texto-secundario);
 }
 
@@ -599,7 +647,9 @@
   width: 56px;
   flex: none;
   text-align: right;
-  font: 600 12.5px/1.4 inherit;
+  font-weight: 600;
+  font-size: 12.5px;
+  line-height: 1.4;
   color: var(--ec-navy);
 }
 
@@ -609,11 +659,15 @@
 }
 
 .col-total-forte {
-  font: 800 13px/1.4 inherit;
+  font-weight: 800;
+  font-size: 13px;
+  line-height: 1.4;
 }
 
 .item-descricao {
-  font: 700 13.5px/1.45 inherit;
+  font-weight: 700;
+  font-size: 13.5px;
+  line-height: 1.45;
   color: var(--ec-navy);
   text-wrap: pretty;
 }
@@ -626,7 +680,9 @@
 }
 
 .chip {
-  font: 500 11.5px/1 inherit;
+  font-weight: 500;
+  font-size: 11.5px;
+  line-height: 1;
   color: var(--ec-chip-texto);
   background: var(--ec-chip-bg);
   border: 1px solid var(--ec-chip-borda);
@@ -644,13 +700,17 @@
 
   span:first-child {
     flex: 1;
-    font: 600 12px/1 inherit;
+    font-weight: 600;
+    font-size: 12px;
+    line-height: 1;
     color: var(--ec-texto-secundario);
   }
 }
 
 .tabela-rodape-valor {
-  font: 800 14px/1 inherit;
+  font-weight: 800;
+  font-size: 14px;
+  line-height: 1;
   color: var(--ec-navy);
 }
 
@@ -672,7 +732,9 @@
 
 .tabela-linha-documento {
   align-items: center;
-  font: 400 12.5px/1.4 inherit;
+  font-weight: 400;
+  font-size: 12.5px;
+  line-height: 1.4;
   color: var(--ec-navy);
 
   &:hover {
@@ -725,7 +787,9 @@
 .chip-numero {
   display: inline-block;
   margin-bottom: 9px;
-  font: 700 10.5px/1 inherit;
+  font-weight: 700;
+  font-size: 10.5px;
+  line-height: 1;
   color: var(--ec-navy);
   background: var(--ec-superficie-5);
   padding: 5px 8px;
@@ -741,7 +805,9 @@
   border-top: 1px solid var(--ec-borda-4);
 
   .dado-valor {
-    font: 600 12.5px/1.2 inherit;
+    font-weight: 600;
+    font-size: 12.5px;
+    line-height: 1.2;
   }
 }
 
@@ -754,13 +820,17 @@
 
   span:first-child {
     flex: 1;
-    font: 600 11.5px/1 inherit;
+    font-weight: 600;
+    font-size: 11.5px;
+    line-height: 1;
     color: var(--ec-texto-secundario);
   }
 }
 
 .cartao-item-total-valor {
-  font: 800 14px/1 inherit;
+  font-weight: 800;
+  font-size: 14px;
+  line-height: 1;
   color: var(--ec-navy);
 }
 
@@ -788,7 +858,9 @@
   flex: none;
   border-radius: 7px;
   background: var(--ec-superficie-5);
-  font: 800 9px/1 inherit;
+  font-weight: 800;
+  font-size: 9px;
+  line-height: 1;
   color: var(--ec-texto-secundario);
 }
 
@@ -800,12 +872,16 @@
 }
 
 .linha-documento-titulo {
-  font: 700 12.5px/1.3 inherit;
+  font-weight: 700;
+  font-size: 12.5px;
+  line-height: 1.3;
   color: var(--ec-navy);
 }
 
 .linha-documento-subtitulo {
-  font: 500 11px/1.3 inherit;
+  font-weight: 500;
+  font-size: 11px;
+  line-height: 1.3;
   color: var(--ec-rotulo);
   margin-top: 3px;
 }
