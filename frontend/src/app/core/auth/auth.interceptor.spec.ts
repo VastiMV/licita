@@ -1,6 +1,7 @@
 import { HttpClient, provideHttpClient, withInterceptors } from '@angular/common/http';
 import { HttpTestingController, provideHttpClientTesting } from '@angular/common/http/testing';
 import { TestBed } from '@angular/core/testing';
+import { provideRouter, Router } from '@angular/router';
 
 import { ENDPOINTS } from '../api/endpoints';
 import { authInterceptor } from './auth.interceptor';
@@ -10,14 +11,21 @@ describe('authInterceptor', () => {
   let http: HttpClient;
   let httpMock: HttpTestingController;
   let auth: AuthService;
+  let router: Router;
 
   beforeEach(() => {
     TestBed.configureTestingModule({
-      providers: [provideHttpClient(withInterceptors([authInterceptor])), provideHttpClientTesting()],
+      providers: [
+        provideHttpClient(withInterceptors([authInterceptor])),
+        provideHttpClientTesting(),
+        provideRouter([]),
+      ],
     });
     http = TestBed.inject(HttpClient);
     httpMock = TestBed.inject(HttpTestingController);
     auth = TestBed.inject(AuthService);
+    router = TestBed.inject(Router);
+    vi.spyOn(router, 'navigateByUrl').mockResolvedValue(true);
   });
 
   afterEach(() => httpMock.verify());
@@ -55,7 +63,7 @@ describe('authInterceptor', () => {
     expect(resultado).toEqual(['filtro-1']);
   });
 
-  it('se o refresh falhar, limpa a sessão e propaga o erro', () => {
+  it('se o refresh falhar, limpa a sessão, propaga o erro e manda pro /login', () => {
     let erro: unknown;
     http.get('/api/filtros/').subscribe({ error: (e) => (erro = e) });
 
@@ -66,5 +74,6 @@ describe('authInterceptor', () => {
 
     expect(erro).toBeTruthy();
     expect(auth.isAuthenticated()).toBe(false);
+    expect(router.navigateByUrl).toHaveBeenCalledWith('/login');
   });
 });
