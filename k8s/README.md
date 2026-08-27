@@ -130,7 +130,7 @@ os manifests). `celery-beat` é singleton: **nunca** escalar
 `replicas` além de 1.
 
 ```bash
-kubectl apply -f k8s/backend/celery-worker-deployment.yaml
+kubectl apply -f k8s/backend/sincronizador-catalogo-pdm-deployment.yaml
 kubectl apply -f k8s/backend/celery-beat-deployment.yaml
 ```
 
@@ -138,5 +138,5 @@ Dependem dos mesmos Secrets do backend, mais `rabbitmq-secrets`. Depois de
 rebuildar a imagem `backend`, force o rollout dos três juntos:
 
 ```bash
-kubectl rollout restart deployment/backend deployment/celery-worker deployment/celery-beat -n inside-solutions-licita
+kubectl rollout restart deployment/backend deployment/sincronizador-catalogo-pdm deployment/celery-beat -n inside-solutions-licita
 ```

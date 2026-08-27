@@ -18,6 +18,7 @@ const OPORTUNIDADE: OportunidadeResponse = {
   valor_unitario_estimado: 3200,
   valor_total: 160000,
   tipo_beneficio: null,
+  criterio_julgamento: 'Menor preço',
   contratacao_uf: 'SP',
   contratacao_modalidade: 'Pregão - Eletrônico',
   contratacao_srp: true,
@@ -48,14 +49,6 @@ const DETALHE: CompraDetalheResponse = {
   documentos: [{ titulo: 'Edital.pdf', tipo_documento: 'Edital', url: 'https://pncp.gov.br/x/1' }],
   capag: { nota: 'A', cor: 'verde' },
 };
-
-// Ações do card (Baixar edital / Ver itens / Site oficial) são segmentos de
-// `.edital-navtab`, não `app-button` — ver oportunidades.page.html.
-function botaoDoCard(fixture: ComponentFixture<OportunidadesPage>, texto: string): HTMLButtonElement {
-  return fixture.debugElement
-    .queryAll(By.css('.edital-navtab-item'))
-    .find((el) => el.nativeElement.textContent.includes(texto))!.nativeElement;
-}
 
 describe('OportunidadesPage', () => {
   let fixture: ComponentFixture<OportunidadesPage>;
@@ -91,8 +84,8 @@ describe('OportunidadesPage', () => {
     const card = fixture.debugElement.query(By.css('.edital-card'));
     expect(card.nativeElement.textContent).toContain('Prefeitura Municipal de Campinas');
     expect(card.nativeElement.textContent).toContain('Aquisição de equipamentos de informática');
-    const siteOficial = fixture.debugElement.query(By.css('.edital-navtab-item--link'));
-    expect(siteOficial.nativeElement.getAttribute('href')).toBe(
+    const linkPncp = fixture.debugElement.query(By.css('.link-pncp'));
+    expect(linkPncp.nativeElement.getAttribute('href')).toBe(
       'https://pncp.gov.br/app/editais/12345678000199/2026/5',
     );
   });
@@ -103,22 +96,11 @@ describe('OportunidadesPage', () => {
     buscar();
 
     expect(fixture.debugElement.queryAll(By.css('.edital-card')).length).toBe(1);
-    expect(fixture.debugElement.nativeElement.textContent).toContain('Ver itens (2)');
-  });
-
-  it('"Ver itens" expande a tabela de itens já carregada, sem novo request', () => {
-    licitacoes.buscarOportunidades.mockReturnValue(of([OPORTUNIDADE]));
-    buscar();
-
-    expect(fixture.debugElement.query(By.css('.edital-tabela-itens'))).toBeNull();
-
-    botaoDoCard(fixture, 'Ver itens').click();
-    fixture.detectChanges();
-
-    const tabela = fixture.debugElement.query(By.css('.edital-tabela-itens'));
-    expect(tabela.nativeElement.textContent).toContain('Notebook Intel i5 8GB 256GB SSD');
-    // "Ver itens" não busca nada — só o request automático de documentos rodou.
-    expect(licitacoes.detalharCompra).toHaveBeenCalledTimes(1);
+    // Aba "Itens" já mostra os dois de cara — ver EditalCardComponent.
+    expect(fixture.debugElement.nativeElement.textContent).toContain('Mouse óptico USB');
+    expect(
+      fixture.debugElement.query(By.css('.aba-contador')).nativeElement.textContent.trim(),
+    ).toBe('2');
   });
 
   it('busca documentos + CAPAG automaticamente, sem precisar clicar em nada', () => {
@@ -126,11 +108,9 @@ describe('OportunidadesPage', () => {
     buscar();
 
     expect(licitacoes.detalharCompra).toHaveBeenCalledWith('12345678000199', '2026', '5');
-    const selo = fixture.debugElement.query(By.css('.capag-selo'));
+    const selo = fixture.debugElement.query(By.css('.selo-capag'));
     expect(selo.nativeElement.textContent).toContain('A');
     expect(selo.nativeElement.className).toContain('capag-verde');
-    const doc = fixture.debugElement.query(By.css('.edital-tabela-documentos .edital-tabela-abrir'));
-    expect(doc.nativeElement.getAttribute('href')).toBe('https://pncp.gov.br/x/1');
   });
 
   it('"Baixar edital" abre o primeiro documento numa aba nova, só depois de carregado', () => {
@@ -138,27 +118,30 @@ describe('OportunidadesPage', () => {
     const abrirSpy = vi.spyOn(window, 'open').mockImplementation(() => null);
     buscar();
 
-    botaoDoCard(fixture, 'Baixar edital').click();
+    fixture.debugElement.query(By.css('.btn-baixar')).nativeElement.click();
 
     expect(abrirSpy).toHaveBeenCalledWith('https://pncp.gov.br/x/1', '_blank', 'noopener');
   });
 
-  it('"Baixar edital" fica desabilitado enquanto os documentos não chegam', () => {
+  it('"Baixar edital" fica escondido enquanto os documentos não chegam (sem botão cinza)', () => {
     licitacoes.buscarOportunidades.mockReturnValue(of([OPORTUNIDADE]));
     licitacoes.detalharCompra.mockReturnValue(new Subject()); // nunca resolve
     buscar();
 
-    expect(botaoDoCard(fixture, 'Baixar edital').disabled).toBe(true);
+    expect(fixture.debugElement.query(By.css('.btn-baixar'))).toBeNull();
   });
 
-  it('falha ao buscar documentos mostra mensagem de erro, sem derrubar a tela', () => {
+  it('falha ao buscar documentos mostra mensagem de erro na aba Documentos, sem derrubar a tela', () => {
     licitacoes.buscarOportunidades.mockReturnValue(of([OPORTUNIDADE]));
     licitacoes.detalharCompra.mockReturnValue(throwError(() => new Error('falhou')));
     buscar();
 
-    expect(fixture.debugElement.query(By.css('.edital-documentos-status.erro')).nativeElement.textContent).toContain(
-      'Não foi possível buscar os documentos',
-    );
+    fixture.debugElement.queryAll(By.css('.aba'))[1].nativeElement.click();
+    fixture.detectChanges();
+
+    expect(
+      fixture.debugElement.query(By.css('.painel-status-erro')).nativeElement.textContent,
+    ).toContain('Não foi possível buscar os documentos');
   });
 
   it('sem resultados, mostra mensagem de nada encontrado', () => {

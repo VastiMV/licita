@@ -109,8 +109,16 @@ local que não seja regenerável), para escala horizontal sem coordenação:
 |---|---|---|
 | `frontend` | 1 | sim — estático, sem estado |
 | `backend` | 1 | sim — sem sessão em memória; auth é JWT |
-| `celery-worker` | 1 | sim — várias réplicas concorrem na mesma fila |
+| `sincronizador-catalogo-pdm`¹ | 1 | sim — várias réplicas concorrem na mesma fila |
 | `celery-beat` | 1 | **não** — agendador é singleton por definição; nunca escalar além de 1 réplica |
+
+¹ Nome do Deployment de worker Celery — nomeado pela task que roda hoje
+(`catalogo.sincronizar_catalogo_pdm`, única existente), não "celery-worker"
+genérico. Ver comentário em
+`k8s/backend/sincronizador-catalogo-pdm-deployment.yaml` para o que fazer
+quando `verificar_filtros_ativos`/`enviar_email_alerta` (tabela abaixo)
+ganharem workers — decidir então entre renomear de volta pra genérico ou
+rotear por fila dedicada.
 
 `postgres` e `rabbitmq` não são `Deployment`: `postgres` é `StatefulSet` (ver
 abaixo); `rabbitmq` roda como `StatefulSet` de 1 réplica nesta fase (fila
@@ -214,9 +222,15 @@ imperativamente no cluster.
 
 ## Próximos passos possíveis
 
-1. Manifests que ainda faltam: `RabbitMQ`, `celery-worker`/`celery-beat`.
-   Postgres, backend e Ingress já existem (ver [`k8s/README.md`](../k8s/README.md)).
-2. Portar os clients de integração (`PncpClient`, `ComprasGovClient`) do
-   protótipo para `integracoes/`, com os aprendizados de
-   [`DOMINIO.md`](DOMINIO.md) preservados (paginação 10–500, busca via
-   `/api/search/`, fallback pro catálogo).
+`integracoes`, `catalogo` e `licitacoes` já existem, com RabbitMQ,
+`sincronizador-catalogo-pdm` e `celery-beat` no ar (ver
+[`DOMINIO.md`](DOMINIO.md) para o estado detalhado e os achados contra a
+API real). Falta:
+
+1. `filtros`/`alertas` — dependem da busca de oportunidades já funcionando,
+   que é o caso.
+2. Fechar a causa raiz da desconexão do PNCP (mitigada com retry, não
+   resolvida — ver `DOMINIO.md`) e a lentidão da busca textual por termo
+   genérico (~2min observados).
+3. Camada 3 da busca (embedding, pod separado) — desenho já fechado em
+   `DOMINIO.md`, implementação pendente.

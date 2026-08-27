@@ -53,6 +53,7 @@ class OportunidadesViewTests(APITestCase):
             "valor_unitario_estimado",
             "valor_total",
             "tipo_beneficio",
+            "criterio_julgamento",
             "contratacao_uf",
             "contratacao_modalidade",
             "contratacao_srp",

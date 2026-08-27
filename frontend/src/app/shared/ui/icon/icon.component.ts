@@ -12,7 +12,11 @@ export type IconName =
   | 'user'
   | 'logout'
   | 'edit'
-  | 'spinner';
+  | 'spinner'
+  | 'arrow-right'
+  | 'download'
+  | 'external-link'
+  | 'check';
 
 /**
  * Catálogo de ícones inline (SVG) do projeto — único lugar que sabe

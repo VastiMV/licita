@@ -1,4 +1,3 @@
-import { DecimalPipe } from '@angular/common';
 import { Component, computed, inject, signal } from '@angular/core';
 import { FormBuilder, ReactiveFormsModule } from '@angular/forms';
 import { Subscription } from 'rxjs';
@@ -6,11 +5,11 @@ import { Subscription } from 'rxjs';
 import { MODALIDADES } from '../../contracts/licitacoes/modalidade';
 import { OportunidadeResponse } from '../../contracts/licitacoes/oportunidade.contracts';
 import { LicitacoesService } from '../../services/licitacoes/licitacoes.service';
-import { BadgeComponent } from '../../shared/ui/badge/badge.component';
 import { ButtonComponent } from '../../shared/ui/button/button.component';
 import { IconComponent } from '../../shared/ui/icon/icon.component';
 import { InputTextComponent } from '../../shared/ui/input-text/input-text.component';
 import { SelectComponent } from '../../shared/ui/select/select.component';
+import { EditalCardComponent } from './edital-card/edital-card.component';
 
 const FORM_INICIAL = {
   palavra_chave: '',
@@ -23,17 +22,23 @@ const FORM_INICIAL = {
 
 /** Um card = um edital. A busca devolve 1 linha por item batido (mesmo
  * edital repete se mais de um item casar) — agrupado aqui pra tela, o
- * backend continua devolvendo a lista flat (ver `OportunidadeResponse`). */
-interface EditalCard {
+ * backend continua devolvendo a lista flat (ver `OportunidadeResponse`).
+ * Exportado porque `EditalCardComponent` recebe isso pronto via `@Input` —
+ * quem monta o agrupamento é a página, o card só exibe. */
+export interface EditalCard {
   readonly chave: string;
   readonly contratacao: OportunidadeResponse;
   readonly itens: readonly OportunidadeResponse[];
 }
 
 /** Documentos + CAPAG de um card, buscados em `apps.licitacoes.CompraDetalheView`. */
-interface DetalheEstado {
+export interface DetalheEstado {
   readonly carregando: boolean;
-  readonly documentos: readonly { titulo: string | null; tipo_documento: string | null; url: string | null }[];
+  readonly documentos: readonly {
+    titulo: string | null;
+    tipo_documento: string | null;
+    url: string | null;
+  }[];
   readonly capag: { nota: string; cor: 'verde' | 'amarelo' | 'vermelho' } | null;
   readonly erro: boolean;
 }
@@ -66,12 +71,11 @@ function agruparPorEdital(resultados: readonly OportunidadeResponse[]): EditalCa
   selector: 'app-oportunidades-page',
   imports: [
     ReactiveFormsModule,
-    DecimalPipe,
     InputTextComponent,
     SelectComponent,
     ButtonComponent,
-    BadgeComponent,
     IconComponent,
+    EditalCardComponent,
   ],
   templateUrl: './oportunidades.page.html',
   styleUrl: './oportunidades.page.scss',
@@ -94,9 +98,6 @@ export class OportunidadesPage {
 
   protected readonly editais = computed(() => agruparPorEdital(this.resultados()));
 
-  /** Cards com a lista de itens aberta — não precisa de request, já veio na busca. */
-  private readonly itensAbertos = signal<ReadonlySet<string>>(new Set());
-
   /** Documentos + CAPAG de cada card — carregados automaticamente assim que a
    * busca volta (um card não espera o outro; cada um mostra "carregando" até
    * a própria resposta chegar). Nada fica atrás de um clique. */
@@ -106,7 +107,6 @@ export class OportunidadesPage {
     this.buscando.set(true);
     this.erro.set(null);
     this.buscou.set(true);
-    this.itensAbertos.set(new Set());
     this.detalhes.set(new Map());
 
     this.buscaEmAndamento = this.licitacoes.buscarOportunidades(this.form.getRawValue()).subscribe({
@@ -138,20 +138,7 @@ export class OportunidadesPage {
     this.resultados.set([]);
     this.erro.set(null);
     this.buscou.set(false);
-    this.itensAbertos.set(new Set());
     this.detalhes.set(new Map());
-  }
-
-  protected itensAbertosPara(chave: string): boolean {
-    return this.itensAbertos().has(chave);
-  }
-
-  protected alternarItens(chave: string): void {
-    this.itensAbertos.update((atual) => {
-      const novo = new Set(atual);
-      novo.has(chave) ? novo.delete(chave) : novo.add(chave);
-      return novo;
-    });
   }
 
   protected detalheDe(chave: string): DetalheEstado | undefined {
@@ -166,8 +153,10 @@ export class OportunidadesPage {
   }
 
   private carregarDetalhe(card: EditalCard): void {
-    const { contratacao_cnpj_orgao, contratacao_ano_compra, contratacao_sequencial_compra } = card.contratacao;
-    if (!contratacao_cnpj_orgao || !contratacao_ano_compra || !contratacao_sequencial_compra) return;
+    const { contratacao_cnpj_orgao, contratacao_ano_compra, contratacao_sequencial_compra } =
+      card.contratacao;
+    if (!contratacao_cnpj_orgao || !contratacao_ano_compra || !contratacao_sequencial_compra)
+      return;
 
     this.definirDetalhe(card.chave, { carregando: true, documentos: [], capag: null, erro: false });
     this.licitacoes
@@ -181,7 +170,12 @@ export class OportunidadesPage {
             erro: false,
           }),
         error: () =>
-          this.definirDetalhe(card.chave, { carregando: false, documentos: [], capag: null, erro: true }),
+          this.definirDetalhe(card.chave, {
+            carregando: false,
+            documentos: [],
+            capag: null,
+            erro: true,
+          }),
       });
   }
 

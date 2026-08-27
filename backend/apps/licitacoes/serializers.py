@@ -20,6 +20,7 @@ class OportunidadeSerializer(serializers.Serializer):
     valor_unitario_estimado = serializers.FloatField(allow_null=True)
     valor_total = serializers.FloatField(allow_null=True)
     tipo_beneficio = serializers.CharField(allow_null=True)
+    criterio_julgamento = serializers.CharField(allow_null=True)
     situacao_item = serializers.CharField(allow_null=True)
 
     contratacao_uf = serializers.CharField(allow_null=True)

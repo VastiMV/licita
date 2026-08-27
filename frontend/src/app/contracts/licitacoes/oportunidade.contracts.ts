@@ -22,6 +22,7 @@ export interface OportunidadeResponse {
   readonly valor_unitario_estimado: number | null;
   readonly valor_total: number | null;
   readonly tipo_beneficio: string | null;
+  readonly criterio_julgamento: string | null;
   readonly contratacao_uf: string | null;
   readonly contratacao_modalidade: string | null;
   readonly contratacao_srp: boolean;
