@@ -46,6 +46,7 @@
     <p class="muted">{{ editais().length }} edital(is) encontrado(s).</p>
     <div class="oportunidades">
       @for (card of editais(); track card.chave) {
+        @let detalhe = detalheDe(card.chave);
         <article class="edital-card">
           <div class="edital-topo">
             <app-badge>{{ card.contratacao.contratacao_uf ?? '—' }}</app-badge>
@@ -54,118 +55,131 @@
               <app-badge>SRP</app-badge>
             }
             <app-badge>{{ card.contratacao.contratacao_situacao ?? '—' }}</app-badge>
-            @if (detalheDe(card.chave)?.dados?.capag; as capag) {
+            <span class="edital-topo-espaco"></span>
+            @if (detalhe?.capag; as capag) {
               <span [class]="'capag-selo capag-' + capag.cor">CAPAG {{ capag.nota }}</span>
-            }
-            <span class="edital-data">
-              @if (card.contratacao.contratacao_data_encerramento_proposta) {
-                propostas até {{ card.contratacao.contratacao_data_encerramento_proposta }}
-              } @else {
-                pub. {{ card.contratacao.contratacao_data_publicacao ?? '—' }}
-              }
-            </span>
-          </div>
-
-          <div class="edital-orgao">
-            {{ card.contratacao.contratacao_orgao_nome ?? '—' }}
-            @if (card.contratacao.contratacao_municipio) {
-              · {{ card.contratacao.contratacao_municipio }}
-            }
-            @if (card.contratacao.contratacao_uasg) {
-              · UASG {{ card.contratacao.contratacao_uasg }}
+            } @else if (detalhe?.carregando) {
+              <span class="capag-selo capag-carregando">CAPAG…</span>
             }
           </div>
 
           <div class="edital-objeto">{{ card.contratacao.contratacao_objeto ?? '—' }}</div>
 
-          <div class="edital-acoes">
-            <app-button type="button" variant="ghost" (click)="alternarItens(card.chave)">
+          <dl class="edital-dados">
+            <div>
+              <dt>Órgão</dt>
+              <dd>{{ card.contratacao.contratacao_orgao_nome ?? '—' }}</dd>
+            </div>
+            <div>
+              <dt>Modalidade</dt>
+              <dd>{{ card.contratacao.contratacao_modalidade ?? '—' }}</dd>
+            </div>
+            <div>
+              <dt>Cidade</dt>
+              <dd>
+                {{ card.contratacao.contratacao_municipio ?? '—' }}
+                @if (card.contratacao.contratacao_uf) {
+                  / {{ card.contratacao.contratacao_uf }}
+                }
+              </dd>
+            </div>
+            <div>
+              <dt>Data de publicação</dt>
+              <dd>{{ card.contratacao.contratacao_data_publicacao ?? '—' }}</dd>
+            </div>
+            <div>
+              <dt>UASG</dt>
+              <dd>{{ card.contratacao.contratacao_uasg ?? '—' }}</dd>
+            </div>
+            <div>
+              <dt>Encerramento de propostas</dt>
+              <dd>{{ card.contratacao.contratacao_data_encerramento_proposta ?? '—' }}</dd>
+            </div>
+          </dl>
+
+          <nav class="edital-navtab">
+            <button
+              type="button"
+              class="edital-navtab-item edital-navtab-item--preenchido"
+              [disabled]="!detalhe?.documentos?.length"
+              (click)="baixarEdital(card.chave)"
+            >
+              Baixar edital
+            </button>
+            <button type="button" class="edital-navtab-item" (click)="alternarItens(card.chave)">
               {{ itensAbertosPara(card.chave) ? 'Ocultar itens' : 'Ver itens (' + card.itens.length + ')' }}
-            </app-button>
-            <app-button type="button" variant="ghost" (click)="alternarDocumentos(card)">
-              {{ documentosAbertosPara(card.chave) ? 'Ocultar documentos' : 'Baixar edital' }}
-            </app-button>
-            @if (card.contratacao.link_compras_gov) {
-              <a
-                class="edital-link-secundario"
-                [href]="card.contratacao.link_compras_gov"
-                target="_blank"
-                rel="noopener"
-              >
-                Abrir no compras.gov.br
-              </a>
-            }
+            </button>
             @if (card.contratacao.link_pncp) {
-              <a class="edital-link-secundario" [href]="card.contratacao.link_pncp" target="_blank" rel="noopener">
-                Ver no PNCP
+              <a class="edital-navtab-item edital-navtab-item--link" [href]="card.contratacao.link_pncp" target="_blank" rel="noopener">
+                Site oficial
               </a>
             }
-          </div>
+          </nav>
 
           @if (itensAbertosPara(card.chave)) {
-            <div class="edital-itens">
-              @for (item of card.itens; track $index) {
-                <div class="oportunidade-item">
-                  <div class="item-titulo">
-                    Item {{ item.numero_item ?? '—' }} — {{ item.descricao_resumida ?? 'sem descrição' }}
-                  </div>
-                  @if (item.descricao_detalhada) {
-                    <div class="item-descricao">{{ item.descricao_detalhada }}</div>
-                  }
-                  <div class="item-rodape">
-                    @if (item.quantidade) {
-                      <span>Qtd: {{ item.quantidade }} {{ item.unidade_medida }}</span>
-                    }
-                    @if (item.valor_unitario_estimado) {
-                      <span>Unit. est.: R$ {{ item.valor_unitario_estimado | number: '1.2-2' }}</span>
-                    }
-                    @if (item.valor_total) {
-                      <span>Total est.: R$ {{ item.valor_total | number: '1.2-2' }}</span>
-                    }
-                    @if (item.tipo_beneficio) {
-                      <span>{{ item.tipo_beneficio }}</span>
-                    }
-                  </div>
-                </div>
-              }
-            </div>
+            <table class="edital-tabela edital-tabela-itens">
+              <thead>
+                <tr>
+                  <th>#</th>
+                  <th>Descrição</th>
+                  <th>Qtd.</th>
+                  <th>Unit. est.</th>
+                  <th>Total est.</th>
+                </tr>
+              </thead>
+              <tbody>
+                @for (item of card.itens; track $index) {
+                  <tr>
+                    <td>{{ item.numero_item ?? '—' }}</td>
+                    <td>
+                      {{ item.descricao_resumida ?? 'sem descrição' }}
+                      @if (item.tipo_beneficio) {
+                        <span class="edital-tabela-extra">{{ item.tipo_beneficio }}</span>
+                      }
+                    </td>
+                    <td>{{ item.quantidade ?? '—' }} {{ item.unidade_medida }}</td>
+                    <td>{{ item.valor_unitario_estimado ? ('R$ ' + (item.valor_unitario_estimado | number: '1.2-2')) : '—' }}</td>
+                    <td>{{ item.valor_total ? ('R$ ' + (item.valor_total | number: '1.2-2')) : '—' }}</td>
+                  </tr>
+                }
+              </tbody>
+            </table>
           }
 
-          @if (documentosAbertosPara(card.chave)) {
-            <div class="edital-documentos">
-              @let detalhe = detalheDe(card.chave);
-              @if (detalhe?.carregando) {
-                <p class="muted">Buscando documentos no PNCP…</p>
-              } @else if (detalhe?.erro) {
-                <p class="erro">Não foi possível buscar os documentos agora.</p>
-              } @else if (detalhe?.dados?.documentos?.length) {
-                <table class="documentos-tabela">
-                  <thead>
+          <div class="edital-documentos">
+            @if (detalhe?.carregando) {
+              <p class="muted edital-documentos-status">Buscando os documentos no PNCP…</p>
+            } @else if (detalhe?.erro) {
+              <p class="erro edital-documentos-status">Não foi possível buscar os documentos agora.</p>
+            } @else if (detalhe?.documentos?.length) {
+              <table class="edital-tabela edital-tabela-documentos">
+                <thead>
+                  <tr>
+                    <th>#</th>
+                    <th>Título</th>
+                    <th>Tipo</th>
+                    <th></th>
+                  </tr>
+                </thead>
+                <tbody>
+                  @for (doc of detalhe!.documentos; track $index) {
                     <tr>
-                      <th>Título</th>
-                      <th>Tipo</th>
-                      <th></th>
+                      <td>{{ $index + 1 }}</td>
+                      <td>{{ doc.titulo ?? '—' }}</td>
+                      <td>{{ doc.tipo_documento ?? '—' }}</td>
+                      <td>
+                        @if (doc.url) {
+                          <a class="edital-tabela-abrir" [href]="doc.url" target="_blank" rel="noopener">Abrir</a>
+                        }
+                      </td>
                     </tr>
-                  </thead>
-                  <tbody>
-                    @for (doc of detalhe!.dados!.documentos; track $index) {
-                      <tr>
-                        <td>{{ doc.titulo ?? '—' }}</td>
-                        <td>{{ doc.tipo_documento ?? '—' }}</td>
-                        <td>
-                          @if (doc.url) {
-                            <a [href]="doc.url" target="_blank" rel="noopener">Abrir</a>
-                          }
-                        </td>
-                      </tr>
-                    }
-                  </tbody>
-                </table>
-              } @else {
-                <p class="muted">Nenhum documento encontrado para este edital.</p>
-              }
-            </div>
-          }
+                  }
+                </tbody>
+              </table>
+            } @else if (detalhe) {
+              <p class="muted edital-documentos-status">Nenhum documento encontrado para este edital.</p>
+            }
+          </div>
         </article>
       }
     </div>

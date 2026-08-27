@@ -4,10 +4,7 @@ import { FormBuilder, ReactiveFormsModule } from '@angular/forms';
 import { Subscription } from 'rxjs';
 
 import { MODALIDADES } from '../../contracts/licitacoes/modalidade';
-import {
-  CompraDetalheResponse,
-  OportunidadeResponse,
-} from '../../contracts/licitacoes/oportunidade.contracts';
+import { OportunidadeResponse } from '../../contracts/licitacoes/oportunidade.contracts';
 import { LicitacoesService } from '../../services/licitacoes/licitacoes.service';
 import { BadgeComponent } from '../../shared/ui/badge/badge.component';
 import { ButtonComponent } from '../../shared/ui/button/button.component';
@@ -33,11 +30,11 @@ interface EditalCard {
   readonly itens: readonly OportunidadeResponse[];
 }
 
-/** Estado da busca de documentos+CAPAG de um card — sob demanda, 1 vez por
- * card (ver `LicitacoesService.detalharCompra`). */
+/** Documentos + CAPAG de um card, buscados em `apps.licitacoes.CompraDetalheView`. */
 interface DetalheEstado {
   readonly carregando: boolean;
-  readonly dados: CompraDetalheResponse | null;
+  readonly documentos: readonly { titulo: string | null; tipo_documento: string | null; url: string | null }[];
+  readonly capag: { nota: string; cor: 'verde' | 'amarelo' | 'vermelho' } | null;
   readonly erro: boolean;
 }
 
@@ -99,8 +96,10 @@ export class OportunidadesPage {
 
   /** Cards com a lista de itens aberta — não precisa de request, já veio na busca. */
   private readonly itensAbertos = signal<ReadonlySet<string>>(new Set());
-  /** Cards com o painel de documentos aberto (documentos + CAPAG, cache em `detalhes`). */
-  private readonly documentosAbertos = signal<ReadonlySet<string>>(new Set());
+
+  /** Documentos + CAPAG de cada card — carregados automaticamente assim que a
+   * busca volta (um card não espera o outro; cada um mostra "carregando" até
+   * a própria resposta chegar). Nada fica atrás de um clique. */
   private readonly detalhes = signal<ReadonlyMap<string, DetalheEstado>>(new Map());
 
   protected buscar(): void {
@@ -108,13 +107,15 @@ export class OportunidadesPage {
     this.erro.set(null);
     this.buscou.set(true);
     this.itensAbertos.set(new Set());
-    this.documentosAbertos.set(new Set());
     this.detalhes.set(new Map());
 
     this.buscaEmAndamento = this.licitacoes.buscarOportunidades(this.form.getRawValue()).subscribe({
       next: (resultados) => {
         this.resultados.set(resultados);
         this.buscando.set(false);
+        for (const card of agruparPorEdital(resultados)) {
+          this.carregarDetalhe(card);
+        }
       },
       error: () => {
         this.erro.set('Não foi possível buscar agora. Tente novamente em instantes.');
@@ -138,7 +139,6 @@ export class OportunidadesPage {
     this.erro.set(null);
     this.buscou.set(false);
     this.itensAbertos.set(new Set());
-    this.documentosAbertos.set(new Set());
     this.detalhes.set(new Map());
   }
 
@@ -147,33 +147,41 @@ export class OportunidadesPage {
   }
 
   protected alternarItens(chave: string): void {
-    this.itensAbertos.update((atual) => alternarNoSet(atual, chave));
-  }
-
-  protected documentosAbertosPara(chave: string): boolean {
-    return this.documentosAbertos().has(chave);
+    this.itensAbertos.update((atual) => {
+      const novo = new Set(atual);
+      novo.has(chave) ? novo.delete(chave) : novo.add(chave);
+      return novo;
+    });
   }
 
   protected detalheDe(chave: string): DetalheEstado | undefined {
     return this.detalhes().get(chave);
   }
 
-  /** Abre/fecha o painel de documentos; busca só na primeira vez (cache em `detalhes`). */
-  protected alternarDocumentos(card: EditalCard): void {
-    const aberto = this.documentosAbertosPara(card.chave);
-    this.documentosAbertos.update((atual) => alternarNoSet(atual, card.chave));
-    if (aberto || this.detalheDe(card.chave)) return;
+  /** Abre o arquivo principal do edital (1º documento) numa aba nova — o
+   * botão fica desabilitado até o detalhe carregar (ver `carregarDetalhe`). */
+  protected baixarEdital(chave: string): void {
+    const url = this.detalheDe(chave)?.documentos[0]?.url;
+    if (url) window.open(url, '_blank', 'noopener');
+  }
 
-    const { contratacao_cnpj_orgao, contratacao_ano_compra, contratacao_sequencial_compra } =
-      card.contratacao;
+  private carregarDetalhe(card: EditalCard): void {
+    const { contratacao_cnpj_orgao, contratacao_ano_compra, contratacao_sequencial_compra } = card.contratacao;
     if (!contratacao_cnpj_orgao || !contratacao_ano_compra || !contratacao_sequencial_compra) return;
 
-    this.definirDetalhe(card.chave, { carregando: true, dados: null, erro: false });
+    this.definirDetalhe(card.chave, { carregando: true, documentos: [], capag: null, erro: false });
     this.licitacoes
       .detalharCompra(contratacao_cnpj_orgao, contratacao_ano_compra, contratacao_sequencial_compra)
       .subscribe({
-        next: (dados) => this.definirDetalhe(card.chave, { carregando: false, dados, erro: false }),
-        error: () => this.definirDetalhe(card.chave, { carregando: false, dados: null, erro: true }),
+        next: (dados) =>
+          this.definirDetalhe(card.chave, {
+            carregando: false,
+            documentos: dados.documentos,
+            capag: dados.capag,
+            erro: false,
+          }),
+        error: () =>
+          this.definirDetalhe(card.chave, { carregando: false, documentos: [], capag: null, erro: true }),
       });
   }
 
@@ -184,14 +192,4 @@ export class OportunidadesPage {
       return novo;
     });
   }
-}
-
-function alternarNoSet<T>(conjunto: ReadonlySet<T>, valor: T): ReadonlySet<T> {
-  const novo = new Set(conjunto);
-  if (novo.has(valor)) {
-    novo.delete(valor);
-  } else {
-    novo.add(valor);
-  }
-  return novo;
 }

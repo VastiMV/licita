@@ -33,7 +33,7 @@ const OPORTUNIDADE: OportunidadeResponse = {
   contratacao_ano_compra: '2026',
   contratacao_sequencial_compra: '5',
   link_compras_gov: 'https://compras.gov.br/x',
-  link_pncp: null,
+  link_pncp: 'https://pncp.gov.br/app/editais/12345678000199/2026/5',
 };
 
 // Segundo item do MESMO edital — casa por cnpj+ano+sequencial (ver
@@ -49,10 +49,12 @@ const DETALHE: CompraDetalheResponse = {
   capag: { nota: 'A', cor: 'verde' },
 };
 
-function botao(fixture: ComponentFixture<OportunidadesPage>, texto: string) {
+// Ações do card (Baixar edital / Ver itens / Site oficial) são segmentos de
+// `.edital-navtab`, não `app-button` — ver oportunidades.page.html.
+function botaoDoCard(fixture: ComponentFixture<OportunidadesPage>, texto: string): HTMLButtonElement {
   return fixture.debugElement
-    .queryAll(By.css('app-button'))
-    .find((el) => el.nativeElement.textContent.includes(texto))!;
+    .queryAll(By.css('.edital-navtab-item'))
+    .find((el) => el.nativeElement.textContent.includes(texto))!.nativeElement;
 }
 
 describe('OportunidadesPage', () => {
@@ -63,7 +65,7 @@ describe('OportunidadesPage', () => {
   };
 
   beforeEach(() => {
-    licitacoes = { buscarOportunidades: vi.fn(), detalharCompra: vi.fn() };
+    licitacoes = { buscarOportunidades: vi.fn(), detalharCompra: vi.fn(() => of(DETALHE)) };
     TestBed.configureTestingModule({
       imports: [OportunidadesPage],
       providers: [{ provide: LicitacoesService, useValue: licitacoes }],
@@ -89,8 +91,10 @@ describe('OportunidadesPage', () => {
     const card = fixture.debugElement.query(By.css('.edital-card'));
     expect(card.nativeElement.textContent).toContain('Prefeitura Municipal de Campinas');
     expect(card.nativeElement.textContent).toContain('Aquisição de equipamentos de informática');
-    const linkSecundario = fixture.debugElement.query(By.css('.edital-link-secundario'));
-    expect(linkSecundario.nativeElement.getAttribute('href')).toBe('https://compras.gov.br/x');
+    const siteOficial = fixture.debugElement.query(By.css('.edital-navtab-item--link'));
+    expect(siteOficial.nativeElement.getAttribute('href')).toBe(
+      'https://pncp.gov.br/app/editais/12345678000199/2026/5',
+    );
   });
 
   it('itens do mesmo edital (mesmo cnpj+ano+sequencial) agrupam num card só', () => {
@@ -102,50 +106,49 @@ describe('OportunidadesPage', () => {
     expect(fixture.debugElement.nativeElement.textContent).toContain('Ver itens (2)');
   });
 
-  it('"Ver itens" expande a lista de itens já carregada, sem novo request', () => {
+  it('"Ver itens" expande a tabela de itens já carregada, sem novo request', () => {
     licitacoes.buscarOportunidades.mockReturnValue(of([OPORTUNIDADE]));
     buscar();
 
-    expect(fixture.debugElement.query(By.css('.oportunidade-item'))).toBeNull();
+    expect(fixture.debugElement.query(By.css('.edital-tabela-itens'))).toBeNull();
 
-    botao(fixture, 'Ver itens').triggerEventHandler('click');
+    botaoDoCard(fixture, 'Ver itens').click();
     fixture.detectChanges();
 
-    const item = fixture.debugElement.query(By.css('.oportunidade-item'));
-    expect(item.nativeElement.textContent).toContain('Notebook Intel i5 8GB 256GB SSD');
-    expect(licitacoes.detalharCompra).not.toHaveBeenCalled();
+    const tabela = fixture.debugElement.query(By.css('.edital-tabela-itens'));
+    expect(tabela.nativeElement.textContent).toContain('Notebook Intel i5 8GB 256GB SSD');
+    // "Ver itens" não busca nada — só o request automático de documentos rodou.
+    expect(licitacoes.detalharCompra).toHaveBeenCalledTimes(1);
   });
 
-  it('"Baixar edital" busca documentos + CAPAG sob demanda e mostra o selo', () => {
+  it('busca documentos + CAPAG automaticamente, sem precisar clicar em nada', () => {
     licitacoes.buscarOportunidades.mockReturnValue(of([OPORTUNIDADE]));
-    licitacoes.detalharCompra.mockReturnValue(of(DETALHE));
     buscar();
-
-    botao(fixture, 'Baixar edital').triggerEventHandler('click');
-    fixture.detectChanges();
 
     expect(licitacoes.detalharCompra).toHaveBeenCalledWith('12345678000199', '2026', '5');
     const selo = fixture.debugElement.query(By.css('.capag-selo'));
     expect(selo.nativeElement.textContent).toContain('A');
     expect(selo.nativeElement.className).toContain('capag-verde');
-    const doc = fixture.debugElement.query(By.css('.documentos-tabela a'));
+    const doc = fixture.debugElement.query(By.css('.edital-tabela-documentos .edital-tabela-abrir'));
     expect(doc.nativeElement.getAttribute('href')).toBe('https://pncp.gov.br/x/1');
   });
 
-  it('reabrir "Baixar edital" não busca de novo (cache)', () => {
+  it('"Baixar edital" abre o primeiro documento numa aba nova, só depois de carregado', () => {
     licitacoes.buscarOportunidades.mockReturnValue(of([OPORTUNIDADE]));
-    licitacoes.detalharCompra.mockReturnValue(of(DETALHE));
+    const abrirSpy = vi.spyOn(window, 'open').mockImplementation(() => null);
     buscar();
 
-    // Abre, fecha, reabre.
-    botao(fixture, 'Baixar edital').triggerEventHandler('click');
-    fixture.detectChanges();
-    botao(fixture, 'Ocultar documentos').triggerEventHandler('click');
-    fixture.detectChanges();
-    botao(fixture, 'Baixar edital').triggerEventHandler('click');
-    fixture.detectChanges();
+    botaoDoCard(fixture, 'Baixar edital').click();
 
-    expect(licitacoes.detalharCompra).toHaveBeenCalledTimes(1);
+    expect(abrirSpy).toHaveBeenCalledWith('https://pncp.gov.br/x/1', '_blank', 'noopener');
+  });
+
+  it('"Baixar edital" fica desabilitado enquanto os documentos não chegam', () => {
+    licitacoes.buscarOportunidades.mockReturnValue(of([OPORTUNIDADE]));
+    licitacoes.detalharCompra.mockReturnValue(new Subject()); // nunca resolve
+    buscar();
+
+    expect(botaoDoCard(fixture, 'Baixar edital').disabled).toBe(true);
   });
 
   it('falha ao buscar documentos mostra mensagem de erro, sem derrubar a tela', () => {
@@ -153,10 +156,7 @@ describe('OportunidadesPage', () => {
     licitacoes.detalharCompra.mockReturnValue(throwError(() => new Error('falhou')));
     buscar();
 
-    botao(fixture, 'Baixar edital').triggerEventHandler('click');
-    fixture.detectChanges();
-
-    expect(fixture.debugElement.query(By.css('.edital-documentos .erro')).nativeElement.textContent).toContain(
+    expect(fixture.debugElement.query(By.css('.edital-documentos-status.erro')).nativeElement.textContent).toContain(
       'Não foi possível buscar os documentos',
     );
   });
