@@ -1,0 +1,15 @@
+# Headless (clusterIP: None) — mesmo padrão do Service do Postgres, DNS
+# estável (rabbitmq.inside-solutions-licita.svc.cluster.local) pro pod.
+apiVersion: v1
+kind: Service
+metadata:
+  name: rabbitmq
+  namespace: inside-solutions-licita
+spec:
+  clusterIP: None
+  selector:
+    app: rabbitmq
+  ports:
+    - name: amqp
+      port: 5672
+      targetPort: 5672

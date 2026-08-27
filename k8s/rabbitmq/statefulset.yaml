@@ -1,0 +1,63 @@
+# StatefulSet (não Deployment) pela mesma razão do Postgres — DNS estável via
+# Service headless. 1 réplica: fila única, sem cluster (ver docs/ARQUITETURA.md).
+# Sem PVC dedicado de propósito: ao contrário do Postgres, o conteúdo da fila é
+# descartável — se o pod reiniciar e perder mensagens em trânsito, a próxima
+# rodada do Celery Beat ou a próxima chamada síncrona resolve; não guardamos
+# histórico aqui. Credenciais via `rabbitmq-secrets`, nunca em ConfigMap.
+apiVersion: apps/v1
+kind: StatefulSet
+metadata:
+  name: rabbitmq
+  namespace: inside-solutions-licita
+spec:
+  serviceName: rabbitmq
+  replicas: 1
+  selector:
+    matchLabels:
+      app: rabbitmq
+  template:
+    metadata:
+      labels:
+        app: rabbitmq
+    spec:
+      containers:
+        - name: rabbitmq
+          # 3.13, não 4.x: o RabbitMQ 4.0 descontinuou `transient_nonexcl_queues`,
+          # um recurso legado do AMQP que o kombu (driver do Celery) ainda usa
+          # por padrão pra declarar fila de resposta — visto na prática aqui,
+          # o celery-worker conectava e entrava em loop de restart
+          # (`Queue.declare: INTERNAL_ERROR - Feature 'transient_nonexcl_queues'
+          # is deprecated`). 3.13 é a LTS anterior, ainda plenamente compatível.
+          image: rabbitmq:3.13-alpine
+          ports:
+            - name: amqp
+              containerPort: 5672
+          envFrom:
+            - secretRef:
+                name: rabbitmq-secrets
+          # tcpSocket, não `rabbitmq-diagnostics` exec — mesmo raciocínio do
+          # probe do backend (ver k8s/backend/deployment.yaml), mas aqui o
+          # motivo é outro: `rabbitmq-diagnostics` abre uma conexão RPC
+          # Erlang própria a cada chamada, e nesse nó (~1 CPU no total) isso
+          # estourava mesmo com timeoutSeconds: 10 — visto na prática,
+          # matando o pod num loop de restart antes dele terminar de subir
+          # (SIGTERM da liveness, não OOM). TCP puro na 5672 é a checagem
+          # mais barata que ainda prova que o broker está aceitando conexão.
+          readinessProbe:
+            tcpSocket:
+              port: 5672
+            initialDelaySeconds: 30
+            periodSeconds: 10
+          livenessProbe:
+            tcpSocket:
+              port: 5672
+            initialDelaySeconds: 60
+            periodSeconds: 20
+            failureThreshold: 5
+          resources:
+            requests:
+              cpu: 100m
+              memory: 256Mi
+            limits:
+              cpu: 500m
+              memory: 512Mi

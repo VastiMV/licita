@@ -34,11 +34,18 @@ INSTALLED_APPS = [
     "django.contrib.sessions",
     "django.contrib.messages",
     "django.contrib.staticfiles",
+    # Extensão Postgres — GinIndex/TrigramSimilarity da busca do catálogo
+    # (ver apps/catalogo/models.py e apps/catalogo/search.py).
+    "django.contrib.postgres",
     "rest_framework",
     "rest_framework_simplejwt.token_blacklist",
     "channels",
     "django_celery_beat",
     "apps.accounts",
+    "apps.integracoes",
+    "apps.catalogo",
+    "apps.capag",
+    "apps.licitacoes",
 ]
 
 MIDDLEWARE = [

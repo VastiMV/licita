@@ -4,6 +4,7 @@ import { Observable } from 'rxjs';
 import { ApiClient } from '../../core/api/api-client';
 import { ENDPOINTS } from '../../core/api/endpoints';
 import {
+  CompraDetalheResponse,
   OportunidadeBuscaParams,
   OportunidadeResponse,
 } from '../../contracts/licitacoes/oportunidade.contracts';
@@ -15,5 +16,15 @@ export class LicitacoesService {
 
   buscarOportunidades(params: OportunidadeBuscaParams): Observable<OportunidadeResponse[]> {
     return this.api.get<OportunidadeResponse[]>(ENDPOINTS.licitacoes.oportunidades, { ...params });
+  }
+
+  /** Documentos do edital + selo CAPAG de uma compra — sob demanda (ver
+   * `CompraDetalheView` no backend), não faz parte de `buscarOportunidades`. */
+  detalharCompra(
+    cnpj: string,
+    ano: string | number,
+    sequencial: string | number,
+  ): Observable<CompraDetalheResponse> {
+    return this.api.get<CompraDetalheResponse>(ENDPOINTS.licitacoes.compraDetalhe(cnpj, ano, sequencial));
   }
 }

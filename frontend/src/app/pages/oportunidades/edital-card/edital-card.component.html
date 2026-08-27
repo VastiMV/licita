@@ -1,0 +1,274 @@
+<article class="edital-card" [class.selecionada]="selecionada()" [class.encerrada]="encerrada()">
+  <div class="cabecalho">
+    <span class="tag tag-uf">{{ contratacao().contratacao_uf ?? '—' }}</span>
+    @if (contratacao().contratacao_modalidade) {
+      <span class="tag">{{ contratacao().contratacao_modalidade }}</span>
+    }
+    @if (contratacao().contratacao_situacao) {
+      <span class="tag somente-desktop">{{ contratacao().contratacao_situacao }}</span>
+    }
+    <span class="cabecalho-espaco"></span>
+    @if (detalhe()?.capag; as capag) {
+      <span [class]="'selo-capag capag-' + capag.cor">
+        <span class="selo-capag-ponto"></span>
+        CAPAG {{ capag.nota }}
+      </span>
+    } @else if (detalhe()?.carregando) {
+      <span class="selo-capag capag-carregando">CAPAG…</span>
+    }
+  </div>
+
+  <div class="corpo">
+    <div class="coluna-principal">
+      <div class="eyebrow">{{ eyebrow() }}</div>
+      <h3 class="titulo">{{ titulo() }}</h3>
+
+      <div class="dados">
+        <div class="dado">
+          <div class="dado-rotulo">Cidade</div>
+          <div class="dado-valor">{{ cidade() }}</div>
+        </div>
+        <div class="dado">
+          <div class="dado-rotulo">Publicação</div>
+          <div class="dado-valor">{{ data(contratacao().contratacao_data_publicacao) ?? '—' }}</div>
+        </div>
+        <div class="dado">
+          <div class="dado-rotulo">Modalidade</div>
+          <div class="dado-valor">{{ contratacao().contratacao_modalidade ?? '—' }}</div>
+        </div>
+        <div class="dado">
+          <div class="dado-rotulo">Valor estimado</div>
+          <div class="dado-valor">{{ moeda(valorTotalEdital()) ?? '—' }}</div>
+        </div>
+      </div>
+    </div>
+
+    <div class="coluna-acoes">
+      @if (rotuloContagem(); as rotulo) {
+        <div class="prazo-bloco somente-desktop" [class.urgente]="urgente()">
+          <div class="prazo-rotulo">Propostas até</div>
+          <div class="prazo-data">
+            {{ data(contratacao().contratacao_data_encerramento_proposta) ?? '—' }}
+          </div>
+          @if (!encerrada()) {
+            <div class="prazo-trilha">
+              <div class="prazo-preenchimento" [style.width.%]="progresso()"></div>
+            </div>
+          }
+          <div class="prazo-contagem">{{ rotulo }}</div>
+        </div>
+
+        <div class="prazo-faixa" [class.urgente]="urgente()">
+          <div>
+            <div class="prazo-rotulo">Propostas até</div>
+            <div class="prazo-data">
+              {{ data(contratacao().contratacao_data_encerramento_proposta) ?? '—' }}
+            </div>
+          </div>
+          <span class="prazo-pill">{{ rotulo }}</span>
+        </div>
+      }
+
+      <span class="acoes-espaco somente-desktop"></span>
+
+      @if (!encerrada()) {
+        @if (!selecionada()) {
+          <div class="grupo-selecionar">
+            <button type="button" class="btn-selecionar" (click)="selecionar()">
+              Selecionar licitação
+            </button>
+            <button
+              type="button"
+              class="btn-selecionar-icone"
+              title="Selecionar licitação"
+              (click)="selecionar()"
+            >
+              <app-icon name="arrow-right" />
+            </button>
+          </div>
+        } @else {
+          <button type="button" class="btn-selecionada" (click)="removerSelecao()">
+            <app-icon name="check" />
+            Licitação selecionada
+          </button>
+          <button type="button" class="link-remover" (click)="removerSelecao()">
+            Remover da seleção
+          </button>
+        }
+      }
+
+      @if (urlEditalPrincipal(); as url) {
+        <button type="button" class="btn-baixar" (click)="baixarEdital.emit()">
+          <span class="btn-baixar-chip">PDF</span>
+          <span class="btn-baixar-texto">
+            <span class="btn-baixar-titulo">Baixar edital</span>
+            @if (detalhe()?.documentos?.[0]?.tipo_documento; as tipo) {
+              <span class="btn-baixar-meta">{{ tipo }}</span>
+            }
+          </span>
+          <app-icon name="download" class="btn-baixar-icone" />
+        </button>
+      }
+
+      <div class="divisoria"></div>
+
+      @if (contratacao().link_pncp; as linkPncp) {
+        <a class="link-pncp" [href]="linkPncp" target="_blank" rel="noopener">
+          <span class="link-pncp-chip">PNCP</span>
+          <span class="link-pncp-texto">Abrir publicação original</span>
+          <app-icon name="external-link" class="link-pncp-icone" />
+        </a>
+      }
+    </div>
+  </div>
+
+  <nav class="abas">
+    <button
+      type="button"
+      class="aba"
+      [class.aba-ativa]="abaAtiva() === 'itens'"
+      (click)="mudarAba('itens')"
+    >
+      Itens <span class="aba-contador">{{ card().itens.length }}</span>
+    </button>
+    <button
+      type="button"
+      class="aba"
+      [class.aba-ativa]="abaAtiva() === 'documentos'"
+      (click)="mudarAba('documentos')"
+    >
+      Documentos <span class="aba-contador">{{ detalhe()?.documentos?.length ?? 0 }}</span>
+    </button>
+  </nav>
+
+  @if (abaAtiva() === 'itens') {
+    <div class="painel painel-itens">
+      <div class="tabela somente-desktop">
+        <div class="tabela-cabecalho">
+          <span class="col-num">#</span>
+          <span class="col-desc">Descrição</span>
+          <span class="col-unidade">Unidade</span>
+          <span class="col-qtd">Qtd</span>
+          <span class="col-valor">Valor unit.</span>
+          <span class="col-total">Total</span>
+        </div>
+        @for (item of card().itens; track $index) {
+          <div class="tabela-linha">
+            <span class="col-num">{{ item.numero_item ?? $index + 1 }}</span>
+            <div class="col-desc">
+              <div class="item-descricao">{{ item.descricao_resumida ?? 'Sem descrição' }}</div>
+              @if (chipsDoItem(item).length) {
+                <div class="item-chips">
+                  @for (chip of chipsDoItem(item); track chip) {
+                    <span class="chip">{{ chip }}</span>
+                  }
+                </div>
+              }
+            </div>
+            <span class="col-unidade">{{ item.unidade_medida ?? '—' }}</span>
+            <span class="col-qtd">{{ item.quantidade ?? '—' }}</span>
+            <span class="col-valor">{{ moeda(item.valor_unitario_estimado) ?? '—' }}</span>
+            <span class="col-total col-total-forte">{{ moeda(item.valor_total) ?? '—' }}</span>
+          </div>
+        }
+        <div class="tabela-rodape">
+          <span
+            >{{ card().itens.length }} {{ card().itens.length === 1 ? 'item' : 'itens' }} · valor
+            total estimado</span
+          >
+          <span class="tabela-rodape-valor">{{ moeda(valorTotalEdital()) ?? '—' }}</span>
+        </div>
+      </div>
+
+      <div class="cartoes">
+        @for (item of card().itens; track $index) {
+          <div class="cartao-item">
+            <span class="chip-numero">Item {{ item.numero_item ?? $index + 1 }}</span>
+            <div class="item-descricao">{{ item.descricao_resumida ?? 'Sem descrição' }}</div>
+            @if (chipsDoItem(item).length) {
+              <div class="item-chips">
+                @for (chip of chipsDoItem(item); track chip) {
+                  <span class="chip">{{ chip }}</span>
+                }
+              </div>
+            }
+            <div class="cartao-item-grade">
+              <div>
+                <div class="dado-rotulo">Unid. × Qtd</div>
+                <div class="dado-valor">
+                  {{ item.unidade_medida ?? '—' }} × {{ item.quantidade ?? '—' }}
+                </div>
+              </div>
+              <div>
+                <div class="dado-rotulo">Valor unitário</div>
+                <div class="dado-valor">{{ moeda(item.valor_unitario_estimado) ?? '—' }}</div>
+              </div>
+            </div>
+            <div class="cartao-item-total">
+              <span>Total estimado</span>
+              <span class="cartao-item-total-valor">{{ moeda(item.valor_total) ?? '—' }}</span>
+            </div>
+          </div>
+        }
+      </div>
+    </div>
+  } @else {
+    <div class="painel painel-documentos">
+      @if (detalhe()?.carregando) {
+        <p class="painel-status">Buscando os documentos no PNCP…</p>
+      } @else if (detalhe()?.erro) {
+        <p class="painel-status painel-status-erro">Não foi possível buscar os documentos agora.</p>
+      } @else if (detalhe()?.documentos?.length) {
+        <div class="tabela somente-desktop">
+          <div class="tabela-cabecalho tabela-cabecalho-documentos">
+            <span class="col-num">#</span>
+            <span class="col-doc-titulo">Título</span>
+            <span class="col-doc-tipo">Tipo</span>
+            <span class="col-doc-acao"></span>
+          </div>
+          @for (doc of detalhe()!.documentos; track $index) {
+            <div class="tabela-linha tabela-linha-documento">
+              <span class="col-num">{{ $index + 1 }}</span>
+              <span class="col-doc-titulo">{{ doc.titulo ?? 'Documento' }}</span>
+              <span class="col-doc-tipo">{{ doc.tipo_documento ?? '—' }}</span>
+              <span class="col-doc-acao">
+                @if (doc.url) {
+                  <a [href]="doc.url" target="_blank" rel="noopener" class="link-abrir">Abrir</a>
+                }
+              </span>
+            </div>
+          }
+        </div>
+
+        <div class="lista-documentos">
+          @for (doc of detalhe()!.documentos; track $index) {
+            @if (doc.url) {
+              <a [href]="doc.url" target="_blank" rel="noopener" class="linha-documento">
+                <span class="chip-documento">PDF</span>
+                <span class="linha-documento-texto">
+                  <span class="linha-documento-titulo">{{ doc.titulo ?? 'Documento' }}</span>
+                  @if (doc.tipo_documento) {
+                    <span class="linha-documento-subtitulo">{{ doc.tipo_documento }}</span>
+                  }
+                </span>
+                <app-icon name="download" class="linha-documento-icone" />
+              </a>
+            } @else {
+              <div class="linha-documento">
+                <span class="chip-documento">PDF</span>
+                <span class="linha-documento-texto">
+                  <span class="linha-documento-titulo">{{ doc.titulo ?? 'Documento' }}</span>
+                  @if (doc.tipo_documento) {
+                    <span class="linha-documento-subtitulo">{{ doc.tipo_documento }}</span>
+                  }
+                </span>
+              </div>
+            }
+          }
+        </div>
+      } @else {
+        <p class="painel-status">Nenhum documento informado na publicação.</p>
+      }
+    </div>
+  }
+</article>

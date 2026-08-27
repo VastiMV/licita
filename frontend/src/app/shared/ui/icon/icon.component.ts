@@ -11,7 +11,12 @@ export type IconName =
   | 'filtros'
   | 'user'
   | 'logout'
-  | 'edit';
+  | 'edit'
+  | 'spinner'
+  | 'arrow-right'
+  | 'download'
+  | 'external-link'
+  | 'check';
 
 /**
  * Catálogo de ícones inline (SVG) do projeto — único lugar que sabe

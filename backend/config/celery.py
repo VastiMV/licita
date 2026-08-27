@@ -1,7 +1,8 @@
 """
-App Celery do projeto. Nenhuma task ainda — isso entra junto com os apps de
-domínio (`catalogo`, `alertas`) que precisam de execução assíncrona. Ver
-docs/ARQUITETURA.md, seção "Assíncrono".
+App Celery do projeto. Primeira task: `catalogo.sincronizar_catalogo_pdm`
+(ver apps/catalogo/tasks.py). Mais entram junto com os apps de domínio
+(`alertas`) que precisam de execução assíncrona. Ver docs/ARQUITETURA.md,
+seção "Assíncrono".
 """
 
 import os

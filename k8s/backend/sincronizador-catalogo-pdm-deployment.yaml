@@ -1,0 +1,64 @@
+# Mesma imagem do backend (nenhum Dockerfile novo) — só troca o `command`.
+# Sem initContainer de migração: o Deployment do backend já garante o schema
+# antes de qualquer worker precisar dele; rodar `migrate` de novo aqui só
+# daria corrida com o initContainer do backend em deploys simultâneos.
+#
+# Nomeado pela task, não "celery-worker" genérico: hoje só existe
+# `catalogo.sincronizar_catalogo_pdm` no sistema (ver apps/catalogo/tasks.py),
+# e um worker sem fila dedicada nenhuma processa QUALQUER task que caia na
+# fila padrão do Celery. Quando `alertas`/`filtros` ganharem suas próprias
+# tasks (ver docs/ARQUITETURA.md, seção "Assíncrono"), esse worker vai
+# processá-las também a menos que ganhem fila e worker dedicados — nesse
+# momento decidir entre (a) voltar a chamar isso de "celery-worker" genérico,
+# ou (b) rotear cada task pra sua própria fila (`-Q catalogo`) e criar um
+# Deployment por família de task. Não antecipar agora — só um worker, só uma
+# task, nome reflete a realidade atual.
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: sincronizador-catalogo-pdm
+  namespace: inside-solutions-licita
+  labels:
+    app: sincronizador-catalogo-pdm
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: sincronizador-catalogo-pdm
+  template:
+    metadata:
+      labels:
+        app: sincronizador-catalogo-pdm
+    spec:
+      imagePullSecrets:
+        - name: ghcr-pull-secret
+      containers:
+        - name: sincronizador-catalogo-pdm
+          image: ghcr.io/vastimv/licita-backend:latest
+          imagePullPolicy: Always
+          command: ["celery", "-A", "config", "worker", "--loglevel=INFO"]
+          envFrom:
+            - configMapRef:
+                name: backend-config
+            - secretRef:
+                name: backend-secrets
+            - secretRef:
+                name: postgres-secrets
+            - secretRef:
+                name: rabbitmq-secrets
+          readinessProbe:
+            # timeoutSeconds explícito: o default (1s) é curto demais para um
+            # round-trip real via broker — mesma classe de bug já vista no
+            # probe do RabbitMQ (ver k8s/rabbitmq/statefulset.yaml).
+            exec:
+              command: ["celery", "-A", "config", "inspect", "ping"]
+            initialDelaySeconds: 15
+            periodSeconds: 30
+            timeoutSeconds: 10
+          resources:
+            requests:
+              cpu: 100m
+              memory: 192Mi
+            limits:
+              cpu: 500m
+              memory: 384Mi

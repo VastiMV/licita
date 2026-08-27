@@ -17,3 +17,11 @@ psycopg[binary]==3.3.4
 # Assíncrono — ver docs/ARQUITETURA.md, seção "Assíncrono".
 celery==5.6.3
 django-celery-beat==2.9.0
+
+# Cliente HTTP dos apps/integracoes (compras.gov.br, PNCP) — mesma lib usada
+# e validada no protótipo (branches claude/tenta-de-novo-xu2sxb).
+httpx==0.28.1
+
+# Leitura do XLSX de notas CAPAG do Tesouro Nacional — apps/capag/sync.py
+# (não tem API, só arquivo estático — ver docs/DOMINIO.md).
+openpyxl==3.1.5

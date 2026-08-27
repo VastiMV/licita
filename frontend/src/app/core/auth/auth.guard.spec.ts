@@ -2,6 +2,7 @@ import { provideHttpClient } from '@angular/common/http';
 import { provideHttpClientTesting, HttpTestingController } from '@angular/common/http/testing';
 import { TestBed } from '@angular/core/testing';
 import { provideRouter, UrlTree } from '@angular/router';
+import type { Observable } from 'rxjs';
 
 import { ENDPOINTS } from '../api/endpoints';
 import { authGuard } from './auth.guard';
@@ -29,10 +30,23 @@ describe('authGuard', () => {
     expect(runGuard()).toBe(true);
   });
 
-  it('redireciona para /login quando não há sessão', () => {
-    const result = runGuard();
+  it('renova a sessão pelo cookie de refresh em vez de redirecionar direto', () => {
+    let value: boolean | UrlTree | undefined;
+    (runGuard() as Observable<boolean | UrlTree>).subscribe((v) => (value = v));
 
-    expect(result).toBeInstanceOf(UrlTree);
-    expect((result as UrlTree).toString()).toBe('/login');
+    httpMock.expectOne(`/api/${ENDPOINTS.auth.refresh}`).flush({ access: 'token-renovado' });
+
+    expect(value).toBe(true);
+    expect(auth.isAuthenticated()).toBe(true);
+  });
+
+  it('redireciona para /login quando o refresh também falha', () => {
+    let value: boolean | UrlTree | undefined;
+    (runGuard() as Observable<boolean | UrlTree>).subscribe((v) => (value = v));
+
+    httpMock.expectOne(`/api/${ENDPOINTS.auth.refresh}`).flush(null, { status: 401, statusText: 'Unauthorized' });
+
+    expect(value).toBeInstanceOf(UrlTree);
+    expect((value as UrlTree).toString()).toBe('/login');
   });
 });

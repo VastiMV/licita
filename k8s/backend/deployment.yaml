@@ -49,6 +49,8 @@ spec:
                 name: backend-secrets
             - secretRef:
                 name: postgres-secrets
+            - secretRef:
+                name: rabbitmq-secrets
           readinessProbe:
             # tcpSocket, não httpGet: o probe do kubelet manda a porta/IP do
             # pod como Host, e ALLOWED_HOSTS rejeitaria isso com 400.
