@@ -34,7 +34,9 @@ const OPORTUNIDADE: OportunidadeResponse = {
   contratacao_cnpj_orgao: '12345678000199',
   contratacao_ano_compra: '2026',
   contratacao_sequencial_compra: '1',
-  link_compras_gov: 'https://compras.gov.br/x',
+  plataforma_id: 'compras_gov',
+  link_plataforma:
+    'https://cnetmobile.estaleiro.serpro.gov.br/comprasnet-web/public/compras/acompanhamento-compra?compra=98957106000012026',
   link_pncp: 'https://pncp.gov.br/app/editais/12345678000199/2026/1',
 };
 
@@ -46,6 +48,7 @@ const DETALHE_CARREGADO: DetalheEstado = {
   carregando: false,
   erro: false,
   capag: { nota: 'B', cor: 'amarelo' },
+  plataforma: null,
   documentos: [
     {
       titulo: 'Aviso de dispensa.pdf',
@@ -128,22 +131,28 @@ describe('EditalCardComponent', () => {
   });
 
   it('painel "Documentos" mostra carregando/erro/vazio conforme o detalhe', () => {
-    host.detalhe.set({ carregando: true, erro: false, capag: null, documentos: [] });
+    host.detalhe.set({ carregando: true, erro: false, capag: null, plataforma: null, documentos: [] });
     fixture.detectChanges();
     clicarBotao('.aba:nth-child(2)');
     expect(texto()).toContain('Buscando os documentos no PNCP');
 
-    host.detalhe.set({ carregando: false, erro: true, capag: null, documentos: [] });
+    host.detalhe.set({ carregando: false, erro: true, capag: null, plataforma: null, documentos: [] });
     fixture.detectChanges();
     expect(texto()).toContain('Não foi possível buscar os documentos agora');
 
-    host.detalhe.set({ carregando: false, erro: false, capag: null, documentos: [] });
+    host.detalhe.set({
+      carregando: false,
+      erro: false,
+      capag: null,
+      plataforma: null,
+      documentos: [],
+    });
     fixture.detectChanges();
     expect(texto()).toContain('Nenhum documento informado');
   });
 
   it('selo CAPAG aparece com a cor certa quando carrega, e "CAPAG…" enquanto isso', () => {
-    host.detalhe.set({ carregando: true, erro: false, capag: null, documentos: [] });
+    host.detalhe.set({ carregando: true, erro: false, capag: null, plataforma: null, documentos: [] });
     fixture.detectChanges();
     expect(texto()).toContain('CAPAG…');
 
@@ -164,23 +173,58 @@ describe('EditalCardComponent', () => {
     expect(host.baixarEdital()).toBe(true);
   });
 
-  it('"Selecionar licitação" alterna pro estado selecionado e "Remover da seleção" volta', () => {
-    expect(texto()).toContain('Selecionar licitação');
+  it('"Salvar oportunidade" alterna pro estado salvo e "Remover das salvas" volta', () => {
+    expect(texto()).toContain('Salvar oportunidade');
 
-    clicarBotao('.btn-selecionar');
-    expect(texto()).toContain('Licitação selecionada');
+    clicarBotao('.btn-salvar');
+    expect(texto()).toContain('Oportunidade salva');
 
     clicarBotao('.link-remover');
-    expect(texto()).toContain('Selecionar licitação');
+    expect(texto()).toContain('Salvar oportunidade');
   });
 
-  it('licitação encerrada esconde o botão de selecionar e mostra "Encerrada"', () => {
+  it('botão dourado abre o link da plataforma, com nome e favicon da registrada', () => {
+    const grupo = fixture.debugElement.query(By.css('.grupo-plataforma'));
+    expect(grupo.nativeElement.getAttribute('href')).toContain('compra=98957106000012026');
+    expect(texto()).toContain('Abrir na plataforma');
+    expect(texto()).toContain('Compras.gov.br');
+    expect(fixture.debugElement.query(By.css('.btn-plataforma-icone img'))).not.toBeNull();
+  });
+
+  it('o link do detalhe (linkSistemaOrigem) tem prioridade sobre o palpite da busca', () => {
+    host.detalhe.set({
+      ...DETALHE_CARREGADO,
+      plataforma: {
+        id: null,
+        nome: 'Portal de Compras Públicas',
+        link: 'https://www.portaldecompraspublicas.com.br/processos/x',
+      },
+    });
+    fixture.detectChanges();
+
+    const grupo = fixture.debugElement.query(By.css('.grupo-plataforma'));
+    expect(grupo.nativeElement.getAttribute('href')).toContain('portaldecompraspublicas');
+    expect(texto()).toContain('Portal de Compras Públicas');
+    // Plataforma fora do registro: sem favicon próprio, ícone genérico.
+    expect(fixture.debugElement.query(By.css('.btn-plataforma-icone img'))).toBeNull();
+  });
+
+  it('sem link de plataforma nenhum, o botão dourado não aparece', () => {
+    host.card.set(
+      montarCard([{ ...OPORTUNIDADE, plataforma_id: null, link_plataforma: null }]),
+    );
+    fixture.detectChanges();
+
+    expect(fixture.debugElement.query(By.css('.grupo-plataforma'))).toBeNull();
+  });
+
+  it('licitação encerrada esconde o botão de salvar e mostra "Encerrada"', () => {
     host.card.set(
       montarCard([{ ...OPORTUNIDADE, contratacao_data_encerramento_proposta: '2026-08-01' }]),
     );
     fixture.detectChanges();
 
-    expect(fixture.debugElement.query(By.css('.btn-selecionar'))).toBeNull();
+    expect(fixture.debugElement.query(By.css('.btn-salvar'))).toBeNull();
     expect(texto()).toContain('Encerrada');
   });
 });

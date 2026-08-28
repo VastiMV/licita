@@ -57,7 +57,7 @@
     0 1px 2px rgba(20, 33, 61, 0.06),
     0 18px 40px -28px rgba(20, 33, 61, 0.4);
 
-  &.selecionada {
+  &.salva {
     border-color: var(--ec-dourado-borda);
   }
 }
@@ -307,50 +307,108 @@
   }
 }
 
-// -- Grupo "Selecionar licitação" (split button) --
+// -- Grupo dourado "Abrir na plataforma" (split button, é um link) --
+// Mesmo visual do antigo split "Selecionar licitação" do handoff; o segmento
+// da direita mostra o favicon da plataforma (ex.: Compras.gov.br) — ou o
+// ícone genérico de link externo, quando a plataforma não está registrada.
 
-.grupo-selecionar {
+.grupo-plataforma {
   display: flex;
   height: 54px;
   border-radius: 10px;
   box-shadow: 0 2px 0 var(--ec-dourado-borda);
   overflow: hidden;
+  text-decoration: none;
 }
 
-.btn-selecionar,
-.btn-selecionar-icone {
-  font: inherit;
+.btn-plataforma,
+.btn-plataforma-icone {
   border: 1px solid var(--ec-dourado-borda);
-  cursor: pointer;
   color: var(--ec-navy);
 }
 
-.btn-selecionar {
+.btn-plataforma {
   flex: 1;
-  font-weight: 800;
-  font-size: 13.5px;
-  line-height: 1;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
   background: var(--ec-dourado);
   border-right: none;
   padding: 0 12px;
   text-align: left;
 
-  &:hover {
+  .grupo-plataforma:hover & {
     background: var(--ec-dourado-hover);
   }
 }
 
-.btn-selecionar-icone {
+.btn-plataforma-titulo {
+  font-weight: 800;
+  font-size: 13.5px;
+  line-height: 1.2;
+}
+
+.btn-plataforma-meta {
+  font-weight: 600;
+  font-size: 10.5px;
+  line-height: 1.2;
+  color: var(--ec-ambar-texto);
+  margin-top: 2px;
+}
+
+.btn-plataforma-icone {
   display: flex;
   align-items: center;
-  justify-content: flex-end;
+  justify-content: center;
   width: 48px;
   flex: none;
-  padding: 0 13px 0 0;
   background: var(--ec-dourado-icone);
 
-  &:hover {
+  .grupo-plataforma:hover & {
     background: var(--ec-dourado);
+  }
+
+  app-icon {
+    width: 16px;
+    height: 16px;
+  }
+
+  img {
+    width: 22px;
+    height: 22px;
+    // O favicon é quadrado sobre fundo dourado — um respiro branco arredondado
+    // (como aba de navegador) lê melhor que o PNG cru sobre a cor.
+    background: var(--ec-superficie);
+    border-radius: 6px;
+    padding: 3px;
+    box-sizing: content-box;
+  }
+}
+
+// -- Botão "Salvar oportunidade" --
+// Persistência ainda não existe — ver o comentário no componente e o módulo
+// "Minhas oportunidades" especificado em docs/DOMINIO.md.
+
+.btn-salvar {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  height: 54px;
+  font: inherit;
+  font-weight: 800;
+  font-size: 13.5px;
+  line-height: 1;
+  color: var(--ec-navy);
+  background: var(--ec-superficie);
+  border: 1.5px solid var(--ec-borda);
+  border-radius: 10px;
+  cursor: pointer;
+
+  &:hover {
+    border-color: var(--ec-dourado-borda);
+    background: var(--ec-superficie-2);
   }
 
   app-icon {
@@ -359,7 +417,7 @@
   }
 }
 
-.btn-selecionada {
+.btn-salva {
   display: flex;
   align-items: center;
   justify-content: center;
@@ -983,20 +1041,25 @@
     font-size: 15px;
   }
 
-  .grupo-selecionar,
-  .btn-selecionada {
+  .grupo-plataforma,
+  .btn-salvar,
+  .btn-salva {
     height: 52px;
     border-radius: 11px;
     margin: 14px 14px 0;
   }
 
-  .btn-selecionar {
-    font-size: 14px;
+  .btn-salvar,
+  .btn-salva {
+    margin-top: 9px;
+  }
+
+  .btn-plataforma {
     padding: 0 14px;
   }
 
-  .btn-selecionar-icone {
-    padding: 0 14px 0 0;
+  .btn-plataforma-titulo {
+    font-size: 14px;
   }
 
   .link-remover {

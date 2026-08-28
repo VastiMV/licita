@@ -54,6 +54,40 @@ A busca de **oportunidades item a item** (tela principal do protótipo) não
 persiste — é consulta ao vivo em `ComprasGovClient`/`PncpClient`, cruzada com
 `Pdm` quando há palavra-chave. Ver "Busca de oportunidades" abaixo.
 
+### `OportunidadeSalva` — **especificado, ainda não implementado**
+
+O botão "Salvar oportunidade" do card (frontend,
+`pages/oportunidades/edital-card/`) já existe visualmente, mas hoje só guarda
+estado local — este model e o módulo abaixo são o que falta pra ele persistir.
+Especificação para a implementação:
+
+| Campo | Tipo | Observação |
+|---|---|---|
+| `owner` | FK `User` | quem salvou |
+| `numero_controle_pncp` | string | identidade canônica da compra (única por owner+compra: `unique_together (owner, numero_controle_pncp)`) |
+| `cnpj_orgao`, `ano_compra`, `sequencial_compra` | string | pra rechamada do detalhe no PNCP |
+| `orgao_nome`, `uf`, `municipio`, `objeto`, `modalidade` | string | snapshot de exibição (a lista precisa renderizar sem rechamar API) |
+| `data_encerramento_proposta` | date, nullable | base do status "expirada" |
+| `link_plataforma`, `link_pncp` | string, nullable | como estavam no momento do salvamento |
+| `valor_total_estimado` | decimal, nullable | |
+| `criada_em` | datetime | |
+
+Regras:
+
+- **Status "expirada" é calculado, não gravado**: `data_encerramento_proposta
+  < hoje` (nula = não expira). Nada de task pra marcar expirada.
+- Endpoints REST em `apps/licitacoes`: `GET /api/licitacoes/salvas/` (lista
+  do usuário logado, com um campo `expirada: bool` no serializer),
+  `POST /api/licitacoes/salvas/` (payload = os campos snapshot; repetido é
+  204/idempotente, não erro), `DELETE /api/licitacoes/salvas/<id>/` (só do
+  próprio owner).
+- Frontend: módulo/página **"Minhas oportunidades"** (rota nova no sidebar),
+  listando as salvas com o mesmo visual de card compacto, badge "Expirada"
+  quando for o caso, e botão de excluir. O botão "Salvar oportunidade" do
+  card de busca troca o estado local (`salva` signal) por chamadas a esse
+  serviço.
+- Salvar é por **edital/compra** (o card), não por item.
+
 ### `Filtro`
 Critério salvo por um usuário para monitorar novas licitações.
 
@@ -107,7 +141,9 @@ reabrir a investigação:
    `codigo_pdm`, que filtram a chamada ao compras.gov.br.
 5. Resultado é por **item da contratação** (não a contratação inteira):
    número do item, descrição, quantidade, valor unitário/total estimado,
-   link para abrir a compra no compras.gov.br e o edital no PNCP.
+   link para abrir a compra **na plataforma de origem** (ver o achado de
+   28/08/2026 abaixo — na busca é o palpite da plataforma padrão; o
+   definitivo vem no detalhe do card) e o edital no PNCP.
 
 ### Busca textual — camadas
 
@@ -227,6 +263,43 @@ achados novos:
   `/itens`) devolve os documentos do edital com link de download direto —
   `200`, PDF de verdade, sem precisar do site do PNCP. `PncpClient
   .detalhar_compra`/`.listar_arquivos` (ver `apps/integracoes/clients/pncp.py`).
+- **Achado crítico, 28/08/2026: o link "abrir no compras.gov.br" dava 404
+  pra TODO resultado vindo da busca textual do PNCP — por dois motivos
+  somados.** (1) O `idCompra` do Comprasnet tem **17 dígitos**: UASG(6) +
+  **modalidade(2, na tabela do compras.gov.br)** + número(5) + ano(4) — a
+  remontagem (`_montar_id_compra` em `clients/pncp.py`) omitia os 2 dígitos
+  da modalidade (o comentário antigo dizia "confirmado contra a API", mas o
+  formato estava errado; confirmado agora contra o `linkSistemaOrigem` real:
+  `...compra=92553805900672026` = 925538+05+90067+2026). (2) Mais
+  fundamental: **o PNCP é o agregador nacional — a busca textual devolve
+  edital de QUALQUER plataforma** (Comprasnet, Portal de Compras Públicas,
+  BLL, Licitanet, ...), e o link era montado como se tudo fosse Comprasnet;
+  pra compra que não vive lá, 404 mesmo com o formato certo. A solução
+  definitiva veio de graça: a API documentada de consulta
+  (`/api/consulta/v1/orgaos/{cnpj}/compras/{ano}/{seq}`, que
+  `CompraDetalheView` já chama pro CAPAG) devolve **`usuarioNome`** (o
+  sistema que publicou, ex.: "Compras.gov.br") e **`linkSistemaOrigem`** (o
+  deep link pronto pra plataforma de origem, seja ela qual for — confirmado
+  ao vivo pros dois casos). O card usa esse link quando o detalhe chega; o
+  `link_plataforma` da busca fica como palpite inicial (plataforma padrão).
+  Observação ao vivo (28/08/2026): o campo `numero` da busca textual veio
+  `None` em TODAS as amostras testadas — ou seja, o palpite da busca quase
+  nunca se monta pra resultado do PNCP (antes isso gerava link com
+  `compra=` vazio, mais um 404 garantido; agora vira `link_plataforma:
+  null`) e o botão dourado desses cards passa a existir quando o detalhe
+  chega com o `linkSistemaOrigem`. Pro modo navegação (dados do próprio
+  compras.gov.br, `idCompra` pronto) o palpite é certo desde a busca.
+- **Plataformas são plugáveis** (28/08/2026): o ponto de entrada é
+  `apps/integracoes/plataformas.py` — plataforma nova = uma subclasse de
+  `Plataforma` registrada em `PLATAFORMAS` (+ o client dela em `clients/`,
+  se tiver API própria; + nome/favicon no mapa `PLATAFORMAS` de
+  `edital-card.component.ts` e o PNG em `frontend/public/plataformas/`).
+  O PNCP **não** entra no registro: é agregador, não plataforma — fica como
+  camada transversal de busca.
+- **O 5xx do PNCP costuma ser transitório** (28/08/2026): visto um 500 de
+  "connection pool timeout" em `/api/consulta/v1/...` que funcionou na
+  tentativa seguinte. `PncpClient` repete uma vez erro >= 500 (4xx continua
+  sem repetição — é resposta, não falha).
 - **CAPAG (Capacidade de Pagamento) não é API — é arquivo estático do
   Tesouro Nacional**, atualizado ~3x/ano: XLSX de municípios
   (`tesourotransparente.gov.br/ckan/dataset/capag-municipios`, aba "Prévia

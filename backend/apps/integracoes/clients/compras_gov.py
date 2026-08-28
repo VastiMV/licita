@@ -98,6 +98,13 @@ MODALIDADE_CONTRATACOES_PARA_PNCP: dict[str, str] = {
     "7": "9",  # Inexigibilidade
 }
 
+# Caminho inverso: um edital que veio da busca textual do PNCP traz o código
+# de modalidade na tabela do PNCP, mas o `idCompra` do Comprasnet embute o
+# código da tabela deste módulo (ver `_montar_id_compra` em clients/pncp.py).
+MODALIDADE_PNCP_PARA_CONTRATACOES: dict[str, str] = {
+    pncp: contratacoes for contratacoes, pncp in MODALIDADE_CONTRATACOES_PARA_PNCP.items()
+}
+
 
 class ComprasGovClientError(RuntimeError):
     pass
@@ -317,15 +324,21 @@ def _so_data(valor: Any) -> str | None:
     return valor.split(" ")[0].split("T")[0]
 
 
-def montar_link_compras_gov(contratacao: dict[str, Any]) -> str:
+def montar_link_compras_gov(contratacao: dict[str, Any]) -> str | None:
     """Link para a tela de acompanhamento da compra no compras.gov.br (Comprasnet),
     onde dá para ver e precificar os itens.
 
     O `idCompra` da API é o código da compra no formato usado pelo Comprasnet
-    (UASG + modalidade + número + ano), que é o parâmetro esperado por essa tela.
+    (UASG + modalidade + número + ano, 17 dígitos — conferido contra o
+    `linkSistemaOrigem` que o próprio PNCP devolve para compras do
+    Comprasnet, ver docs/DOMINIO.md, achado de 28/08/2026), que é o parâmetro
+    esperado por essa tela. Sem `id_compra` não há link — devolver a URL sem
+    o parâmetro só renderia um botão que dá 404.
     """
 
-    id_compra = contratacao.get("id_compra") or ""
+    id_compra = contratacao.get("id_compra")
+    if not id_compra:
+        return None
     return (
         "https://cnetmobile.estaleiro.serpro.gov.br/comprasnet-web/public/compras/"
         f"acompanhamento-compra?compra={id_compra}"

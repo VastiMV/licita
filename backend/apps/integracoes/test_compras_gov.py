@@ -18,10 +18,13 @@ from .clients.compras_gov import (
     normalizar,
 )
 
+# O `idCompra` real tem 17 dígitos: UASG(6) + modalidade(2, tabela do próprio
+# compras.gov.br — 05 = Pregão Eletrônico) + número(5) + ano(4). Conferido
+# contra a API real em 28/08/2026 (docs/DOMINIO.md).
 RESPOSTA_CONTRATACOES = {
     "resultado": [
         {
-            "idCompra": "925874000052026",
+            "idCompra": "92587405000052026",
             "numeroControlePNCP": "12345678000199-1-000005/2026",
             "unidadeOrgaoCodigoUnidade": "925874",
             "unidadeOrgaoNomeUnidade": "Prefeitura Municipal Exemplo",
@@ -32,7 +35,9 @@ RESPOSTA_CONTRATACOES = {
             "anoCompraPncp": 2026,
             "sequencialCompraPncp": 5,
             "modalidadeNome": "Pregão - Eletrônico",
-            "codigoModalidade": 6,
+            # Tabela do compras.gov.br (MODALIDADES_CONTRATACOES): 5 = Pregão
+            # Eletrônico — coerente com o "05" embutido no idCompra acima.
+            "codigoModalidade": 5,
             "objetoCompra": "Aquisição de equipamentos de informática",
             "situacaoCompraNomePncp": "Divulgada no PNCP",
             "srp": True,
@@ -50,7 +55,7 @@ RESPOSTA_CONTRATACOES = {
 RESPOSTA_ITENS = {
     "resultado": [
         {
-            "idCompraItem": "925874000052026-1",
+            "idCompraItem": "92587405000052026-1",
             "numeroItemCompra": 1,
             "descricaoResumida": "Notebook",
             "descricaodetalhada": "Notebook com processador de 8 núcleos, 16GB RAM, SSD 512GB, tela 14 polegadas",
@@ -99,7 +104,7 @@ class ComprasGovClientTests(SimpleTestCase):
 
         self.assertEqual(total_paginas, 1)
         c = contratacoes[0]
-        self.assertEqual(c["id_compra"], "925874000052026")
+        self.assertEqual(c["id_compra"], "92587405000052026")
         self.assertEqual(c["uasg"], "925874")
         self.assertEqual(c["uf"], "SP")
         self.assertEqual(c["data_publicacao"], "2026-08-20")  # hora removida
@@ -112,10 +117,10 @@ class ComprasGovClientTests(SimpleTestCase):
             return httpx.Response(200, json=RESPOSTA_ITENS)
 
         with _client_falso(handler) as client:
-            itens = client.listar_itens("925874000052026")
+            itens = client.listar_itens("92587405000052026")
 
         self.assertEqual(capturado["params"]["tipo"], "idCompra")
-        self.assertEqual(capturado["params"]["codigo"], "925874000052026")
+        self.assertEqual(capturado["params"]["codigo"], "92587405000052026")
 
         item = itens[0]
         self.assertEqual(item["numero_item"], 1)
@@ -137,16 +142,18 @@ class ComprasGovClientTests(SimpleTestCase):
 
     def test_links(self):
         contratacao = {
-            "id_compra": "925874000052026",
+            "id_compra": "92587405000052026",
             "cnpj_orgao": "12345678000199",
             "ano_compra": 2026,
             "sequencial_compra": 5,
         }
-        self.assertIn("compra=925874000052026", montar_link_compras_gov(contratacao))
+        self.assertIn("compra=92587405000052026", montar_link_compras_gov(contratacao))
         self.assertEqual(
             montar_link_pncp(contratacao), "https://pncp.gov.br/app/editais/12345678000199/2026/5"
         )
         self.assertIsNone(montar_link_pncp({"id_compra": "x"}))
+        # Sem idCompra não há link — melhor que um botão que abre 404.
+        self.assertIsNone(montar_link_compras_gov({}))
 
     def test_normalizar_tira_acento_e_sobe_caixa(self):
         self.assertEqual(normalizar("café"), "CAFE")

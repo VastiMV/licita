@@ -40,7 +40,11 @@ class OportunidadeSerializer(serializers.Serializer):
     contratacao_ano_compra = serializers.CharField(allow_null=True)
     contratacao_sequencial_compra = serializers.CharField(allow_null=True)
 
-    link_compras_gov = serializers.CharField()
+    # `plataforma_id` casa com o registro em `apps/integracoes/plataformas.py`
+    # (o frontend usa pra escolher o ícone do botão). Na busca é o palpite da
+    # plataforma padrão; o definitivo vem no detalhe (`CompraDetalheSerializer`).
+    plataforma_id = serializers.CharField(allow_null=True)
+    link_plataforma = serializers.CharField(allow_null=True)
     link_pncp = serializers.CharField(allow_null=True)
 
     # O contrato do frontend não aceita `null` aqui — `srp` ausente vira
@@ -67,9 +71,21 @@ class CapagSerializer(serializers.Serializer):
     cor = serializers.CharField()
 
 
+class PlataformaSerializer(serializers.Serializer):
+    """A plataforma onde a compra de fato acontece, resolvida pelo
+    `linkSistemaOrigem` do PNCP (ver `apps/integracoes/plataformas.py`).
+    `id` nulo = plataforma que existe mas não está registrada aqui — o link
+    e o nome continuam valendo."""
+
+    id = serializers.CharField(allow_null=True)
+    nome = serializers.CharField(allow_null=True)
+    link = serializers.CharField()
+
+
 class CompraDetalheSerializer(serializers.Serializer):
-    """Resposta de `CompraDetalheView` — buscada sob demanda (1 clique no
-    card), nunca junto da busca (ver docs/DOMINIO.md)."""
+    """Resposta de `CompraDetalheView` — uma chamada por card, disparada
+    quando o resultado da busca chega (ver docs/DOMINIO.md)."""
 
     documentos = DocumentoSerializer(many=True)
     capag = CapagSerializer(allow_null=True)
+    plataforma = PlataformaSerializer(allow_null=True)

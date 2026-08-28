@@ -33,7 +33,9 @@ const OPORTUNIDADE: OportunidadeResponse = {
   contratacao_cnpj_orgao: '12345678000199',
   contratacao_ano_compra: '2026',
   contratacao_sequencial_compra: '5',
-  link_compras_gov: 'https://compras.gov.br/x',
+  plataforma_id: 'compras_gov',
+  link_plataforma:
+    'https://cnetmobile.estaleiro.serpro.gov.br/comprasnet-web/public/compras/acompanhamento-compra?compra=92512305000052026',
   link_pncp: 'https://pncp.gov.br/app/editais/12345678000199/2026/5',
 };
 
@@ -48,6 +50,11 @@ const OPORTUNIDADE_2: OportunidadeResponse = {
 const DETALHE: CompraDetalheResponse = {
   documentos: [{ titulo: 'Edital.pdf', tipo_documento: 'Edital', url: 'https://pncp.gov.br/x/1' }],
   capag: { nota: 'A', cor: 'verde' },
+  plataforma: {
+    id: 'compras_gov',
+    nome: 'Compras.gov.br',
+    link: 'https://cnetmobile.estaleiro.serpro.gov.br/comprasnet-web/public/landing?destino=acompanhamento-compra&compra=92512305000052026',
+  },
 };
 
 describe('OportunidadesPage', () => {

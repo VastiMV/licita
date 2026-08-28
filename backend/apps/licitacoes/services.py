@@ -36,11 +36,11 @@ from apps.integracoes.clients.compras_gov import (
     MODALIDADE_CONTRATACOES_PARA_PNCP,
     ComprasGovClient,
     ComprasGovClientError,
-    montar_link_compras_gov,
     montar_link_pncp,
     normalizar,
 )
 from apps.integracoes.clients.pncp import PncpClient, PncpClientError
+from apps.integracoes.plataformas import plataforma_padrao
 
 logger = logging.getLogger(__name__)
 
@@ -350,6 +350,14 @@ def _passa_nos_filtros(
 
 
 def _montar_oportunidade(contratacao: dict[str, Any], item: dict[str, Any]) -> dict[str, Any]:
+    # O link de plataforma da BUSCA é o melhor palpite (a plataforma padrão do
+    # registro): certo pra tudo que veio do compras.gov.br, chute pro que veio
+    # da busca textual do PNCP — que agrega todas as plataformas. O link
+    # definitivo (`linkSistemaOrigem`) chega com o detalhe da compra, que o
+    # frontend busca por card e prefere quando presente (ver
+    # `apps/integracoes/plataformas.py` e docs/DOMINIO.md).
+    plataforma = plataforma_padrao()
+    link_plataforma = plataforma.montar_link(contratacao)
     return {
         **{f"contratacao_{k}": v for k, v in contratacao.items() if k != "raw_json"},
         "numero_item": item.get("numero_item"),
@@ -363,6 +371,7 @@ def _montar_oportunidade(contratacao: dict[str, Any], item: dict[str, Any]) -> d
         "situacao_item": item.get("situacao"),
         "criterio_julgamento": item.get("criterio_julgamento"),
         "tipo_beneficio": item.get("tipo_beneficio"),
-        "link_compras_gov": montar_link_compras_gov(contratacao),
+        "plataforma_id": plataforma.id if link_plataforma else None,
+        "link_plataforma": link_plataforma,
         "link_pncp": montar_link_pncp(contratacao),
     }

@@ -16,7 +16,8 @@ export type IconName =
   | 'arrow-right'
   | 'download'
   | 'external-link'
-  | 'check';
+  | 'check'
+  | 'bookmark';
 
 /**
  * Catálogo de ícones inline (SVG) do projeto — único lugar que sabe

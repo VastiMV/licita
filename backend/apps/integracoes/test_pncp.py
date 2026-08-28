@@ -142,6 +142,11 @@ class PncpClientTests(SimpleTestCase):
                 "municipioNome": "São José do Rio Preto",
                 "codigoIbge": "3549805",
             },
+            "usuarioNome": "Compras.gov.br",
+            "linkSistemaOrigem": (
+                "https://cnetmobile.estaleiro.serpro.gov.br/comprasnet-web/public/"
+                "landing?destino=acompanhamento-compra&compra=92553805900672026"
+            ),
         }
 
         def handler(request: httpx.Request) -> httpx.Response:
@@ -156,6 +161,10 @@ class PncpClientTests(SimpleTestCase):
         self.assertEqual(detalhe["uf"], "SP")
         self.assertEqual(detalhe["codigo_ibge"], "3549805")
         self.assertEqual(detalhe["municipio_nome"], "São José do Rio Preto")
+        # A plataforma de origem — é daqui que o frontend tira o link certo
+        # de "abrir na plataforma" (o PNCP agrega todas, ver docs/DOMINIO.md).
+        self.assertEqual(detalhe["plataforma_nome"], "Compras.gov.br")
+        self.assertIn("compra=92553805900672026", detalhe["link_plataforma"])
 
     def test_detalhar_compra_sem_orgao_ou_unidade_nao_derruba(self):
         with _pncp_falso(lambda r: httpx.Response(200, json={})) as client:
@@ -163,6 +172,8 @@ class PncpClientTests(SimpleTestCase):
 
         self.assertIsNone(detalhe["esfera_id"])
         self.assertIsNone(detalhe["codigo_ibge"])
+        self.assertIsNone(detalhe["plataforma_nome"])
+        self.assertIsNone(detalhe["link_plataforma"])
 
     def test_listar_arquivos_monta_o_caminho_e_normaliza(self):
         capturado = {}
@@ -219,10 +230,19 @@ class PncpClientTests(SimpleTestCase):
                 client.buscar_editais("café")
 
     def test_id_compra_remontado_bate_com_o_da_api(self):
-        # UASG 925874, compra 00005/2026 -> mesmo idCompra que o compras.gov.br usa.
-        self.assertEqual(_montar_id_compra("925874", "00005", "2026"), "925874000052026")
-        self.assertIsNone(_montar_id_compra(None, "00005", "2026"))
-        self.assertIsNone(_montar_id_compra("925874", "abc", "2026"))
+        """Formato real: UASG(6) + modalidade(2, tabela do compras.gov.br) +
+        número(5) + ano(4) = 17 dígitos — conferido contra o
+        `linkSistemaOrigem` do PNCP em 28/08/2026 (docs/DOMINIO.md). A
+        modalidade chega na tabela do PNCP (6 = Pregão Eletrônico) e vira o
+        código do compras.gov.br (05) dentro do id."""
+
+        self.assertEqual(_montar_id_compra("925874", 6, "00005", "2026"), "92587405000052026")
+        self.assertIsNone(_montar_id_compra(None, 6, "00005", "2026"))
+        self.assertIsNone(_montar_id_compra("925874", 6, "abc", "2026"))
+        # Modalidade sem equivalente no compras.gov.br (ex.: 3 = Concurso):
+        # link nenhum é melhor que link quebrado.
+        self.assertIsNone(_montar_id_compra("925874", 3, "00005", "2026"))
+        self.assertIsNone(_montar_id_compra("925874", None, "00005", "2026"))
 
     def test_campos_ausentes_nao_derrubam_a_normalizacao(self):
         """O endpoint não é documentado: faltar campo é degradação, não exceção."""
@@ -283,7 +303,7 @@ class PncpClientTests(SimpleTestCase):
 
         self.assertIn("derrubou a conexão", str(ctx.exception))
 
-    def test_erro_de_status_nao_e_repetido(self):
+    def test_erro_de_cliente_nao_e_repetido(self):
         """400 é resposta: repetir daria o mesmo e só atrasaria o usuário."""
 
         chamadas = []
@@ -298,3 +318,38 @@ class PncpClientTests(SimpleTestCase):
                     client.buscar_editais("café")
 
         self.assertEqual(len(chamadas), 1)
+
+    def test_erro_5xx_transitorio_e_repetido(self):
+        """O PNCP devolve 500 esporádico (pool de conexão dele estourando —
+        visto ao vivo em 28/08/2026); uma repetição resolve sem mascarar
+        defeito de verdade."""
+
+        chamadas = []
+
+        def handler(request: httpx.Request) -> httpx.Response:
+            chamadas.append(request.url)
+            if len(chamadas) == 1:
+                return httpx.Response(500, text='{"message": "Failed to obtain JDBC Connection"}')
+            return httpx.Response(200, json=RESPOSTA_BUSCA)
+
+        with mock.patch.object(pncp_module, "ESPERA_ENTRE_TENTATIVAS", 0):
+            with _pncp_falso(handler) as client:
+                editais, _ = client.buscar_editais("café")
+
+        self.assertEqual(len(chamadas), 2)
+        self.assertEqual(editais[0]["cnpj_orgao"], "12345678000199")
+
+    def test_erro_5xx_persistente_vira_erro_claro(self):
+        chamadas = []
+
+        def handler(request: httpx.Request) -> httpx.Response:
+            chamadas.append(request.url)
+            return httpx.Response(503, text="indisponível")
+
+        with mock.patch.object(pncp_module, "ESPERA_ENTRE_TENTATIVAS", 0):
+            with _pncp_falso(handler) as client:
+                with self.assertRaises(PncpClientError) as ctx:
+                    client.buscar_editais("café")
+
+        self.assertEqual(len(chamadas), 2)
+        self.assertIn("503", str(ctx.exception))

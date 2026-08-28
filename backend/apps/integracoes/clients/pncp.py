@@ -37,6 +37,8 @@ import httpx
 
 from config.settings.environment import env
 
+from .compras_gov import MODALIDADE_PNCP_PARA_CONTRATACOES
+
 # O portal recusa páginas grandes na busca; 10 a 50 é a faixa que a tela usa.
 TAM_PAGINA_MIN = 10
 TAM_PAGINA_MAX = 50
@@ -112,10 +114,13 @@ class PncpClient:
             raise PncpClientError(f"Resposta inválida (não-JSON) em {caminho}") from exc
 
     def _get_com_repeticao(self, caminho: str, params: dict[str, Any]) -> httpx.Response:
-        """Repete uma vez quando o servidor derruba a conexão sem responder.
+        """Repete uma vez quando o servidor derruba a conexão sem responder ou
+        devolve erro 5xx.
 
-        Só a desconexão é repetida. Erro de status (400, 404, 500) é resposta do
-        servidor: repetir daria o mesmo resultado e só atrasaria o usuário.
+        Erro 4xx é resposta de verdade (o pedido está errado): repetir daria o
+        mesmo resultado e só atrasaria o usuário. Já o 5xx do PNCP costuma ser
+        transitório — visto ao vivo em 28/08/2026: um 500 de "connection pool
+        timeout" no `/api/consulta/v1/...` que funcionou na tentativa seguinte.
         """
 
         for tentativa in range(1, TENTATIVAS + 1):
@@ -124,6 +129,9 @@ class PncpClient:
                 resp.raise_for_status()
                 return resp
             except httpx.HTTPStatusError as exc:
+                if exc.response.status_code >= 500 and tentativa < TENTATIVAS:
+                    time.sleep(ESPERA_ENTRE_TENTATIVAS)
+                    continue
                 raise PncpClientError(
                     f"PNCP respondeu {exc.response.status_code} em {caminho}: "
                     f"{exc.response.text[:300]}"
@@ -248,9 +256,10 @@ def _normalizar_edital(e: dict[str, Any]) -> dict[str, Any]:
     sequencial = _primeiro(e, "numero_sequencial", "numeroSequencial", "sequencialCompra")
     numero = _primeiro(e, "numero", "numeroCompra")
     uasg = _primeiro(e, "unidade_codigo", "unidadeCodigo", "codigoUnidade")
+    codigo_modalidade = _primeiro(e, "modalidade_licitacao_id", "codigoModalidade")
 
     return {
-        "id_compra": _montar_id_compra(uasg, numero, ano),
+        "id_compra": _montar_id_compra(uasg, codigo_modalidade, numero, ano),
         "numero_controle_pncp": _primeiro(e, "numero_controle_pncp", "numeroControlePNCP", "id"),
         "uasg": uasg,
         "orgao_nome": _primeiro(e, "unidade_nome", "unidadeNome", "orgao_nome", "orgaoNome"),
@@ -261,7 +270,7 @@ def _normalizar_edital(e: dict[str, Any]) -> dict[str, Any]:
         "ano_compra": ano,
         "sequencial_compra": sequencial,
         "modalidade": _primeiro(e, "modalidade_licitacao_nome", "modalidadeNome"),
-        "codigo_modalidade": _primeiro(e, "modalidade_licitacao_id", "codigoModalidade"),
+        "codigo_modalidade": codigo_modalidade,
         "objeto": _primeiro(e, "description", "objetoCompra", "objeto", "title"),
         "situacao": _primeiro(e, "situacao_nome", "situacaoNome"),
         "srp": e.get("srp"),
@@ -308,6 +317,14 @@ def _normalizar_detalhe_compra(d: dict[str, Any]) -> dict[str, Any]:
         "uf": unidade.get("ufSigla"),
         "municipio_nome": unidade.get("municipioNome"),
         "codigo_ibge": unidade.get("codigoIbge"),
+        # A plataforma onde a compra de fato acontece. O PNCP é agregador
+        # nacional: a busca textual devolve edital de QUALQUER plataforma
+        # (Comprasnet, Portal de Compras Públicas, BLL, ...), e só este
+        # detalhe diz de qual — `usuarioNome` é o sistema que publicou e
+        # `linkSistemaOrigem` o link direto pra compra lá (confirmado ao
+        # vivo em 28/08/2026, ver docs/DOMINIO.md).
+        "plataforma_nome": d.get("usuarioNome"),
+        "link_plataforma": d.get("linkSistemaOrigem"),
     }
 
 
@@ -319,18 +336,25 @@ def _normalizar_arquivo(a: dict[str, Any]) -> dict[str, Any]:
     }
 
 
-def _montar_id_compra(uasg: Any, numero: Any, ano: Any) -> str | None:
-    """O `idCompra` do compras.gov.br é UASG(6) + número da compra(5) + ano(4).
+def _montar_id_compra(uasg: Any, codigo_modalidade_pncp: Any, numero: Any, ano: Any) -> str | None:
+    """O `idCompra` do compras.gov.br é UASG(6) + modalidade(2) + número(5) +
+    ano(4) — 17 dígitos, com a modalidade na tabela do compras.gov.br
+    (`MODALIDADES_CONTRATACOES`), não na do PNCP.
 
-    Confirmado contra os dados reais da API. A busca do PNCP não devolve esse
-    campo, mas devolve as três partes — remontamos para manter o link do
-    Comprasnet funcionando.
+    Confirmado em 28/08/2026 contra o `linkSistemaOrigem` que o próprio PNCP
+    devolve (ex.: `...compra=92553805900672026` = UASG 925538 + modalidade 05
+    + compra 90067 + ano 2026). A versão anterior omitia os 2 dígitos da
+    modalidade — TODO link Comprasnet montado a partir da busca textual dava
+    404 (ver docs/DOMINIO.md). A busca do PNCP devolve a modalidade na tabela
+    do PNCP; sem tradução conhecida (modalidade que o Comprasnet não opera),
+    melhor link nenhum do que um link quebrado.
     """
 
-    if not (uasg and numero and ano):
+    codigo_contratacoes = MODALIDADE_PNCP_PARA_CONTRATACOES.get(str(codigo_modalidade_pncp or ""))
+    if not (uasg and numero and ano and codigo_contratacoes):
         return None
     try:
-        return f"{int(uasg):06d}{int(numero):05d}{int(ano):04d}"
+        return f"{int(uasg):06d}{int(codigo_contratacoes):02d}{int(numero):05d}{int(ano):04d}"
     except (TypeError, ValueError):
         return None
 

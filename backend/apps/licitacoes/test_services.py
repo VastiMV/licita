@@ -27,8 +27,8 @@ from .services import BuscaSemCorrespondenciaNoCatalogo, buscar_oportunidades
 ITENS_POR_CATALOGO = {
     "resultado": [
         {
-            "idCompra": "925874000052026",
-            "idCompraItem": "925874000052026-1",
+            "idCompra": "92587405000052026",
+            "idCompraItem": "92587405000052026-1",
             "numeroItemCompra": 1,
             "descricaoResumida": "Café torrado",
             "descricaodetalhada": "Café torrado e moído, pacote de 500g, tipo tradicional",
@@ -118,7 +118,7 @@ class BuscaPorCatalogoTests(SimpleTestCase):
     def test_filtro_de_modalidade_usa_codigo_da_contratacao(self):
         with _pncp(False):
             self.assertGreaterEqual(
-                len(_buscar(palavra_chave="Café", codigos_pdm=PDMS_CAFE, codigo_modalidade="6")), 1
+                len(_buscar(palavra_chave="Café", codigos_pdm=PDMS_CAFE, codigo_modalidade="5")), 1
             )
             self.assertEqual(
                 _buscar(palavra_chave="Café", codigos_pdm=PDMS_CAFE, codigo_modalidade="8"), []
@@ -126,14 +126,15 @@ class BuscaPorCatalogoTests(SimpleTestCase):
 
     def test_sem_palavra_chave_navega_contratacoes_do_periodo(self):
         with _pncp(False):
-            resultados = _buscar(codigo_modalidade="6")
+            resultados = _buscar(codigo_modalidade="5")
         self.assertEqual(len(resultados), 1)
         self.assertEqual(resultados[0]["numero_item"], 1)
 
     def test_links_presentes_no_resultado(self):
         with _pncp(False):
             op = _buscar(palavra_chave="Café", codigos_pdm=PDMS_CAFE)[0]
-        self.assertIn("compra=925874000052026", op["link_compras_gov"])
+        self.assertIn("compra=92587405000052026", op["link_plataforma"])
+        self.assertEqual(op["plataforma_id"], "compras_gov")
         self.assertTrue(op["link_pncp"].startswith("https://pncp.gov.br/app/editais/"))
 
     def test_itens_repetidos_entre_pdms_nao_duplicam_no_resultado(self):

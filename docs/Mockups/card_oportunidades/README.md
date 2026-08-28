@@ -1,5 +1,14 @@
 # Handoff: Card de oportunidade de licitação (desktop 6a + mobile 7a)
 
+> **Atualização 28/08/2026 — este handoff foi parcialmente superado pela
+> implementação; NÃO reverter o card pra ele.** O slot dourado primário não é
+> mais "Selecionar licitação": é **"Abrir na plataforma"** (link pra
+> plataforma de origem da compra, com o favicon dela no segmento de ícone —
+> ver docs/DOMINIO.md, achado de 28/08/2026). A ação de guardar virou o botão
+> outline **"Salvar oportunidade"** (persistência especificada em
+> docs/DOMINIO.md, entidade `OportunidadeSalva`). O restante do handoff
+> (layout, paleta, abas, prazos, estados) continua valendo.
+
 ## Overview
 Card que lista/apresenta uma oportunidade de licitação pública (dispensa, pregão etc.) vinda do PNCP.
 O usuário precisa, em um relance: entender o objeto, o órgão, o prazo de propostas, e agir —

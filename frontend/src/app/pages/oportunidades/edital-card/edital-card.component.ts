@@ -14,6 +14,15 @@ import {
 
 type Aba = 'itens' | 'documentos';
 
+/** Nome e ícone das plataformas que o backend registra
+ * (`apps/integracoes/plataformas.py`) — o `id` é o contrato entre os dois.
+ * Plataforma nova no backend = uma entrada aqui (com o favicon dela em
+ * `public/plataformas/`). Plataforma fora desta tabela ainda abre: o botão
+ * usa o nome que o PNCP deu e um ícone genérico. */
+const PLATAFORMAS: Record<string, { nome: string; icone: string }> = {
+  compras_gov: { nome: 'Compras.gov.br', icone: 'plataformas/compras_gov.png' },
+};
+
 /** Card de uma oportunidade (= um edital) na busca — layout desktop (6a) e
  * mobile (7a) do handoff em `docs/Mockups/card_oportunidades/README.md`.
  * As duas versões compartilham o mesmo template; a troca é só CSS
@@ -35,13 +44,13 @@ export class EditalCardComponent {
 
   protected readonly abaAtiva = signal<Aba>('itens');
 
-  // "Selecionar licitação" ainda não persiste nada — o produto ainda não tem
-  // uma "carteira" de licitações pra guardar isso (ver README do handoff,
-  // seção "Interactions & Behavior"). Por enquanto é só o estado visual
-  // local dos estados "Estados"/"State Management" do design, pra já deixar
-  // a interação e os dois visuais prontos; quando existir persistência de
-  // verdade, troca por uma chamada de serviço aqui.
-  protected readonly selecionada = signal(false);
+  // "Salvar oportunidade" ainda não persiste nada — o módulo "Minhas
+  // oportunidades" (lista de salvas, com exclusão e status de expirada) está
+  // especificado em docs/DOMINIO.md ("OportunidadeSalva") mas não existe.
+  // Por enquanto é só o estado visual local, pra deixar a interação e os
+  // dois visuais prontos; quando o módulo existir, isto vira uma chamada de
+  // serviço (POST/DELETE em /api/licitacoes/salvas/).
+  protected readonly salva = signal(false);
 
   // Helpers de formatação expostos pro template (ver edital-card.utils.ts).
   protected readonly moeda = formatarMoeda;
@@ -111,16 +120,37 @@ export class EditalCardComponent {
     () => this.detalhe()?.documentos[0]?.url ?? null,
   );
 
+  /** O botão dourado "Abrir na plataforma". O link do detalhe
+   * (`linkSistemaOrigem` do PNCP) é a verdade e tem prioridade; o da busca é
+   * o palpite da plataforma padrão — certo pro que veio do compras.gov.br,
+   * chute pro que veio da busca textual do PNCP (que agrega todas as
+   * plataformas, ver docs/DOMINIO.md). `null` esconde o botão: link nenhum é
+   * melhor que um link que abre 404. */
+  protected readonly plataforma = computed(() => {
+    const doDetalhe = this.detalhe()?.plataforma ?? null;
+    const contratacao = this.contratacao();
+    const link = doDetalhe?.link ?? contratacao.link_plataforma;
+    if (!link) return null;
+
+    const id = doDetalhe ? doDetalhe.id : contratacao.plataforma_id;
+    const registrada = id ? PLATAFORMAS[id] : undefined;
+    return {
+      link,
+      nome: registrada?.nome ?? doDetalhe?.nome ?? null,
+      icone: registrada?.icone ?? null,
+    };
+  });
+
   protected mudarAba(aba: Aba): void {
     this.abaAtiva.set(aba);
   }
 
-  protected selecionar(): void {
-    this.selecionada.set(true);
+  protected salvar(): void {
+    this.salva.set(true);
   }
 
-  protected removerSelecao(): void {
-    this.selecionada.set(false);
+  protected removerDasSalvas(): void {
+    this.salva.set(false);
   }
 
   /** Chips sob a descrição do item — só com dados reais do PNCP; CATSER e
