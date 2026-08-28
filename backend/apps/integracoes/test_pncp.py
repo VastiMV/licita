@@ -45,6 +45,18 @@ RESPOSTA_BUSCA = {
     "total": 1,
 }
 
+# Detalhe (API de consulta documentada) de uma compra publicada pelo
+# Comprasnet — é o que diz a plataforma de origem e dá o link de disputa.
+RESPOSTA_DETALHE_COMPRASNET = {
+    "orgaoEntidade": {"cnpj": "12345678000199", "esferaId": "M"},
+    "unidadeOrgao": {"ufSigla": "SP", "municipioNome": "Campinas", "codigoIbge": "3509502"},
+    "usuarioNome": "Compras.gov.br",
+    "linkSistemaOrigem": (
+        "https://cnetmobile.estaleiro.serpro.gov.br/comprasnet-web/public/"
+        "landing?destino=acompanhamento-compra&compra=92587405000052026"
+    ),
+}
+
 RESPOSTA_ITENS_PNCP = [
     {
         "numeroItem": 1,

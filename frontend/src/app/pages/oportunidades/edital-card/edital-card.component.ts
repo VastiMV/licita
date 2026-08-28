@@ -120,22 +120,21 @@ export class EditalCardComponent {
     () => this.detalhe()?.documentos[0]?.url ?? null,
   );
 
-  /** O botão dourado "Abrir na plataforma". O link do detalhe
-   * (`linkSistemaOrigem` do PNCP) é a verdade e tem prioridade; o da busca é
-   * o palpite da plataforma padrão — certo pro que veio do compras.gov.br,
-   * chute pro que veio da busca textual do PNCP (que agrega todas as
-   * plataformas, ver docs/DOMINIO.md). `null` esconde o botão: link nenhum é
-   * melhor que um link que abre 404. */
+  /** O botão dourado "Abrir na plataforma" — sempre presente: o backend
+   * garante que toda oportunidade é da plataforma escolhida e tem link de
+   * disputa (sem link não existe oportunidade, ver docs/DOMINIO.md). O link
+   * do detalhe (`linkSistemaOrigem` do PNCP), quando chega, tem prioridade
+   * sobre o da busca. */
   protected readonly plataforma = computed(() => {
     const doDetalhe = this.detalhe()?.plataforma ?? null;
     const contratacao = this.contratacao();
-    const link = doDetalhe?.link ?? contratacao.link_plataforma;
-    if (!link) return null;
-
+    // Quando o detalhe chegou, o `id` dele vale MESMO sendo nulo (nulo =
+    // plataforma real, só não registrada) — `??` aqui ressuscitaria o
+    // palpite da busca por cima da verdade.
     const id = doDetalhe ? doDetalhe.id : contratacao.plataforma_id;
     const registrada = id ? PLATAFORMAS[id] : undefined;
     return {
-      link,
+      link: doDetalhe?.link ?? contratacao.link_plataforma,
       nome: registrada?.nome ?? doDetalhe?.nome ?? null,
       icone: registrada?.icone ?? null,
     };

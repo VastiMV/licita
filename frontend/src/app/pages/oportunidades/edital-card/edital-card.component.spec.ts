@@ -184,14 +184,16 @@ describe('EditalCardComponent', () => {
   });
 
   it('botão dourado abre o link da plataforma, com nome e favicon da registrada', () => {
-    const grupo = fixture.debugElement.query(By.css('.grupo-plataforma'));
-    expect(grupo.nativeElement.getAttribute('href')).toContain('compra=98957106000012026');
+    const botao = fixture.debugElement.query(By.css('.btn-plataforma'));
+    expect(botao.nativeElement.getAttribute('href')).toContain('compra=98957106000012026');
     expect(texto()).toContain('Abrir na plataforma');
     expect(texto()).toContain('Compras.gov.br');
-    expect(fixture.debugElement.query(By.css('.btn-plataforma-icone img'))).not.toBeNull();
+    // Favicon no chip da esquerda; a seta de ação fica à direita.
+    expect(fixture.debugElement.query(By.css('.btn-plataforma-chip img'))).not.toBeNull();
+    expect(fixture.debugElement.query(By.css('.btn-plataforma-icone'))).not.toBeNull();
   });
 
-  it('o link do detalhe (linkSistemaOrigem) tem prioridade sobre o palpite da busca', () => {
+  it('o link do detalhe (linkSistemaOrigem) tem prioridade sobre o da busca', () => {
     host.detalhe.set({
       ...DETALHE_CARREGADO,
       plataforma: {
@@ -202,20 +204,22 @@ describe('EditalCardComponent', () => {
     });
     fixture.detectChanges();
 
-    const grupo = fixture.debugElement.query(By.css('.grupo-plataforma'));
-    expect(grupo.nativeElement.getAttribute('href')).toContain('portaldecompraspublicas');
+    const botao = fixture.debugElement.query(By.css('.btn-plataforma'));
+    expect(botao.nativeElement.getAttribute('href')).toContain('portaldecompraspublicas');
     expect(texto()).toContain('Portal de Compras Públicas');
-    // Plataforma fora do registro: sem favicon próprio, ícone genérico.
-    expect(fixture.debugElement.query(By.css('.btn-plataforma-icone img'))).toBeNull();
+    // Plataforma fora do registro: sem favicon próprio, ícone genérico no chip.
+    expect(fixture.debugElement.query(By.css('.btn-plataforma-chip img'))).toBeNull();
+    expect(fixture.debugElement.query(By.css('.btn-plataforma-chip app-icon'))).not.toBeNull();
   });
 
-  it('sem link de plataforma nenhum, o botão dourado não aparece', () => {
+  it('o botão dourado aparece sempre — o backend garante o link', () => {
+    // Mesmo encerrada, e mesmo antes do detalhe chegar.
     host.card.set(
-      montarCard([{ ...OPORTUNIDADE, plataforma_id: null, link_plataforma: null }]),
+      montarCard([{ ...OPORTUNIDADE, contratacao_data_encerramento_proposta: '2026-08-01' }]),
     );
     fixture.detectChanges();
 
-    expect(fixture.debugElement.query(By.css('.grupo-plataforma'))).toBeNull();
+    expect(fixture.debugElement.query(By.css('.btn-plataforma'))).not.toBeNull();
   });
 
   it('licitação encerrada esconde o botão de salvar e mostra "Encerrada"', () => {

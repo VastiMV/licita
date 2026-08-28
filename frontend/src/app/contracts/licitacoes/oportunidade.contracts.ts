@@ -40,12 +40,11 @@ export interface OportunidadeResponse {
   readonly contratacao_ano_compra: string | null;
   readonly contratacao_sequencial_compra: string | null;
   /** Plataforma onde a disputa acontece (registro em
-   * `apps/integracoes/plataformas.py` do backend). Na busca é o palpite da
-   * plataforma padrão — o PNCP agrega todas as plataformas, então o
-   * definitivo (`PlataformaResponse`) chega junto do detalhe do card e tem
-   * prioridade sobre estes dois campos. */
-  readonly plataforma_id: string | null;
-  readonly link_plataforma: string | null;
+   * `apps/integracoes/plataformas.py` do backend). Garantidos não-nulos: o
+   * backend só devolve oportunidade da plataforma escolhida e com link de
+   * disputa — sem link não existe oportunidade. */
+  readonly plataforma_id: string;
+  readonly link_plataforma: string;
   readonly link_pncp: string | null;
 }
 

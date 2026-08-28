@@ -307,45 +307,64 @@
   }
 }
 
-// -- Grupo dourado "Abrir na plataforma" (split button, é um link) --
-// Mesmo visual do antigo split "Selecionar licitação" do handoff; o segmento
-// da direita mostra o favicon da plataforma (ex.: Compras.gov.br) — ou o
-// ícone genérico de link externo, quando a plataforma não está registrada.
-
-.grupo-plataforma {
-  display: flex;
-  height: 54px;
-  border-radius: 10px;
-  box-shadow: 0 2px 0 var(--ec-dourado-borda);
-  overflow: hidden;
-  text-decoration: none;
-}
-
-.btn-plataforma,
-.btn-plataforma-icone {
-  border: 1px solid var(--ec-dourado-borda);
-  color: var(--ec-navy);
-}
+// -- Botão dourado "Abrir na plataforma" (é um link) --
+// Mesma anatomia dos outros botões da coluna (ver .btn-baixar): chip à
+// esquerda (aqui, o favicon da plataforma — ou o ícone genérico de link
+// externo quando ela não está registrada), texto alinhado à esquerda e a
+// seta de ação à direita. Sempre presente: o backend garante o link.
 
 .btn-plataforma {
-  flex: 1;
-  min-width: 0;
   display: flex;
-  flex-direction: column;
-  justify-content: center;
+  align-items: center;
+  gap: 11px;
+  height: 54px;
+  color: var(--ec-navy);
   background: var(--ec-dourado);
-  border-right: none;
-  padding: 0 12px;
-  text-align: left;
+  border: 1px solid var(--ec-dourado-borda);
+  border-radius: 10px;
+  padding: 0 13px;
+  box-shadow: 0 2px 0 var(--ec-dourado-borda);
+  text-decoration: none;
 
-  .grupo-plataforma:hover & {
+  &:hover {
     background: var(--ec-dourado-hover);
   }
 }
 
+.btn-plataforma-chip {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 30px;
+  height: 30px;
+  flex: none;
+  border-radius: 7px;
+  // Respiro branco (como aba de navegador) — o favicon lê melhor assim do
+  // que o PNG cru sobre o dourado.
+  background: var(--ec-superficie);
+
+  img {
+    width: 20px;
+    height: 20px;
+  }
+
+  app-icon {
+    width: 16px;
+    height: 16px;
+  }
+}
+
+.btn-plataforma-texto {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  text-align: left;
+}
+
 .btn-plataforma-titulo {
   font-weight: 800;
-  font-size: 13.5px;
+  font-size: 12.5px;
   line-height: 1.2;
 }
 
@@ -358,32 +377,9 @@
 }
 
 .btn-plataforma-icone {
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  width: 48px;
+  width: 16px;
+  height: 16px;
   flex: none;
-  background: var(--ec-dourado-icone);
-
-  .grupo-plataforma:hover & {
-    background: var(--ec-dourado);
-  }
-
-  app-icon {
-    width: 16px;
-    height: 16px;
-  }
-
-  img {
-    width: 22px;
-    height: 22px;
-    // O favicon é quadrado sobre fundo dourado — um respiro branco arredondado
-    // (como aba de navegador) lê melhor que o PNG cru sobre a cor.
-    background: var(--ec-superficie);
-    border-radius: 6px;
-    padding: 3px;
-    box-sizing: content-box;
-  }
 }
 
 // -- Botão "Salvar oportunidade" --
@@ -1041,7 +1037,7 @@
     font-size: 15px;
   }
 
-  .grupo-plataforma,
+  .btn-plataforma,
   .btn-salvar,
   .btn-salva {
     height: 52px;
@@ -1049,17 +1045,17 @@
     margin: 14px 14px 0;
   }
 
+  .btn-plataforma {
+    padding: 0 14px;
+  }
+
   .btn-salvar,
   .btn-salva {
     margin-top: 9px;
   }
 
-  .btn-plataforma {
-    padding: 0 14px;
-  }
-
   .btn-plataforma-titulo {
-    font-size: 14px;
+    font-size: 13.5px;
   }
 
   .link-remover {

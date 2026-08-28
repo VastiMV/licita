@@ -17,7 +17,11 @@ from django.test import SimpleTestCase
 
 from apps.integracoes.test_compras_gov import RESPOSTA_CONTRATACOES, RESPOSTA_ITENS
 from apps.integracoes.test_compras_gov import _client_falso as client_falso
-from apps.integracoes.test_pncp import RESPOSTA_BUSCA, RESPOSTA_ITENS_PNCP
+from apps.integracoes.test_pncp import (
+    RESPOSTA_BUSCA,
+    RESPOSTA_DETALHE_COMPRASNET,
+    RESPOSTA_ITENS_PNCP,
+)
 from apps.integracoes.test_pncp import _pncp_falso as pncp_falso
 
 from . import services
@@ -57,13 +61,20 @@ def _montar_handler():
     return handler
 
 
-def _montar_handler_pncp(resposta_busca=None, resposta_itens=None, status=200):
+def _montar_handler_pncp(resposta_busca=None, resposta_itens=None, status=200, resposta_detalhe=None):
     def handler(request: httpx.Request) -> httpx.Response:
         if status != 200:
             return httpx.Response(status, text="indisponível")
         if request.url.path == "/api/search/":
             return httpx.Response(
                 200, json=resposta_busca if resposta_busca is not None else RESPOSTA_BUSCA
+            )
+        # O detalhe é o que revela a plataforma de origem do edital — sem
+        # ele a busca textual descarta tudo (sem link não há oportunidade).
+        if request.url.path.startswith("/api/consulta/"):
+            return httpx.Response(
+                200,
+                json=resposta_detalhe if resposta_detalhe is not None else RESPOSTA_DETALHE_COMPRASNET,
             )
         return httpx.Response(
             200, json=resposta_itens if resposta_itens is not None else RESPOSTA_ITENS_PNCP
@@ -158,6 +169,9 @@ class BuscaTextualPncpTests(SimpleTestCase):
         self.assertEqual(op["contratacao_uf"], "SP")
         self.assertEqual(op["contratacao_orgao_nome"], "Prefeitura Municipal Exemplo")
         self.assertEqual(op["link_pncp"], "https://pncp.gov.br/app/editais/12345678000199/2026/5")
+        # O link de disputa é o `linkSistemaOrigem` do detalhe, não remontagem.
+        self.assertEqual(op["link_plataforma"], RESPOSTA_DETALHE_COMPRASNET["linkSistemaOrigem"])
+        self.assertEqual(op["plataforma_id"], "compras_gov")
 
     def test_pncp_dispensa_o_catalogo_de_pdm(self):
         with _pncp(True):
@@ -206,6 +220,50 @@ class BuscaTextualPncpTests(SimpleTestCase):
         self.assertGreaterEqual(len(resultados), 1)
         self.assertIn("Café torrado", resultados[0]["descricao_resumida"])
 
+    def test_edital_de_outra_plataforma_e_descartado_e_cai_no_catalogo(self):
+        """O PNCP agrega todas as plataformas; hoje só o compras.gov.br está
+        registrado, então edital de outra plataforma não vira oportunidade —
+        e a busca cai no catálogo (que só acha compra do compras.gov.br)."""
+
+        outra = {
+            **RESPOSTA_DETALHE_COMPRASNET,
+            "usuarioNome": "ECustomize Consultoria em Software S.A",
+            "linkSistemaOrigem": "https://www.portaldecompraspublicas.com.br/processos/x",
+        }
+        with _pncp(True):
+            resultados = _buscar_com_pncp(
+                _montar_handler_pncp(resposta_detalhe=outra),
+                palavra_chave="Café",
+                codigos_pdm=PDMS_CAFE,
+            )
+        self.assertGreaterEqual(len(resultados), 1)
+        self.assertIn("Café torrado", resultados[0]["descricao_resumida"])
+        self.assertIn("cnetmobile", resultados[0]["link_plataforma"])
+
+    def test_edital_sem_link_de_origem_tambem_e_descartado(self):
+        """Sem `linkSistemaOrigem` não há como abrir a disputa — sem link não
+        existe oportunidade (medido ao vivo: ~11 de 50 editais vêm assim)."""
+
+        with _pncp(True):
+            resultados = _buscar_com_pncp(
+                _montar_handler_pncp(resposta_detalhe={}),
+                palavra_chave="Café",
+                codigos_pdm=PDMS_CAFE,
+            )
+        # Caiu no catálogo em vez de devolver edital sem link.
+        self.assertGreaterEqual(len(resultados), 1)
+        self.assertIn("Café torrado", resultados[0]["descricao_resumida"])
+
+    def test_toda_oportunidade_tem_link_de_plataforma(self):
+        with _pncp(True):
+            do_pncp = _buscar_com_pncp(_montar_handler_pncp(), palavra_chave="café", codigos_pdm=[])
+        with _pncp(False):
+            do_catalogo = _buscar(palavra_chave="Café", codigos_pdm=PDMS_CAFE)
+            navegacao = _buscar(codigo_modalidade="5")
+        for op in do_pncp + do_catalogo + navegacao:
+            self.assertTrue(op["link_plataforma"])
+            self.assertEqual(op["plataforma_id"], "compras_gov")
+
     def test_sem_pncp_e_sem_pdm_o_aviso_continua(self):
         vazio = {"items": [], "total": 0}
         with _pncp(True):
@@ -227,6 +285,8 @@ class BuscaTextualPncpTests(SimpleTestCase):
             if request.url.path == "/api/search/":
                 capturado["modalidades"] = request.url.params.get("modalidades")
                 return httpx.Response(200, json=RESPOSTA_BUSCA)
+            if request.url.path.startswith("/api/consulta/"):
+                return httpx.Response(200, json=RESPOSTA_DETALHE_COMPRASNET)
             return httpx.Response(200, json=RESPOSTA_ITENS_PNCP)
 
         with _pncp(True):

@@ -41,10 +41,12 @@ class OportunidadeSerializer(serializers.Serializer):
     contratacao_sequencial_compra = serializers.CharField(allow_null=True)
 
     # `plataforma_id` casa com o registro em `apps/integracoes/plataformas.py`
-    # (o frontend usa pra escolher o ícone do botão). Na busca é o palpite da
-    # plataforma padrão; o definitivo vem no detalhe (`CompraDetalheSerializer`).
-    plataforma_id = serializers.CharField(allow_null=True)
-    link_plataforma = serializers.CharField(allow_null=True)
+    # (o frontend usa pra escolher o ícone do botão). Sem `allow_null` de
+    # propósito: toda oportunidade é da plataforma escolhida e tem link de
+    # disputa garantido — sem link não existe oportunidade (ver
+    # services.buscar_oportunidades). Nulo aqui é bug, não dado.
+    plataforma_id = serializers.CharField()
+    link_plataforma = serializers.CharField()
     link_pncp = serializers.CharField(allow_null=True)
 
     # O contrato do frontend não aceita `null` aqui — `srp` ausente vira

@@ -141,9 +141,9 @@ reabrir a investigação:
    `codigo_pdm`, que filtram a chamada ao compras.gov.br.
 5. Resultado é por **item da contratação** (não a contratação inteira):
    número do item, descrição, quantidade, valor unitário/total estimado,
-   link para abrir a compra **na plataforma de origem** (ver o achado de
-   28/08/2026 abaixo — na busca é o palpite da plataforma padrão; o
-   definitivo vem no detalhe do card) e o edital no PNCP.
+   link para abrir a compra **na plataforma** (garantido em todo resultado —
+   ver a decisão de produto de 28/08/2026 abaixo: só entra oportunidade da
+   plataforma escolhida, com link de disputa) e o edital no PNCP.
 
 ### Busca textual — camadas
 
@@ -280,15 +280,26 @@ achados novos:
   `CompraDetalheView` já chama pro CAPAG) devolve **`usuarioNome`** (o
   sistema que publicou, ex.: "Compras.gov.br") e **`linkSistemaOrigem`** (o
   deep link pronto pra plataforma de origem, seja ela qual for — confirmado
-  ao vivo pros dois casos). O card usa esse link quando o detalhe chega; o
-  `link_plataforma` da busca fica como palpite inicial (plataforma padrão).
-  Observação ao vivo (28/08/2026): o campo `numero` da busca textual veio
-  `None` em TODAS as amostras testadas — ou seja, o palpite da busca quase
-  nunca se monta pra resultado do PNCP (antes isso gerava link com
-  `compra=` vazio, mais um 404 garantido; agora vira `link_plataforma:
-  null`) e o botão dourado desses cards passa a existir quando o detalhe
-  chega com o `linkSistemaOrigem`. Pro modo navegação (dados do próprio
-  compras.gov.br, `idCompra` pronto) o palpite é certo desde a busca.
+  ao vivo pros dois casos). Medição ao vivo (28/08/2026, termo "café",
+  página de 50): **só 11 editais eram do Comprasnet**; 11 vieram sem
+  `linkSistemaOrigem` nenhum; os outros 28 eram de 13 plataformas
+  diferentes. E o campo `numero` da busca textual veio `None` em todas as
+  amostras — link remontado a partir da busca não é confiável.
+- **Decisão de produto (28/08/2026): toda oportunidade devolvida é da
+  plataforma escolhida e tem `link_plataforma` garantido** — sem link de
+  disputa não existe oportunidade, e o botão dourado do card aparece
+  SEMPRE. Hoje a plataforma é fixa (compras.gov.br, a única registrada);
+  quando houver mais de uma, vira um dropdown na tela de busca (igual ao de
+  modalidade) que manda o `plataforma_id` do registro — o parâmetro já
+  existe em `services.buscar_oportunidades`. Consequência no caminho da
+  busca textual: como a resposta do `/api/search/` não diz a plataforma, a
+  orquestração lê até 50 editais (`MAX_EDITAIS_BRUTOS`), **detalha cada um
+  em paralelo** (`_apenas_da_plataforma` em `apps/licitacoes/services.py`)
+  e descarta o que não é da plataforma escolhida, gravando o
+  `linkSistemaOrigem` definitivo nos que ficam; se nenhum sobrar, cai na
+  reserva de catálogo (que já é 100% compras.gov.br). Custo: até ~50
+  chamadas de detalhe extra por busca, em rodadas de 20 — é o preço de não
+  mostrar oportunidade que o usuário não consegue abrir.
 - **Plataformas são plugáveis** (28/08/2026): o ponto de entrada é
   `apps/integracoes/plataformas.py` — plataforma nova = uma subclasse de
   `Plataforma` registrada em `PLATAFORMAS` (+ o client dela em `clients/`,

@@ -52,6 +52,12 @@ class Plataforma(ABC):
         """Link da compra na plataforma, a partir da contratação normalizada.
         `None` quando os dados não bastam pra um link que funcione."""
 
+    def pertence(self, link: str) -> bool:
+        """Se um link (ex.: `linkSistemaOrigem` do PNCP) é desta plataforma —
+        é o que filtra a busca textual pra plataforma escolhida."""
+
+        return any(dominio in link for dominio in self.dominios)
+
 
 class ComprasGov(Plataforma):
     id = "compras_gov"
@@ -79,6 +85,6 @@ def identificar_plataforma(link: str | None) -> Plataforma | None:
     if not link:
         return None
     for plataforma in PLATAFORMAS.values():
-        if any(dominio in link for dominio in plataforma.dominios):
+        if plataforma.pertence(link):
             return plataforma
     return None

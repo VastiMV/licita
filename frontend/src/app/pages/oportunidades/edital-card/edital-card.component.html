@@ -73,25 +73,26 @@
 
       @if (plataforma(); as plat) {
         <a
-          class="grupo-plataforma"
+          class="btn-plataforma"
           [href]="plat.link"
           target="_blank"
           rel="noopener"
           [title]="'Abrir em ' + (plat.nome ?? 'plataforma de origem')"
         >
-          <span class="btn-plataforma">
-            <span class="btn-plataforma-titulo">Abrir na plataforma</span>
-            @if (plat.nome) {
-              <span class="btn-plataforma-meta">{{ plat.nome }}</span>
-            }
-          </span>
-          <span class="btn-plataforma-icone">
+          <span class="btn-plataforma-chip">
             @if (plat.icone) {
               <img [src]="plat.icone" alt="" />
             } @else {
               <app-icon name="external-link" />
             }
           </span>
+          <span class="btn-plataforma-texto">
+            <span class="btn-plataforma-titulo">Abrir na plataforma</span>
+            @if (plat.nome) {
+              <span class="btn-plataforma-meta">{{ plat.nome }}</span>
+            }
+          </span>
+          <app-icon name="arrow-right" class="btn-plataforma-icone" />
         </a>
       }
 
