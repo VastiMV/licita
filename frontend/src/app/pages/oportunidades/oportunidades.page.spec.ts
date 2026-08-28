@@ -37,6 +37,7 @@ const OPORTUNIDADE: OportunidadeResponse = {
   link_plataforma:
     'https://cnetmobile.estaleiro.serpro.gov.br/comprasnet-web/public/compras/acompanhamento-compra?compra=92512305000052026',
   link_pncp: 'https://pncp.gov.br/app/editais/12345678000199/2026/5',
+  capag: null,
 };
 
 // Segundo item do MESMO edital — casa por cnpj+ano+sequencial (ver

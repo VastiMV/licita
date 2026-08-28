@@ -42,6 +42,8 @@ import logging
 from concurrent.futures import ThreadPoolExecutor
 from typing import Any
 
+from django.core.cache import cache
+
 from config.settings.environment import env
 
 from apps.integracoes.clients.compras_gov import (
@@ -73,6 +75,30 @@ MAX_EDITAIS_PNCP = 20  # teto de editais desdobrados em itens na busca textual
 # quase nada. Custo: até MAX_EDITAIS_BRUTOS chamadas de detalhe por busca,
 # em paralelo (MAX_WORKERS por rodada).
 MAX_EDITAIS_BRUTOS = 50
+
+
+# O detalhe de uma compra não muda no que usamos dele (link de origem,
+# esfera, código IBGE) — e o `/api/consulta/` do PNCP tem rate limit por IP
+# (429, medido ao vivo em 28/08/2026, estourado por ~50 chamadas da rajada
+# de uma busca). O cache faz buscas repetidas e o detalhe do card não
+# pagarem de novo o que a busca já pagou. Backend padrão do Django é
+# LocMem (por processo); apontar CACHES pra Redis no cluster estende o
+# ganho pra todos os pods sem mudar este código.
+CACHE_DETALHE_TTL = 6 * 60 * 60
+
+
+def detalhar_compra_cacheada(
+    cliente: PncpClient, *, cnpj: str, ano: str | int, sequencial: str | int
+) -> dict[str, Any]:
+    """`PncpClient.detalhar_compra` com cache. Erro não é cacheado — a
+    próxima tentativa (fora da janela de rate limit) tenta de novo."""
+
+    chave = f"pncp:detalhe:{cnpj}:{ano}:{sequencial}"
+    detalhe = cache.get(chave)
+    if detalhe is None:
+        detalhe = cliente.detalhar_compra(cnpj=cnpj, ano=ano, sequencial=sequencial)
+        cache.set(chave, detalhe, CACHE_DETALHE_TTL)
+    return detalhe
 
 
 class BuscaSemCorrespondenciaNoCatalogo(Exception):
@@ -244,17 +270,25 @@ def _apenas_da_plataforma(
     cliente: PncpClient, editais: list[dict[str, Any]], plataforma: Plataforma
 ) -> list[dict[str, Any]]:
     """Detalha cada edital no PNCP e fica só com os da plataforma escolhida,
-    gravando neles o `link_plataforma` definitivo (`linkSistemaOrigem`).
+    gravando neles o `link_plataforma` definitivo (`linkSistemaOrigem`) e os
+    insumos do selo CAPAG (esfera + código IBGE).
 
     É o filtro caro da busca (1 chamada de detalhe por edital, em paralelo),
     mas é o único jeito: a resposta da busca textual não diz de qual
     plataforma o edital é (ver docs/DOMINIO.md, achado de 28/08/2026).
     Detalhe que falhar = edital descartado: sem link não existe oportunidade.
+
+    Guardar os insumos do CAPAG aqui não é otimização opcional: o
+    `/api/consulta/` do PNCP tem rate limit por IP (429, medido ao vivo em
+    28/08/2026), e esta rajada o consome — a chamada de detalhe que o card
+    dispara logo depois é justamente a que leva 429. Reaproveitar o detalhe
+    que a busca já pagou é o que mantém o selo CAPAG aparecendo.
     """
 
-    def link_seguro(edital: dict[str, Any]) -> str | None:
+    def detalhe_seguro(edital: dict[str, Any]) -> dict[str, Any] | None:
         try:
-            detalhe = cliente.detalhar_compra(
+            return detalhar_compra_cacheada(
+                cliente,
                 cnpj=edital["cnpj_orgao"],
                 ano=edital["ano_compra"],
                 sequencial=edital["sequencial_compra"],
@@ -264,14 +298,16 @@ def _apenas_da_plataforma(
                 "Falha ao detalhar o edital %s", edital.get("numero_controle_pncp")
             )
             return None
-        return detalhe.get("link_plataforma")
 
     selecionados = []
     with ThreadPoolExecutor(max_workers=MAX_WORKERS) as pool:
-        for edital, link in zip(editais, pool.map(link_seguro, editais)):
+        for edital, detalhe in zip(editais, pool.map(detalhe_seguro, editais)):
+            link = (detalhe or {}).get("link_plataforma")
             if not link or not plataforma.pertence(link):
                 continue
             edital["link_plataforma"] = link
+            edital["capag_esfera_id"] = detalhe.get("esfera_id")
+            edital["capag_codigo_ibge"] = detalhe.get("codigo_ibge")
             selecionados.append(edital)
     return selecionados
 
@@ -438,8 +474,13 @@ def _montar_oportunidade(
     # (navegação/PDM) a própria plataforma o monta do `id_compra` — e quem
     # chega aqui sem id_compra já foi descartado antes.
     link_plataforma = contratacao.get("link_plataforma") or plataforma.montar_link(contratacao)
+    internos = {"raw_json", "link_plataforma", "capag_esfera_id", "capag_codigo_ibge"}
     return {
-        **{f"contratacao_{k}": v for k, v in contratacao.items() if k != "raw_json"},
+        **{f"contratacao_{k}": v for k, v in contratacao.items() if k not in internos},
+        # Insumos do selo CAPAG, quando a busca já os pagou (caminho da busca
+        # textual). Quem resolve nota é a view — services não toca em banco.
+        "capag_esfera_id": contratacao.get("capag_esfera_id"),
+        "capag_codigo_ibge": contratacao.get("capag_codigo_ibge"),
         "numero_item": item.get("numero_item"),
         "descricao_resumida": item.get("descricao_resumida"),
         "descricao_detalhada": item.get("descricao_detalhada"),

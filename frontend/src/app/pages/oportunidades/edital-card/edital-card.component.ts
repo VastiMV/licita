@@ -140,6 +140,13 @@ export class EditalCardComponent {
     };
   });
 
+  /** Selo CAPAG: o da própria busca chega junto do resultado (caminho da
+   * busca textual) e aparece na hora; o do detalhe cobre os caminhos em que
+   * a busca não tinha os insumos (navegação/catálogo). */
+  protected readonly seloCapag = computed(
+    () => this.contratacao().capag ?? this.detalhe()?.capag ?? null,
+  );
+
   protected mudarAba(aba: Aba): void {
     this.abaAtiva.set(aba);
   }

@@ -8,7 +8,7 @@
       <span class="tag somente-desktop">{{ contratacao().contratacao_situacao }}</span>
     }
     <span class="cabecalho-espaco"></span>
-    @if (detalhe()?.capag; as capag) {
+    @if (seloCapag(); as capag) {
       <span [class]="'selo-capag capag-' + capag.cor">
         <span class="selo-capag-ponto"></span>
         CAPAG {{ capag.nota }}

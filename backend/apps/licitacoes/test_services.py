@@ -13,6 +13,7 @@ from contextlib import contextmanager
 from unittest import mock
 
 import httpx
+from django.core.cache import cache
 from django.test import SimpleTestCase
 
 from apps.integracoes.test_compras_gov import RESPOSTA_CONTRATACOES, RESPOSTA_ITENS
@@ -158,6 +159,12 @@ class BuscaPorCatalogoTests(SimpleTestCase):
 class BuscaTextualPncpTests(SimpleTestCase):
     """PNCP ligado — caminho preferido."""
 
+    def setUp(self):
+        # O detalhe de compra é cacheado entre buscas (ver
+        # services.detalhar_compra_cacheada) — cada teste começa limpo pra um
+        # fixture de detalhe não vazar pro teste seguinte.
+        cache.clear()
+
     def test_busca_por_palavra_usa_o_pncp_quando_disponivel(self):
         with _pncp(True):
             resultados = _buscar_com_pncp(_montar_handler_pncp(), palavra_chave="café", codigos_pdm=[])
@@ -172,6 +179,10 @@ class BuscaTextualPncpTests(SimpleTestCase):
         # O link de disputa é o `linkSistemaOrigem` do detalhe, não remontagem.
         self.assertEqual(op["link_plataforma"], RESPOSTA_DETALHE_COMPRASNET["linkSistemaOrigem"])
         self.assertEqual(op["plataforma_id"], "compras_gov")
+        # Os insumos do CAPAG vêm do mesmo detalhe que filtrou a plataforma —
+        # o /api/consulta/ tem rate limit e não dá pra chamar de novo no card.
+        self.assertEqual(op["capag_esfera_id"], "M")
+        self.assertEqual(op["capag_codigo_ibge"], "3509502")
 
     def test_pncp_dispensa_o_catalogo_de_pdm(self):
         with _pncp(True):

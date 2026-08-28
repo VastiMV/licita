@@ -46,6 +46,11 @@ export interface OportunidadeResponse {
   readonly plataforma_id: string;
   readonly link_plataforma: string;
   readonly link_pncp: string | null;
+  /** Selo CAPAG já resolvido na busca (caminho da busca textual, que pega
+   * os insumos de graça ao filtrar a plataforma). Nulo = sem nota ou o
+   * caminho não tinha os insumos — aí o `CompraDetalheResponse` do card é
+   * quem tenta resolver. */
+  readonly capag: CapagResponse | null;
 }
 
 /** Um arquivo do edital (aviso, anexo, termo de referência...), com link de

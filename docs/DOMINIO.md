@@ -311,6 +311,19 @@ achados novos:
   "connection pool timeout" em `/api/consulta/v1/...` que funcionou na
   tentativa seguinte. `PncpClient` repete uma vez erro >= 500 (4xx continua
   sem repetição — é resposta, não falha).
+- **O `/api/consulta/` do PNCP tem rate limit por IP** (429, medido ao vivo
+  em 28/08/2026): a rajada de ~50 detalhes de uma busca textual consome a
+  janela — a próxima chamada ao endpoint (o detalhe do card, ou outra
+  busca em seguida) leva 429 por alguns minutos. Só a família
+  `/api/consulta/` é limitada; `/api/pncp/v1/...` (itens, arquivos) e
+  `/api/search/` seguem normais. Mitigações no código: (1) os insumos do
+  CAPAG e o link de origem vão **embutidos no resultado da busca** — o selo
+  do card não depende de segunda chamada (`views._resolver_capag`); (2) o
+  detalhe é **cacheado** (`services.detalhar_compra_cacheada`, TTL 6h,
+  LocMem por padrão — apontar `CACHES` pra Redis no cluster compartilha
+  entre pods). Degradação sob 429 sustentado: a busca textual não consegue
+  confirmar plataforma e cai na reserva de catálogo (100% compras.gov.br,
+  links garantidos) — o usuário continua vendo resultado.
 - **CAPAG (Capacidade de Pagamento) não é API — é arquivo estático do
   Tesouro Nacional**, atualizado ~3x/ano: XLSX de municípios
   (`tesourotransparente.gov.br/ckan/dataset/capag-municipios`, aba "Prévia

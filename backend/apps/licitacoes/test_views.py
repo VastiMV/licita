@@ -9,6 +9,7 @@ from __future__ import annotations
 from unittest import mock
 
 import httpx
+from django.core.cache import cache
 from rest_framework.test import APITestCase
 
 from apps.accounts.models import User
@@ -23,6 +24,9 @@ from apps.integracoes.test_compras_gov import _client_falso as client_falso
 class OportunidadesViewTests(APITestCase):
     def setUp(self):
         self.user = User.objects.create_user(email="user@licita.dev", password="uma-senha-forte")
+        # Detalhe de compra é cacheado entre requisições (ver services) —
+        # cada teste começa limpo.
+        cache.clear()
 
     def test_sem_autenticacao_e_negado(self):
         response = self.client.get("/api/licitacoes/oportunidades/")
@@ -69,9 +73,42 @@ class OportunidadesViewTests(APITestCase):
             "plataforma_id",
             "link_plataforma",
             "link_pncp",
+            "capag",
         ):
             self.assertIn(campo, oportunidade)
         self.assertIsInstance(oportunidade["contratacao_srp"], bool)
+
+    def test_busca_textual_ja_resolve_o_capag_sem_segunda_chamada(self):
+        """O selo do card não pode depender de uma segunda chamada ao
+        `/api/consulta/` (rate limit por IP — 429 medido ao vivo em
+        28/08/2026): os insumos vêm no detalhe que a própria busca fez pra
+        filtrar a plataforma, e a view resolve a nota dali."""
+
+        from apps.integracoes.test_pncp import _pncp_falso
+        from apps.licitacoes.test_services import _montar_handler_pncp
+
+        MunicipioCapag.objects.create(codigo_ibge=3509502, nome_municipio="Campinas", uf="SP", nota="A")
+        self.client.force_authenticate(self.user)
+
+        with (
+            mock.patch("apps.licitacoes.services.env", mock.Mock(usar_busca_pncp=True)),
+            mock.patch(
+                "apps.licitacoes.services.PncpClient",
+                side_effect=lambda *a, **kw: _pncp_falso(_montar_handler_pncp()),
+            ),
+            mock.patch(
+                "apps.integracoes.plataformas.ComprasGovClient",
+                side_effect=lambda *a, **kw: client_falso(_montar_handler()),
+            ),
+        ):
+            response = self.client.get(
+                "/api/licitacoes/oportunidades/",
+                {"palavra_chave": "café", "data_inicial": "2026-07-01"},
+            )
+
+        self.assertEqual(response.status_code, 200)
+        self.assertGreaterEqual(len(response.data), 1)
+        self.assertEqual(response.data[0]["capag"], {"nota": "A", "cor": "verde"})
 
 
 class CompraDetalheViewTests(APITestCase):
@@ -81,6 +118,7 @@ class CompraDetalheViewTests(APITestCase):
     def setUp(self):
         self.user = User.objects.create_user(email="user@licita.dev", password="uma-senha-forte")
         self.client.force_authenticate(self.user)
+        cache.clear()
 
     def test_sem_autenticacao_e_negado(self):
         self.client.force_authenticate(None)

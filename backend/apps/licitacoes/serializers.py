@@ -49,6 +49,16 @@ class OportunidadeSerializer(serializers.Serializer):
     link_plataforma = serializers.CharField()
     link_pncp = serializers.CharField(allow_null=True)
 
+    # Selo CAPAG resolvido já na busca, quando o caminho da busca textual
+    # trouxe os insumos junto do detalhe que filtra a plataforma (ver
+    # `views._resolver_capag`). Nulo = sem nota OU insumos indisponíveis
+    # neste caminho — aí o detalhe do card (`CompraDetalheSerializer`) é
+    # quem tenta resolver.
+    capag = serializers.SerializerMethodField()
+
+    def get_capag(self, obj: dict) -> dict | None:
+        return obj.get("capag")
+
     # O contrato do frontend não aceita `null` aqui — `srp` ausente vira
     # "não é SRP" (False), não "não sei".
     contratacao_srp = serializers.SerializerMethodField()

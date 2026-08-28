@@ -38,6 +38,7 @@ const OPORTUNIDADE: OportunidadeResponse = {
   link_plataforma:
     'https://cnetmobile.estaleiro.serpro.gov.br/comprasnet-web/public/compras/acompanhamento-compra?compra=98957106000012026',
   link_pncp: 'https://pncp.gov.br/app/editais/12345678000199/2026/1',
+  capag: null,
 };
 
 function montarCard(itens: readonly OportunidadeResponse[] = [OPORTUNIDADE]): EditalCard {
@@ -149,6 +150,15 @@ describe('EditalCardComponent', () => {
     });
     fixture.detectChanges();
     expect(texto()).toContain('Nenhum documento informado');
+  });
+
+  it('selo CAPAG vindo da própria busca aparece na hora, sem esperar o detalhe', () => {
+    host.card.set(montarCard([{ ...OPORTUNIDADE, capag: { nota: 'A', cor: 'verde' } }]));
+    fixture.detectChanges();
+
+    const selo = fixture.debugElement.query(By.css('.selo-capag'));
+    expect(selo.nativeElement.textContent).toContain('CAPAG A');
+    expect(selo.nativeElement.className).toContain('capag-verde');
   });
 
   it('selo CAPAG aparece com a cor certa quando carrega, e "CAPAG…" enquanto isso', () => {

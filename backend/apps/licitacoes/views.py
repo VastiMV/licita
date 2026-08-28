@@ -19,7 +19,11 @@ from apps.integracoes.clients.pncp import PncpClient, PncpClientError
 from apps.integracoes.plataformas import identificar_plataforma, plataforma_padrao
 
 from .serializers import CompraDetalheSerializer, OportunidadeSerializer
-from .services import BuscaSemCorrespondenciaNoCatalogo, buscar_oportunidades
+from .services import (
+    BuscaSemCorrespondenciaNoCatalogo,
+    buscar_oportunidades,
+    detalhar_compra_cacheada,
+)
 
 # Mesma janela padrão do protótipo (`app/routers/licitacoes.py`) para o modo
 # interativo — diferente do lookback de 2 dias usado pelo scanner de
@@ -69,8 +73,30 @@ class OportunidadesView(APIView):
         except ComprasGovClientError as exc:
             return Response({"detail": str(exc)}, status=502)
 
+        _resolver_capag(resultados)
         serializer = OportunidadeSerializer(resultados, many=True)
         return Response(serializer.data)
+
+
+def _resolver_capag(resultados: list[dict]) -> None:
+    """Preenche `capag` nas oportunidades cujos insumos (esfera + IBGE) a
+    busca já trouxe — o caminho da busca textual os pega do mesmo detalhe
+    que filtra a plataforma, de graça. Importa porque o `/api/consulta/` do
+    PNCP tem rate limit por IP (ver docs/DOMINIO.md, 28/08/2026): a chamada
+    de detalhe do card, disparada logo após a busca, leva 429 — se o selo
+    dependesse só dela, sumiria. Nos caminhos sem insumos (navegação/PDM),
+    `capag` fica nulo e o detalhe do card continua sendo quem resolve.
+
+    Resolve aqui, e não em services, porque a nota vem do banco
+    (`apps.capag`) e a orquestração de busca é deliberadamente sem banco.
+    """
+
+    memo: dict[tuple, dict | None] = {}
+    for op in resultados:
+        chave = (op.get("capag_esfera_id"), op.get("capag_codigo_ibge"), op.get("contratacao_uf"))
+        if chave not in memo:
+            memo[chave] = nota_para(esfera_id=chave[0], codigo_ibge=chave[1], uf=chave[2])
+        op["capag"] = memo[chave]
 
 
 class CompraDetalheView(APIView):
@@ -90,7 +116,12 @@ class CompraDetalheView(APIView):
 
         with PncpClient() as client:
             try:
-                detalhe = client.detalhar_compra(cnpj=cnpj, ano=ano, sequencial=sequencial)
+                # Cacheado: a busca que gerou este card provavelmente acabou
+                # de detalhar esta mesma compra — e o /api/consulta/ tem rate
+                # limit por IP que a rajada dela consome (ver services).
+                detalhe = detalhar_compra_cacheada(
+                    client, cnpj=cnpj, ano=ano, sequencial=sequencial
+                )
             except PncpClientError:
                 detalhe = None
             if detalhe:
