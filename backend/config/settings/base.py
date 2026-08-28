@@ -150,6 +150,16 @@ SIMPLE_JWT = {
 CSRF_COOKIE_SECURE = not DEBUG
 SESSION_COOKIE_SECURE = not DEBUG
 
+# O Ingress (Traefik, ver k8s/ingress.yaml) termina o TLS e repassa pro
+# backend em HTTP puro — sem isto, `request.is_secure()` dá False mesmo em
+# produção, o Django monta a origem esperada como "http://<host>" e rejeita
+# todo POST vindo do navegador em "https://<host>" com "Origin checking
+# failed" (403). Era isso que derrubava a sessão a cada 15 min: todo
+# refresh de token batia em /api/auth/refresh/, que exige CSRF de verdade
+# (ver apps/accounts/views.py), e caía nesse 403 sempre — nunca era o
+# refresh token em si que expirava.
+SECURE_PROXY_SSL_HEADER = ("HTTP_X_FORWARDED_PROTO", "https")
+
 
 # Celery + RabbitMQ — ver docs/ARQUITETURA.md, seção "Assíncrono".
 # Nenhuma task ainda: só o app Celery instanciado (config/celery.py) e o
