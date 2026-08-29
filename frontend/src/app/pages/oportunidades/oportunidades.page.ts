@@ -9,6 +9,7 @@ import { ButtonComponent } from '../../shared/ui/button/button.component';
 import { IconComponent } from '../../shared/ui/icon/icon.component';
 import { InputTextComponent } from '../../shared/ui/input-text/input-text.component';
 import { SelectComponent } from '../../shared/ui/select/select.component';
+import { VoltarTopoComponent } from '../../shared/ui/voltar-topo/voltar-topo.component';
 import { EditalCardComponent } from './edital-card/edital-card.component';
 
 const FORM_INICIAL = {
@@ -31,7 +32,8 @@ export interface EditalCard {
   readonly itens: readonly OportunidadeResponse[];
 }
 
-/** Documentos + CAPAG de um card, buscados em `apps.licitacoes.CompraDetalheView`. */
+/** Documentos + CAPAG + plataforma de origem de um card, buscados em
+ * `apps.licitacoes.CompraDetalheView`. */
 export interface DetalheEstado {
   readonly carregando: boolean;
   readonly documentos: readonly {
@@ -40,6 +42,9 @@ export interface DetalheEstado {
     url: string | null;
   }[];
   readonly capag: { nota: string; cor: 'verde' | 'amarelo' | 'vermelho' } | null;
+  /** Onde a compra de fato acontece — corrige o palpite `link_plataforma`
+   * da busca (o PNCP agrega todas as plataformas, ver docs/DOMINIO.md). */
+  readonly plataforma: { id: string | null; nome: string | null; link: string } | null;
   readonly erro: boolean;
 }
 
@@ -76,6 +81,7 @@ function agruparPorEdital(resultados: readonly OportunidadeResponse[]): EditalCa
     ButtonComponent,
     IconComponent,
     EditalCardComponent,
+    VoltarTopoComponent,
   ],
   templateUrl: './oportunidades.page.html',
   styleUrl: './oportunidades.page.scss',
@@ -158,7 +164,13 @@ export class OportunidadesPage {
     if (!contratacao_cnpj_orgao || !contratacao_ano_compra || !contratacao_sequencial_compra)
       return;
 
-    this.definirDetalhe(card.chave, { carregando: true, documentos: [], capag: null, erro: false });
+    this.definirDetalhe(card.chave, {
+      carregando: true,
+      documentos: [],
+      capag: null,
+      plataforma: null,
+      erro: false,
+    });
     this.licitacoes
       .detalharCompra(contratacao_cnpj_orgao, contratacao_ano_compra, contratacao_sequencial_compra)
       .subscribe({
@@ -167,6 +179,7 @@ export class OportunidadesPage {
             carregando: false,
             documentos: dados.documentos,
             capag: dados.capag,
+            plataforma: dados.plataforma,
             erro: false,
           }),
         error: () =>
@@ -174,6 +187,7 @@ export class OportunidadesPage {
             carregando: false,
             documentos: [],
             capag: null,
+            plataforma: null,
             erro: true,
           }),
       });

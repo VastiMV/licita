@@ -40,8 +40,24 @@ class OportunidadeSerializer(serializers.Serializer):
     contratacao_ano_compra = serializers.CharField(allow_null=True)
     contratacao_sequencial_compra = serializers.CharField(allow_null=True)
 
-    link_compras_gov = serializers.CharField()
+    # `plataforma_id` casa com o registro em `apps/integracoes/plataformas.py`
+    # (o frontend usa pra escolher o ícone do botão). Sem `allow_null` de
+    # propósito: toda oportunidade é da plataforma escolhida e tem link de
+    # disputa garantido — sem link não existe oportunidade (ver
+    # services.buscar_oportunidades). Nulo aqui é bug, não dado.
+    plataforma_id = serializers.CharField()
+    link_plataforma = serializers.CharField()
     link_pncp = serializers.CharField(allow_null=True)
+
+    # Selo CAPAG resolvido já na busca, quando o caminho da busca textual
+    # trouxe os insumos junto do detalhe que filtra a plataforma (ver
+    # `views._resolver_capag`). Nulo = sem nota OU insumos indisponíveis
+    # neste caminho — aí o detalhe do card (`CompraDetalheSerializer`) é
+    # quem tenta resolver.
+    capag = serializers.SerializerMethodField()
+
+    def get_capag(self, obj: dict) -> dict | None:
+        return obj.get("capag")
 
     # O contrato do frontend não aceita `null` aqui — `srp` ausente vira
     # "não é SRP" (False), não "não sei".
@@ -67,9 +83,21 @@ class CapagSerializer(serializers.Serializer):
     cor = serializers.CharField()
 
 
+class PlataformaSerializer(serializers.Serializer):
+    """A plataforma onde a compra de fato acontece, resolvida pelo
+    `linkSistemaOrigem` do PNCP (ver `apps/integracoes/plataformas.py`).
+    `id` nulo = plataforma que existe mas não está registrada aqui — o link
+    e o nome continuam valendo."""
+
+    id = serializers.CharField(allow_null=True)
+    nome = serializers.CharField(allow_null=True)
+    link = serializers.CharField()
+
+
 class CompraDetalheSerializer(serializers.Serializer):
-    """Resposta de `CompraDetalheView` — buscada sob demanda (1 clique no
-    card), nunca junto da busca (ver docs/DOMINIO.md)."""
+    """Resposta de `CompraDetalheView` — uma chamada por card, disparada
+    quando o resultado da busca chega (ver docs/DOMINIO.md)."""
 
     documentos = DocumentoSerializer(many=True)
     capag = CapagSerializer(allow_null=True)
+    plataforma = PlataformaSerializer(allow_null=True)

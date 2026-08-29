@@ -39,8 +39,18 @@ export interface OportunidadeResponse {
   readonly contratacao_cnpj_orgao: string | null;
   readonly contratacao_ano_compra: string | null;
   readonly contratacao_sequencial_compra: string | null;
-  readonly link_compras_gov: string;
+  /** Plataforma onde a disputa acontece (registro em
+   * `apps/integracoes/plataformas.py` do backend). Garantidos não-nulos: o
+   * backend só devolve oportunidade da plataforma escolhida e com link de
+   * disputa — sem link não existe oportunidade. */
+  readonly plataforma_id: string;
+  readonly link_plataforma: string;
   readonly link_pncp: string | null;
+  /** Selo CAPAG já resolvido na busca (caminho da busca textual, que pega
+   * os insumos de graça ao filtrar a plataforma). Nulo = sem nota ou o
+   * caminho não tinha os insumos — aí o `CompraDetalheResponse` do card é
+   * quem tenta resolver. */
+  readonly capag: CapagResponse | null;
 }
 
 /** Um arquivo do edital (aviso, anexo, termo de referência...), com link de
@@ -59,9 +69,19 @@ export interface CapagResponse {
   readonly cor: 'verde' | 'amarelo' | 'vermelho';
 }
 
+/** A plataforma de origem da compra, resolvida pelo `linkSistemaOrigem` do
+ * PNCP. `id` nulo = plataforma real porém não registrada no backend (o link
+ * e o nome continuam valendo; só não há ícone próprio). */
+export interface PlataformaResponse {
+  readonly id: string | null;
+  readonly nome: string | null;
+  readonly link: string;
+}
+
 /** Resposta de `GET .../compras/<cnpj>/<ano>/<sequencial>/detalhe/` —
- * buscada sob demanda (1 clique no card), nunca junto da busca. */
+ * uma chamada por card, disparada quando o resultado da busca chega. */
 export interface CompraDetalheResponse {
   readonly documentos: readonly DocumentoResponse[];
   readonly capag: CapagResponse | null;
+  readonly plataforma: PlataformaResponse | null;
 }

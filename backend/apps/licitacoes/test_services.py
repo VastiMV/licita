@@ -13,11 +13,16 @@ from contextlib import contextmanager
 from unittest import mock
 
 import httpx
+from django.core.cache import cache
 from django.test import SimpleTestCase
 
 from apps.integracoes.test_compras_gov import RESPOSTA_CONTRATACOES, RESPOSTA_ITENS
 from apps.integracoes.test_compras_gov import _client_falso as client_falso
-from apps.integracoes.test_pncp import RESPOSTA_BUSCA, RESPOSTA_ITENS_PNCP
+from apps.integracoes.test_pncp import (
+    RESPOSTA_BUSCA,
+    RESPOSTA_DETALHE_COMPRASNET,
+    RESPOSTA_ITENS_PNCP,
+)
 from apps.integracoes.test_pncp import _pncp_falso as pncp_falso
 
 from . import services
@@ -27,8 +32,8 @@ from .services import BuscaSemCorrespondenciaNoCatalogo, buscar_oportunidades
 ITENS_POR_CATALOGO = {
     "resultado": [
         {
-            "idCompra": "925874000052026",
-            "idCompraItem": "925874000052026-1",
+            "idCompra": "92587405000052026",
+            "idCompraItem": "92587405000052026-1",
             "numeroItemCompra": 1,
             "descricaoResumida": "Café torrado",
             "descricaodetalhada": "Café torrado e moído, pacote de 500g, tipo tradicional",
@@ -57,13 +62,20 @@ def _montar_handler():
     return handler
 
 
-def _montar_handler_pncp(resposta_busca=None, resposta_itens=None, status=200):
+def _montar_handler_pncp(resposta_busca=None, resposta_itens=None, status=200, resposta_detalhe=None):
     def handler(request: httpx.Request) -> httpx.Response:
         if status != 200:
             return httpx.Response(status, text="indisponível")
         if request.url.path == "/api/search/":
             return httpx.Response(
                 200, json=resposta_busca if resposta_busca is not None else RESPOSTA_BUSCA
+            )
+        # O detalhe é o que revela a plataforma de origem do edital — sem
+        # ele a busca textual descarta tudo (sem link não há oportunidade).
+        if request.url.path.startswith("/api/consulta/"):
+            return httpx.Response(
+                200,
+                json=resposta_detalhe if resposta_detalhe is not None else RESPOSTA_DETALHE_COMPRASNET,
             )
         return httpx.Response(
             200, json=resposta_itens if resposta_itens is not None else RESPOSTA_ITENS_PNCP
@@ -118,7 +130,7 @@ class BuscaPorCatalogoTests(SimpleTestCase):
     def test_filtro_de_modalidade_usa_codigo_da_contratacao(self):
         with _pncp(False):
             self.assertGreaterEqual(
-                len(_buscar(palavra_chave="Café", codigos_pdm=PDMS_CAFE, codigo_modalidade="6")), 1
+                len(_buscar(palavra_chave="Café", codigos_pdm=PDMS_CAFE, codigo_modalidade="5")), 1
             )
             self.assertEqual(
                 _buscar(palavra_chave="Café", codigos_pdm=PDMS_CAFE, codigo_modalidade="8"), []
@@ -126,14 +138,15 @@ class BuscaPorCatalogoTests(SimpleTestCase):
 
     def test_sem_palavra_chave_navega_contratacoes_do_periodo(self):
         with _pncp(False):
-            resultados = _buscar(codigo_modalidade="6")
+            resultados = _buscar(codigo_modalidade="5")
         self.assertEqual(len(resultados), 1)
         self.assertEqual(resultados[0]["numero_item"], 1)
 
     def test_links_presentes_no_resultado(self):
         with _pncp(False):
             op = _buscar(palavra_chave="Café", codigos_pdm=PDMS_CAFE)[0]
-        self.assertIn("compra=925874000052026", op["link_compras_gov"])
+        self.assertIn("compra=92587405000052026", op["link_plataforma"])
+        self.assertEqual(op["plataforma_id"], "compras_gov")
         self.assertTrue(op["link_pncp"].startswith("https://pncp.gov.br/app/editais/"))
 
     def test_itens_repetidos_entre_pdms_nao_duplicam_no_resultado(self):
@@ -146,6 +159,12 @@ class BuscaPorCatalogoTests(SimpleTestCase):
 class BuscaTextualPncpTests(SimpleTestCase):
     """PNCP ligado — caminho preferido."""
 
+    def setUp(self):
+        # O detalhe de compra é cacheado entre buscas (ver
+        # services.detalhar_compra_cacheada) — cada teste começa limpo pra um
+        # fixture de detalhe não vazar pro teste seguinte.
+        cache.clear()
+
     def test_busca_por_palavra_usa_o_pncp_quando_disponivel(self):
         with _pncp(True):
             resultados = _buscar_com_pncp(_montar_handler_pncp(), palavra_chave="café", codigos_pdm=[])
@@ -157,6 +176,13 @@ class BuscaTextualPncpTests(SimpleTestCase):
         self.assertEqual(op["contratacao_uf"], "SP")
         self.assertEqual(op["contratacao_orgao_nome"], "Prefeitura Municipal Exemplo")
         self.assertEqual(op["link_pncp"], "https://pncp.gov.br/app/editais/12345678000199/2026/5")
+        # O link de disputa é o `linkSistemaOrigem` do detalhe, não remontagem.
+        self.assertEqual(op["link_plataforma"], RESPOSTA_DETALHE_COMPRASNET["linkSistemaOrigem"])
+        self.assertEqual(op["plataforma_id"], "compras_gov")
+        # Os insumos do CAPAG vêm do mesmo detalhe que filtrou a plataforma —
+        # o /api/consulta/ tem rate limit e não dá pra chamar de novo no card.
+        self.assertEqual(op["capag_esfera_id"], "M")
+        self.assertEqual(op["capag_codigo_ibge"], "3509502")
 
     def test_pncp_dispensa_o_catalogo_de_pdm(self):
         with _pncp(True):
@@ -205,6 +231,50 @@ class BuscaTextualPncpTests(SimpleTestCase):
         self.assertGreaterEqual(len(resultados), 1)
         self.assertIn("Café torrado", resultados[0]["descricao_resumida"])
 
+    def test_edital_de_outra_plataforma_e_descartado_e_cai_no_catalogo(self):
+        """O PNCP agrega todas as plataformas; hoje só o compras.gov.br está
+        registrado, então edital de outra plataforma não vira oportunidade —
+        e a busca cai no catálogo (que só acha compra do compras.gov.br)."""
+
+        outra = {
+            **RESPOSTA_DETALHE_COMPRASNET,
+            "usuarioNome": "ECustomize Consultoria em Software S.A",
+            "linkSistemaOrigem": "https://www.portaldecompraspublicas.com.br/processos/x",
+        }
+        with _pncp(True):
+            resultados = _buscar_com_pncp(
+                _montar_handler_pncp(resposta_detalhe=outra),
+                palavra_chave="Café",
+                codigos_pdm=PDMS_CAFE,
+            )
+        self.assertGreaterEqual(len(resultados), 1)
+        self.assertIn("Café torrado", resultados[0]["descricao_resumida"])
+        self.assertIn("cnetmobile", resultados[0]["link_plataforma"])
+
+    def test_edital_sem_link_de_origem_tambem_e_descartado(self):
+        """Sem `linkSistemaOrigem` não há como abrir a disputa — sem link não
+        existe oportunidade (medido ao vivo: ~11 de 50 editais vêm assim)."""
+
+        with _pncp(True):
+            resultados = _buscar_com_pncp(
+                _montar_handler_pncp(resposta_detalhe={}),
+                palavra_chave="Café",
+                codigos_pdm=PDMS_CAFE,
+            )
+        # Caiu no catálogo em vez de devolver edital sem link.
+        self.assertGreaterEqual(len(resultados), 1)
+        self.assertIn("Café torrado", resultados[0]["descricao_resumida"])
+
+    def test_toda_oportunidade_tem_link_de_plataforma(self):
+        with _pncp(True):
+            do_pncp = _buscar_com_pncp(_montar_handler_pncp(), palavra_chave="café", codigos_pdm=[])
+        with _pncp(False):
+            do_catalogo = _buscar(palavra_chave="Café", codigos_pdm=PDMS_CAFE)
+            navegacao = _buscar(codigo_modalidade="5")
+        for op in do_pncp + do_catalogo + navegacao:
+            self.assertTrue(op["link_plataforma"])
+            self.assertEqual(op["plataforma_id"], "compras_gov")
+
     def test_sem_pncp_e_sem_pdm_o_aviso_continua(self):
         vazio = {"items": [], "total": 0}
         with _pncp(True):
@@ -226,6 +296,8 @@ class BuscaTextualPncpTests(SimpleTestCase):
             if request.url.path == "/api/search/":
                 capturado["modalidades"] = request.url.params.get("modalidades")
                 return httpx.Response(200, json=RESPOSTA_BUSCA)
+            if request.url.path.startswith("/api/consulta/"):
+                return httpx.Response(200, json=RESPOSTA_DETALHE_COMPRASNET)
             return httpx.Response(200, json=RESPOSTA_ITENS_PNCP)
 
         with _pncp(True):

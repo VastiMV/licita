@@ -14,11 +14,16 @@ from rest_framework.views import APIView
 
 from apps.capag.lookup import nota_para
 from apps.catalogo.search import buscar_pdms
-from apps.integracoes.clients.compras_gov import ComprasGovClient, ComprasGovClientError
+from apps.integracoes.clients.compras_gov import ComprasGovClientError
 from apps.integracoes.clients.pncp import PncpClient, PncpClientError
+from apps.integracoes.plataformas import identificar_plataforma, plataforma_padrao
 
 from .serializers import CompraDetalheSerializer, OportunidadeSerializer
-from .services import BuscaSemCorrespondenciaNoCatalogo, buscar_oportunidades
+from .services import (
+    BuscaSemCorrespondenciaNoCatalogo,
+    buscar_oportunidades,
+    detalhar_compra_cacheada,
+)
 
 # Mesma janela padrão do protótipo (`app/routers/licitacoes.py`) para o modo
 # interativo — diferente do lookback de 2 dias usado pelo scanner de
@@ -47,7 +52,10 @@ class OportunidadesView(APIView):
         codigos_pdm = [p.codigo_pdm for p in buscar_pdms(palavra_chave)] if palavra_chave else None
 
         try:
-            with ComprasGovClient() as client:
+            # O client de navegação/fallback vem do registro de plataformas
+            # (`apps/integracoes/plataformas.py`) — é lá que uma plataforma
+            # nova entra, não aqui.
+            with plataforma_padrao().criar_client() as client:
                 resultados = buscar_oportunidades(
                     client,
                     data_inicial=data_inicial,
@@ -65,28 +73,55 @@ class OportunidadesView(APIView):
         except ComprasGovClientError as exc:
             return Response({"detail": str(exc)}, status=502)
 
+        _resolver_capag(resultados)
         serializer = OportunidadeSerializer(resultados, many=True)
         return Response(serializer.data)
 
 
+def _resolver_capag(resultados: list[dict]) -> None:
+    """Preenche `capag` nas oportunidades cujos insumos (esfera + IBGE) a
+    busca já trouxe — o caminho da busca textual os pega do mesmo detalhe
+    que filtra a plataforma, de graça. Importa porque o `/api/consulta/` do
+    PNCP tem rate limit por IP (ver docs/DOMINIO.md, 28/08/2026): a chamada
+    de detalhe do card, disparada logo após a busca, leva 429 — se o selo
+    dependesse só dela, sumiria. Nos caminhos sem insumos (navegação/PDM),
+    `capag` fica nulo e o detalhe do card continua sendo quem resolve.
+
+    Resolve aqui, e não em services, porque a nota vem do banco
+    (`apps.capag`) e a orquestração de busca é deliberadamente sem banco.
+    """
+
+    memo: dict[tuple, dict | None] = {}
+    for op in resultados:
+        chave = (op.get("capag_esfera_id"), op.get("capag_codigo_ibge"), op.get("contratacao_uf"))
+        if chave not in memo:
+            memo[chave] = nota_para(esfera_id=chave[0], codigo_ibge=chave[1], uf=chave[2])
+        op["capag"] = memo[chave]
+
+
 class CompraDetalheView(APIView):
     """`GET /api/licitacoes/compras/<cnpj>/<ano>/<sequencial>/detalhe/` —
-    documentos do edital (com link de download direto) + selo CAPAG de uma
-    compra específica.
+    documentos do edital (com link de download direto), selo CAPAG e a
+    plataforma de origem de uma compra específica.
 
-    Sob demanda: o frontend só chama isso quando o usuário abre um card
-    (1 clique = 1 chamada), nunca durante a busca — não queremos voltar a
-    disparar N chamadas extras por resultado, depois de já ter corrigido a
-    lentidão da busca por outro motivo (ver docs/DOMINIO.md).
+    Uma chamada por card, disparada pelo frontend quando o resultado da busca
+    chega — nunca N chamadas dentro da própria busca (não queremos voltar à
+    lentidão já corrigida, ver docs/DOMINIO.md).
     """
 
     def get(self, request: Request, cnpj: str, ano: int, sequencial: int) -> Response:
         capag = None
         documentos: list[dict] = []
+        plataforma = None
 
         with PncpClient() as client:
             try:
-                detalhe = client.detalhar_compra(cnpj=cnpj, ano=ano, sequencial=sequencial)
+                # Cacheado: a busca que gerou este card provavelmente acabou
+                # de detalhar esta mesma compra — e o /api/consulta/ tem rate
+                # limit por IP que a rajada dela consome (ver services).
+                detalhe = detalhar_compra_cacheada(
+                    client, cnpj=cnpj, ano=ano, sequencial=sequencial
+                )
             except PncpClientError:
                 detalhe = None
             if detalhe:
@@ -95,11 +130,26 @@ class CompraDetalheView(APIView):
                     codigo_ibge=detalhe.get("codigo_ibge"),
                     uf=detalhe.get("uf"),
                 )
+                # O link de origem é a resposta definitiva de "em qual
+                # plataforma essa compra acontece" — corrige o palpite da
+                # busca (ver `services._montar_oportunidade`). Plataforma não
+                # registrada ainda assim tem link e nome (os que o PNCP deu);
+                # só fica sem `id` (logo, sem ícone próprio no frontend).
+                link_plataforma = detalhe.get("link_plataforma")
+                if link_plataforma:
+                    conhecida = identificar_plataforma(link_plataforma)
+                    plataforma = {
+                        "id": conhecida.id if conhecida else None,
+                        "nome": conhecida.nome if conhecida else detalhe.get("plataforma_nome"),
+                        "link": link_plataforma,
+                    }
 
             try:
                 documentos = client.listar_arquivos(cnpj=cnpj, ano=ano, sequencial=sequencial)
             except PncpClientError:
                 documentos = []
 
-        serializer = CompraDetalheSerializer({"documentos": documentos, "capag": capag})
+        serializer = CompraDetalheSerializer(
+            {"documentos": documentos, "capag": capag, "plataforma": plataforma}
+        )
         return Response(serializer.data)

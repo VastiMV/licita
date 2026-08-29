@@ -1,4 +1,4 @@
-<article class="edital-card" [class.selecionada]="selecionada()" [class.encerrada]="encerrada()">
+<article class="edital-card" [class.salva]="salva()" [class.encerrada]="encerrada()">
   <div class="cabecalho">
     <span class="tag tag-uf">{{ contratacao().contratacao_uf ?? '—' }}</span>
     @if (contratacao().contratacao_modalidade) {
@@ -8,7 +8,7 @@
       <span class="tag somente-desktop">{{ contratacao().contratacao_situacao }}</span>
     }
     <span class="cabecalho-espaco"></span>
-    @if (detalhe()?.capag; as capag) {
+    @if (seloCapag(); as capag) {
       <span [class]="'selo-capag capag-' + capag.cor">
         <span class="selo-capag-ponto"></span>
         CAPAG {{ capag.nota }}
@@ -71,28 +71,44 @@
 
       <span class="acoes-espaco somente-desktop"></span>
 
+      @if (plataforma(); as plat) {
+        <a
+          class="btn-plataforma"
+          [href]="plat.link"
+          target="_blank"
+          rel="noopener"
+          [title]="'Abrir em ' + (plat.nome ?? 'plataforma de origem')"
+        >
+          <span class="btn-plataforma-chip">
+            @if (plat.icone) {
+              <img [src]="plat.icone" alt="" />
+            } @else {
+              <app-icon name="external-link" />
+            }
+          </span>
+          <span class="btn-plataforma-texto">
+            <span class="btn-plataforma-titulo">Abrir na plataforma</span>
+            @if (plat.nome) {
+              <span class="btn-plataforma-meta">{{ plat.nome }}</span>
+            }
+          </span>
+          <app-icon name="arrow-right" class="btn-plataforma-icone" />
+        </a>
+      }
+
       @if (!encerrada()) {
-        @if (!selecionada()) {
-          <div class="grupo-selecionar">
-            <button type="button" class="btn-selecionar" (click)="selecionar()">
-              Selecionar licitação
-            </button>
-            <button
-              type="button"
-              class="btn-selecionar-icone"
-              title="Selecionar licitação"
-              (click)="selecionar()"
-            >
-              <app-icon name="arrow-right" />
-            </button>
-          </div>
-        } @else {
-          <button type="button" class="btn-selecionada" (click)="removerSelecao()">
-            <app-icon name="check" />
-            Licitação selecionada
+        @if (!salva()) {
+          <button type="button" class="btn-salvar" (click)="salvar()">
+            <app-icon name="bookmark" />
+            Salvar oportunidade
           </button>
-          <button type="button" class="link-remover" (click)="removerSelecao()">
-            Remover da seleção
+        } @else {
+          <button type="button" class="btn-salva" (click)="removerDasSalvas()">
+            <app-icon name="check" />
+            Oportunidade salva
+          </button>
+          <button type="button" class="link-remover" (click)="removerDasSalvas()">
+            Remover das salvas
           </button>
         }
       }

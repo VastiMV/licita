@@ -71,6 +71,9 @@
   --transition-fast: 0.15s ease;
 
   // ---------- Camadas ----------
+  // Botão flutuante: acima do conteúdo, abaixo de tudo que exige atenção
+  // (menu lateral, backdrop, modal).
+  --z-fab: 800;
   --z-sidebar-backdrop: 900;
   --z-sidebar: 901;
   --z-modal-backdrop: 1000;
