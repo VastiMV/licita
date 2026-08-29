@@ -126,6 +126,10 @@ export class DataTableComponent<T> {
     }
   }
 
+  protected dicaDe(coluna: ColunaTabela<T>, linha: T): string | null {
+    return coluna.dica?.(linha) ?? null;
+  }
+
   protected classeCelula(coluna: ColunaTabela<T>, linha: T): string {
     const tom = coluna.tom?.(linha);
     return tom ? `celula-${tom}` : '';

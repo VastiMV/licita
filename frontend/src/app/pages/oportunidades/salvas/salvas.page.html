@@ -22,13 +22,6 @@
   (estadoMudou)="aoMudarEstado($event)"
 >
   <ng-template appTabelaAcoes let-salva>
-    <app-button variant="ghost" (click)="visualizar(salva)">
-      <app-icon name="eye" />
-      Visualizar
-    </app-button>
-    <app-button variant="danger" (click)="excluir(salva)">
-      <app-icon name="trash" />
-      Excluir
-    </app-button>
+    <app-menu [itens]="acoesDe(salva)" [descricao]="'Ações da oportunidade ' + salva.chave" />
   </ng-template>
 </app-data-table>

@@ -6,11 +6,3 @@ h1 {
 app-data-table {
   margin-top: var(--space-5);
 }
-
-// Ícone menor que o padrão de 20px nos botões de ação da tabela. A regra
-// vale para o conteúdo projetado no `ng-template` acima — ele pertence a
-// esta página, não à tabela.
-app-data-table app-button app-icon {
-  width: 15px;
-  height: 15px;
-}

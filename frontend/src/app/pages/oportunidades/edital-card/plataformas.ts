@@ -4,16 +4,9 @@
  * `public/plataformas/`). Plataforma fora desta tabela ainda aparece: usa o
  * nome que o PNCP deu e um ícone genérico.
  *
- * Mora fora do card porque a tabela de oportunidades salvas mostra a mesma
- * coluna "Plataforma" — e as duas telas têm que dar o mesmo nome. */
+ * Mora fora do card (e não dentro dele) porque é o registro do domínio, não
+ * um detalhe de layout: qualquer tela que precise nomear uma plataforma usa
+ * esta tabela, e todas dão o mesmo nome. */
 export const PLATAFORMAS: Record<string, { nome: string; icone: string }> = {
   compras_gov: { nome: 'Compras.gov.br', icone: 'plataformas/compras_gov.png' },
 };
-
-/** Nome de exibição de uma plataforma: o do registro quando conhecida, o que
- * a origem informou quando não, e o próprio id como último recurso (melhor
- * um identificador do que uma coluna vazia). */
-export function nomePlataforma(id: string | null, informado?: string | null): string {
-  const registrada = id ? PLATAFORMAS[id] : undefined;
-  return registrada?.nome ?? informado ?? id ?? '—';
-}

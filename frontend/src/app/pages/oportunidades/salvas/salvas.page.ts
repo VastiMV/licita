@@ -3,7 +3,6 @@ import { Component, OnInit, inject, signal } from '@angular/core';
 import { OportunidadeSalvaResponse } from '../../../contracts/licitacoes/oportunidade-salva.contracts';
 import { OportunidadesSalvasService } from '../../../services/licitacoes/oportunidades-salvas.service';
 import { ModalService } from '../../../shared/overlay/modal.service';
-import { ButtonComponent } from '../../../shared/ui/button/button.component';
 import { DataTableComponent } from '../../../shared/ui/data-table/data-table.component';
 import {
   ColunaTabela,
@@ -12,36 +11,57 @@ import {
   parametroOrdenacao,
 } from '../../../shared/ui/data-table/data-table.model';
 import { TabelaAcoesDirective } from '../../../shared/ui/data-table/tabela-acoes.directive';
-import { IconComponent } from '../../../shared/ui/icon/icon.component';
+import { ItemMenu, MenuComponent } from '../../../shared/ui/menu/menu.component';
 import { ToastService } from '../../../shared/ui/toast/toast.service';
 import { formatarData, formatarMoeda } from '../edital-card/edital-card.utils';
-import { nomePlataforma } from '../edital-card/plataformas';
 import { OportunidadeModalComponent } from './oportunidade-modal/oportunidade-modal.component';
+
+/** Quantos caracteres do município cabem sem esticar a coluna. O nome é
+ * cortado (com reticências) e a UF vem sempre depois — a sigla é o que não
+ * pode sumir de "Bom Jesus da Lapa / BA". O nome inteiro fica no `title`. */
+const MAX_MUNICIPIO = 24;
+
+function cidadeComUf(salva: OportunidadeSalvaResponse): string {
+  const municipio = salva.municipio || '—';
+  const encurtado =
+    municipio.length > MAX_MUNICIPIO
+      ? `${municipio.slice(0, MAX_MUNICIPIO - 1).trimEnd()}…`
+      : municipio;
+  return salva.uf ? `${encurtado} / ${salva.uf}` : encurtado;
+}
 
 /** As chaves das colunas são contrato com o backend (`ORDENACOES` em
  * `apps/licitacoes/views.py`) — é o que vai no `ordering` do endpoint. */
 const COLUNAS: readonly ColunaTabela<OportunidadeSalvaResponse>[] = [
-  { chave: 'descricao', titulo: 'Descrição', valor: (salva) => salva.objeto || '—' },
   {
-    chave: 'plataforma',
-    titulo: 'Plataforma',
-    valor: (salva) => nomePlataforma(salva.plataforma_id, salva.plataforma_nome),
+    chave: 'uasg',
+    titulo: 'UASG',
+    valor: (salva) => salva.uasg || '—',
+    // O objeto saiu da tabela (gastava a largura toda), mas continua sendo
+    // o que identifica a oportunidade — fica na dica da primeira coluna e
+    // inteiro no modal.
+    dica: (salva) => salva.objeto || null,
+    umaLinha: true,
   },
   { chave: 'modalidade', titulo: 'Modalidade', valor: (salva) => salva.modalidade || '—' },
   {
     chave: 'cidade',
     titulo: 'Cidade',
-    valor: (salva) => [salva.municipio, salva.uf].filter(Boolean).join(' / ') || '—',
+    valor: cidadeComUf,
+    dica: (salva) => [salva.municipio, salva.uf].filter(Boolean).join(' / ') || null,
+    umaLinha: true,
   },
   {
     chave: 'data_publicacao',
     titulo: 'Publicação',
     valor: (salva) => formatarData(salva.data_publicacao) ?? '—',
+    umaLinha: true,
   },
   {
     chave: 'prazo',
     titulo: 'Prazo da proposta',
     valor: (salva) => formatarData(salva.data_encerramento_proposta) ?? '—',
+    umaLinha: true,
     // Prazo vencido é o dado mais importante da linha: vira pílula vermelha
     // (a linha inteira também fica destacada, ver `expirada` no template).
     tom: (salva) => (salva.expirada ? 'perigo' : null),
@@ -51,6 +71,7 @@ const COLUNAS: readonly ColunaTabela<OportunidadeSalvaResponse>[] = [
     titulo: 'Valor estimado',
     valor: (salva) => formatarMoeda(salva.valor_total_estimado) ?? '—',
     numerica: true,
+    umaLinha: true,
   },
 ];
 
@@ -63,7 +84,7 @@ const COLUNAS: readonly ColunaTabela<OportunidadeSalvaResponse>[] = [
  */
 @Component({
   selector: 'app-salvas-page',
-  imports: [DataTableComponent, TabelaAcoesDirective, ButtonComponent, IconComponent],
+  imports: [DataTableComponent, TabelaAcoesDirective, MenuComponent],
   templateUrl: './salvas.page.html',
   styleUrl: './salvas.page.scss',
 })
@@ -98,6 +119,16 @@ export class SalvasPage implements OnInit {
   protected aoMudarEstado(estado: EstadoTabela): void {
     this.estado.set(estado);
     this.carregar();
+  }
+
+  /** As ações de uma linha ficam dentro de um menu, não como botões soltos:
+   * é o que mantém a tabela inteira visível num monitor médio, sem rolagem
+   * horizontal. */
+  protected acoesDe(salva: OportunidadeSalvaResponse): readonly ItemMenu[] {
+    return [
+      { rotulo: 'Visualizar', icone: 'eye', executar: () => this.visualizar(salva) },
+      { rotulo: 'Excluir', icone: 'trash', tom: 'perigo', executar: () => this.excluir(salva) },
+    ];
   }
 
   protected visualizar(salva: OportunidadeSalvaResponse): void {

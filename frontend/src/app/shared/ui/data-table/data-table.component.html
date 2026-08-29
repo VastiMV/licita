@@ -70,7 +70,9 @@
               @for (coluna of colunas(); track coluna.chave) {
                 <td
                   [attr.data-rotulo]="coluna.titulo"
+                  [attr.title]="dicaDe(coluna, linha)"
                   [class.numerica]="coluna.numerica"
+                  [class.uma-linha]="coluna.umaLinha"
                   [class]="classeCelula(coluna, linha)"
                 >
                   <span class="celula-conteudo">{{ coluna.valor(linha) }}</span>

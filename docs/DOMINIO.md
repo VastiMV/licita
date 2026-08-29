@@ -129,6 +129,15 @@ qualquer coluna e paginação — todas integradas ao endpoint, nunca em
 memória. Linha com prazo vencido fica destacada, e o modal de visualização
 mostra em texto que não é mais possível gerar proposta.
 
+Colunas: **UASG, modalidade, cidade, publicação, prazo da proposta e valor
+estimado**, mais um menu de ações por linha (visualizar/excluir). O objeto
+do edital **não** é coluna — é longo demais e empurrava a tabela para fora
+da tela; ele continua sendo o que a busca varre, aparece como dica (`title`)
+na coluna de UASG e inteiro no modal. Pela mesma razão a cidade é cortada
+com reticências (a UF nunca some) e as ações ficam num menu em vez de
+botões soltos: a tabela tem que caber num monitor médio sem rolagem
+horizontal — no celular ela vira uma lista de cartões rótulo/valor.
+
 ### Histórico da oportunidade salva (`EventoOportunidadeSalva`)
 
 Toda oportunidade salva carrega um log detalhado. O **módulo que exibe esse

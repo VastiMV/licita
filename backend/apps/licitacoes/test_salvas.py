@@ -211,31 +211,39 @@ class OportunidadesSalvasTests(APITestCase):
     def test_ordenacao_por_coluna_da_tabela_e_coluna_desconhecida_cai_no_padrao(self):
         self.client.post(
             "/api/licitacoes/salvas/",
-            payload([item(contratacao_objeto="Zíper industrial")]),
+            payload([item(contratacao_uasg="925997", contratacao_objeto="Zíper industrial")]),
             format="json",
         )
         self.client.post(
             "/api/licitacoes/salvas/",
-            payload([item(contratacao_sequencial_compra="43", contratacao_objeto="Areia lavada")]),
+            payload(
+                [
+                    item(
+                        contratacao_sequencial_compra="43",
+                        contratacao_uasg="110161",
+                        contratacao_objeto="Areia lavada",
+                    )
+                ]
+            ),
             format="json",
         )
 
-        crescente = self.client.get("/api/licitacoes/salvas/", {"ordering": "descricao"})
+        crescente = self.client.get("/api/licitacoes/salvas/", {"ordering": "uasg"})
         self.assertEqual(
-            [linha["objeto"] for linha in crescente.data["results"]],
-            ["Areia lavada", "Zíper industrial"],
+            [linha["uasg"] for linha in crescente.data["results"]], ["110161", "925997"]
         )
 
-        decrescente = self.client.get("/api/licitacoes/salvas/", {"ordering": "-descricao"})
+        decrescente = self.client.get("/api/licitacoes/salvas/", {"ordering": "-uasg"})
         self.assertEqual(
-            [linha["objeto"] for linha in decrescente.data["results"]],
-            ["Zíper industrial", "Areia lavada"],
+            [linha["uasg"] for linha in decrescente.data["results"]], ["925997", "110161"]
         )
 
-        # Padrão: mais recentes primeiro, sem 400 por coluna inventada.
-        padrao = self.client.get("/api/licitacoes/salvas/", {"ordering": "coluna-que-nao-existe"})
-        self.assertEqual(padrao.status_code, 200)
-        self.assertEqual(padrao.data["results"][0]["objeto"], "Areia lavada")
+        # Padrão: mais recentes primeiro, sem 400 por coluna inventada (nem
+        # por uma que deixou de ser coluna da tabela, como "descricao").
+        for ordering in ("coluna-que-nao-existe", "descricao"):
+            padrao = self.client.get("/api/licitacoes/salvas/", {"ordering": ordering})
+            self.assertEqual(padrao.status_code, 200)
+            self.assertEqual(padrao.data["results"][0]["objeto"], "Areia lavada")
 
     def test_paginacao_integra_com_o_paginador_da_tabela(self):
         for sequencial in range(1, 4):

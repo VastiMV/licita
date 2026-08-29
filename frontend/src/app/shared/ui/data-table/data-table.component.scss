@@ -144,6 +144,10 @@ tbody td {
     text-align: right;
     font-variant-numeric: tabular-nums;
   }
+
+  &.uma-linha {
+    white-space: nowrap;
+  }
 }
 
 tbody tr:last-child td {
@@ -340,6 +344,10 @@ tbody tr.destacada:hover td {
       text-align: right;
     }
 
+    &.uma-linha {
+      white-space: normal;
+    }
+
     &::before {
       content: attr(data-rotulo);
       flex-shrink: 0;
@@ -347,16 +355,13 @@ tbody tr.destacada:hover td {
     }
   }
 
-  // A primeira coluna é o "título" do cartão: sem rótulo, em destaque.
+  // A primeira coluna é o "título" do cartão: mesmo par rótulo/valor das
+  // outras, só que em destaque (o rótulo fica, porque a primeira coluna nem
+  // sempre se explica sozinha — pode ser um número, uma data, um código).
   tbody td:first-child {
     padding-top: var(--space-2);
     font-weight: var(--font-weight-semibold);
     color: var(--color-navy);
-    display: block;
-
-    &::before {
-      display: none;
-    }
   }
 
   tbody tr.destacada td:first-child {

@@ -16,8 +16,6 @@ from __future__ import annotations
 
 import datetime as dt
 
-from django.db.models import Value
-from django.db.models.functions import Coalesce, NullIf
 from django.shortcuts import get_object_or_404
 from rest_framework.pagination import PageNumberPagination
 from rest_framework.request import Request
@@ -191,10 +189,11 @@ class OportunidadesSalvasPaginacao(PageNumberPagination):
 
 # Colunas ordenáveis da tabela do frontend -> campo real. Whitelist, não
 # `OrderingFilter` aberto: o nome da coluna é contrato de tela, e ordenar por
-# um campo interno (`texto_busca`, `itens`) não faz sentido nenhum.
+# um campo interno (`texto_busca`, `itens`) não faz sentido nenhum. O objeto
+# do edital não está aqui porque saiu da tabela — continua sendo o texto que
+# a busca varre (`texto_busca`), só não é coluna.
 ORDENACOES = {
-    "descricao": "objeto",
-    "plataforma": "plataforma_ordenacao",
+    "uasg": "uasg",
     "modalidade": "modalidade",
     "cidade": "municipio",
     "data_publicacao": "data_publicacao",
@@ -236,14 +235,6 @@ class OportunidadesSalvasView(APIView):
             OportunidadeSalva.objects.ativas()
             .select_related("salva_por")
             .buscar(request.query_params.get("busca", ""))
-            # A plataforma exibida é o nome quando ele existe (veio do
-            # detalhe do PNCP) e o id do registro quando não — ordenar tem
-            # que seguir o que a tela mostra.
-            .annotate(
-                plataforma_ordenacao=Coalesce(
-                    NullIf("plataforma_nome", Value("")), "plataforma_id"
-                )
-            )
             .order_by(_ordenacao(request.query_params.get("ordering")))
         )
 

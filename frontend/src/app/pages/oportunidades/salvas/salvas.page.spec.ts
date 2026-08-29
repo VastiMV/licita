@@ -5,6 +5,7 @@ import { of, throwError } from 'rxjs';
 import { OportunidadeSalvaResponse } from '../../../contracts/licitacoes/oportunidade-salva.contracts';
 import { OportunidadesSalvasService } from '../../../services/licitacoes/oportunidades-salvas.service';
 import { ModalService } from '../../../shared/overlay/modal.service';
+import { MenuComponent } from '../../../shared/ui/menu/menu.component';
 import { ToastService } from '../../../shared/ui/toast/toast.service';
 import { OportunidadeModalComponent } from './oportunidade-modal/oportunidade-modal.component';
 import { SalvasPage } from './salvas.page';
@@ -41,7 +42,10 @@ const VENCIDA: OportunidadeSalvaResponse = {
   id: 2,
   chave: '12345678000199-2026-43',
   sequencial_compra: '43',
+  uasg: '110161',
   objeto: 'Serviço de limpeza predial',
+  municipio: 'São Miguel do Oeste dos Campos Gerais',
+  uf: 'SC',
   data_encerramento_proposta: '2026-08-01',
   expirada: true,
 };
@@ -89,8 +93,18 @@ describe('SalvasPage', () => {
     return fixture.debugElement.queryAll(By.css('tbody tr'));
   }
 
-  function acoesDaLinha(indice: number) {
-    return linhas()[indice].queryAll(By.css('app-button'));
+  /** As ações vivem num menu; abrir o menu monta o painel num overlay do
+   * CDK, fora da árvore do componente — por isso a busca é no document. */
+  function abrirMenuDaLinha(indice: number): HTMLButtonElement[] {
+    linhas()[indice].query(By.css('app-menu .gatilho')).nativeElement.click();
+    fixture.detectChanges();
+    return Array.from(document.querySelectorAll<HTMLButtonElement>('.menu-item'));
+  }
+
+  function clicarAcao(indice: number, rotulo: string): void {
+    const item = abrirMenuDaLinha(indice).find((botao) => botao.textContent?.includes(rotulo));
+    item!.click();
+    fixture.detectChanges();
   }
 
   it('carrega a lista ao abrir, mais recentes primeiro', () => {
@@ -108,32 +122,52 @@ describe('SalvasPage', () => {
       .queryAll(By.css('td'))
       .map((td) => td.nativeElement.textContent.trim());
 
-    expect(celulas[0]).toBe('Aquisição de café e açúcar');
-    // Plataforma pelo id registrado, mesmo nome que o card da busca usa.
-    expect(celulas[1]).toBe('Compras.gov.br');
-    expect(celulas[2]).toBe('Pregão Eletrônico');
-    expect(celulas[3]).toBe('Campinas / SP');
-    expect(celulas[4]).toBe('20/08/2026');
-    expect(celulas[5]).toBe('10/09/2026');
-    expect(celulas[6]).toBe('R$ 1.850,00');
+    expect(celulas[0]).toBe('925997');
+    expect(celulas[1]).toBe('Pregão Eletrônico');
+    expect(celulas[2]).toBe('Campinas / SP');
+    expect(celulas[3]).toBe('20/08/2026');
+    expect(celulas[4]).toBe('10/09/2026');
+    expect(celulas[5]).toBe('R$ 1.850,00');
+  });
+
+  it('o objeto saiu da tabela, mas continua na dica da coluna de UASG', () => {
+    const uasg = linhas()[0].queryAll(By.css('td'))[0].nativeElement;
+
+    expect(uasg.getAttribute('title')).toBe('Aquisição de café e açúcar');
+  });
+
+  it('cidade longa é cortada com reticências, sem perder a UF nem quebrar linha', () => {
+    const cidade = linhas()[1].queryAll(By.css('td'))[2].nativeElement;
+
+    expect(cidade.textContent.trim()).toBe('São Miguel do Oeste dos… / SC');
+    expect(cidade.className).toContain('uma-linha');
+    // O nome inteiro fica na dica.
+    expect(cidade.getAttribute('title')).toBe('São Miguel do Oeste dos Campos Gerais / SC');
   });
 
   it('a que perdeu o prazo fica destacada, com o prazo em vermelho', () => {
     expect(linhas()[1].classes['destacada']).toBe(true);
     expect(linhas()[0].classes['destacada']).toBeFalsy();
-    expect(linhas()[1].queryAll(By.css('td'))[5].nativeElement.className).toContain(
+    expect(linhas()[1].queryAll(By.css('td'))[4].nativeElement.className).toContain(
       'celula-perigo',
     );
   });
 
+  it('as ações ficam num menu por linha, não como botões soltos', () => {
+    expect(fixture.debugElement.queryAll(By.directive(MenuComponent))).toHaveLength(2);
+
+    const opcoes = abrirMenuDaLinha(0).map((botao) => botao.textContent?.trim());
+    expect(opcoes).toEqual(['Visualizar', 'Excluir']);
+  });
+
   it('visualizar abre o modal com a oportunidade salva', () => {
-    acoesDaLinha(0)[0].nativeElement.click();
+    clicarAcao(0, 'Visualizar');
 
     expect(modal.abrir).toHaveBeenCalledWith(OportunidadeModalComponent, SALVA);
   });
 
   it('excluir avisa que a ação não pode ser desfeita e só exclui se confirmado', () => {
-    acoesDaLinha(0)[1].nativeElement.click();
+    clicarAcao(0, 'Excluir');
 
     expect(modal.confirmar).toHaveBeenCalledWith(
       expect.objectContaining({ mensagem: expect.stringContaining('não poderá ser desfeita') }),
@@ -147,7 +181,7 @@ describe('SalvasPage', () => {
   it('excluir cancelado não chama o serviço', () => {
     modal.confirmar.mockReturnValue(of(false));
 
-    acoesDaLinha(0)[1].nativeElement.click();
+    clicarAcao(0, 'Excluir');
 
     expect(service.remover).not.toHaveBeenCalled();
   });
@@ -155,7 +189,7 @@ describe('SalvasPage', () => {
   it('falha ao excluir avisa e não some com a linha', () => {
     service.remover.mockReturnValue(throwError(() => new Error('falhou')));
 
-    acoesDaLinha(0)[1].nativeElement.click();
+    clicarAcao(0, 'Excluir');
 
     expect(toast.erro).toHaveBeenCalled();
     expect(linhas()).toHaveLength(2);
@@ -198,7 +232,7 @@ describe('SalvasPage', () => {
     fixture.debugElement.queryAll(By.css('thead th .ordenar'))[0].nativeElement.click();
 
     expect(service.listar).toHaveBeenLastCalledWith(
-      expect.objectContaining({ ordering: 'descricao', page: 1 }),
+      expect.objectContaining({ ordering: 'uasg', page: 1 }),
     );
   });
 

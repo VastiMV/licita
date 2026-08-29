@@ -24,6 +24,13 @@ export interface ColunaTabela<T> {
   readonly ordenavel?: boolean;
   /** Alinha à direita e usa fonte tabular (valores, quantidades). */
   readonly numerica?: boolean;
+  /** Proíbe a quebra de linha na célula — para coluna cujo valor só faz
+   * sentido inteiro numa linha só (cidade, datas). Quem usa é responsável
+   * por encurtar o texto, senão a coluna estica a tabela. */
+  readonly umaLinha?: boolean;
+  /** Texto completo em `title` (tooltip do navegador) — é o par natural de
+   * uma coluna que mostra o valor encurtado. */
+  readonly dica?: (linha: T) => string | null;
   /** Destaque condicional da célula — `null` = célula normal. */
   readonly tom?: (linha: T) => TomCelula | null;
 }
