@@ -1,0 +1,288 @@
+<h1>Cotador</h1>
+<p class="muted">
+  Formação de preço para disputar um pregão. Informe o que você paga ao fornecedor e os percentuais
+  da sua operação; a tela recalcula a cada tecla. Nada aqui é salvo — sair da página descarta a
+  cotação.
+</p>
+
+<form [formGroup]="form" novalidate>
+  <section class="painel" formGroupName="parametros">
+    <h2>Custos e percentuais</h2>
+    <p class="muted nota">
+      Transporte, garantia e lucro incidem sobre o <strong>custo</strong> (o valor pago ao
+      fornecedor). Os tributos incidem sobre a <strong>venda</strong> — por isso o preço não é custo
+      + margem, e sim uma conta que já embute o imposto que vai cair sobre ele mesmo.
+    </p>
+
+    <div class="form-grid">
+      <app-input-number label="Transporte" sufixo="% do custo" formControlName="transporte" />
+      <app-input-number label="Garantia extra" sufixo="% do custo" formControlName="garantia" />
+      <app-input-number
+        label="Lucro desejado"
+        sufixo="% do custo"
+        formControlName="lucroDesejado"
+      />
+      <app-input-number label="Lucro mínimo" sufixo="% do custo" formControlName="lucroMinimo" />
+    </div>
+
+    <div class="form-grid">
+      <app-input-number label="ICMS / Simples" sufixo="% da venda" formControlName="icms" />
+      <app-input-number label="PIS" sufixo="% da venda" formControlName="pis" />
+      <app-input-number label="COFINS" sufixo="% da venda" formControlName="cofins" />
+      <app-input-number label="IPI" sufixo="% da venda" formControlName="ipi" />
+      <app-input-number label="ISS" sufixo="% da venda" formControlName="iss" />
+    </div>
+
+    @if (parametros().lucroMinimo > parametros().lucroDesejado) {
+      <p class="aviso">
+        O lucro mínimo está acima do desejado — o preço mínimo ficaria maior que o preço final.
+      </p>
+    }
+    @if (
+      parametros().icms +
+        parametros().pis +
+        parametros().cofins +
+        parametros().ipi +
+        parametros().iss >=
+      1
+    ) {
+      <p class="aviso">
+        Os tributos somam 100% ou mais da venda: não existe preço que feche essa conta.
+      </p>
+    }
+  </section>
+
+  <section class="painel">
+    <h2>Itens da cotação</h2>
+
+    <div class="rolagem">
+      <table class="tabela">
+        <thead>
+          <tr>
+            <th scope="col" class="col-num">#</th>
+            <th scope="col" class="col-acao"><span class="sr-only">Remover</span></th>
+            <th scope="col">Fornecedor / produto</th>
+            <th scope="col" class="numerica">Qtd.</th>
+            <th scope="col" class="numerica">Valor un. produto</th>
+            <th scope="col" class="numerica">Frete fixo un.</th>
+            <th scope="col" class="numerica">Outros custos un.</th>
+            <th scope="col" class="numerica">Ref. do edital</th>
+            <th scope="col" class="numerica calculada">Custo un.</th>
+            <th scope="col" class="numerica calculada col-resultado">Preço final un.</th>
+          </tr>
+        </thead>
+        <tbody formArrayName="itens">
+          @for (grupo of itens.controls; track grupo; let i = $index) {
+            <tr [formGroupName]="i">
+              <td class="col-num">{{ i + 1 }}</td>
+              <td class="col-acao">
+                <app-button
+                  variant="ghost"
+                  [disabled]="itens.length === 1"
+                  (click)="removerItem(i)"
+                >
+                  <app-icon name="trash" />
+                  <span class="sr-only">Remover item {{ i + 1 }}</span>
+                </app-button>
+              </td>
+              <td class="col-fornecedor">
+                <app-input-text
+                  formControlName="fornecedor"
+                  placeholder="ex.: Papel A4"
+                  ariaLabel="Fornecedor ou produto do item {{ i + 1 }}"
+                />
+              </td>
+              <td>
+                <app-input-number
+                  formControlName="quantidade"
+                  ariaLabel="Quantidade do item {{ i + 1 }}"
+                />
+              </td>
+              <td>
+                <app-input-number
+                  prefixo="R$"
+                  formControlName="valorUnitarioProduto"
+                  ariaLabel="Valor unitário do produto do item {{ i + 1 }}"
+                />
+              </td>
+              <td>
+                <app-input-number
+                  prefixo="R$"
+                  formControlName="freteFixoUnitario"
+                  ariaLabel="Frete fixo unitário do item {{ i + 1 }}"
+                />
+              </td>
+              <td>
+                <app-input-number
+                  prefixo="R$"
+                  formControlName="outrosCustosUnitarios"
+                  ariaLabel="Outros custos unitários do item {{ i + 1 }}"
+                />
+              </td>
+              <td>
+                <app-input-number
+                  prefixo="R$"
+                  formControlName="valorReferenciaEdital"
+                  ariaLabel="Valor de referência do edital do item {{ i + 1 }}"
+                />
+              </td>
+
+              @if (calculados()[i]; as calculado) {
+                <td class="numerica calculada">{{ moeda(calculado.custoUnitario) }}</td>
+                <td class="numerica calculada destaque col-resultado">
+                  {{ moeda(calculado.precoUnitarioFinal) }}
+                </td>
+              }
+            </tr>
+          }
+        </tbody>
+        <tfoot>
+          <tr>
+            <td colspan="3">
+              Total · {{ itens.length }} {{ itens.length === 1 ? 'item' : 'itens' }}
+            </td>
+            <td class="numerica">{{ totais().quantidade }}</td>
+            <td class="numerica" colspan="4">
+              Custo dos produtos: {{ moeda(totais().custoTotalProdutos) }} · preço médio un.:
+              {{ moeda(totais().precoUnitarioMedio) }}
+            </td>
+            <td class="numerica calculada">{{ moeda(totais().capitalNecessario) }}</td>
+            <td class="numerica calculada destaque col-resultado">
+              {{ moeda(totais().precoTotalFinal) }}
+            </td>
+          </tr>
+        </tfoot>
+      </table>
+    </div>
+
+    <app-button variant="ghost" (click)="adicionarItem()">Adicionar item</app-button>
+  </section>
+
+  <section class="painel">
+    <h2>Painel de lances</h2>
+    <p class="muted nota">
+      Com o pregão acontecendo, altere apenas a coluna <strong>Lance atual</strong>.
+    </p>
+
+    <div class="rolagem">
+      <table class="tabela" formArrayName="itens">
+        <thead>
+          <tr>
+            <th scope="col" class="col-num">#</th>
+            <th scope="col">Fornecedor / produto</th>
+            <th scope="col" class="numerica">Lance atual</th>
+            <th scope="col" class="numerica calculada">Equilíbrio</th>
+            <th scope="col" class="numerica calculada">Preço mínimo</th>
+            <th scope="col" class="numerica calculada">Lucro sobre o custo</th>
+            <th scope="col" class="numerica calculada">Lucro líq. un.</th>
+            <th scope="col" class="numerica calculada">Lucro líq. total</th>
+            <th scope="col" class="numerica calculada">Pode baixar</th>
+            <th scope="col" class="numerica calculada">Desconto do lance</th>
+            <th scope="col" class="calculada col-resultado">Status</th>
+          </tr>
+        </thead>
+        <tbody>
+          @for (grupo of itens.controls; track grupo; let i = $index) {
+            <tr [formGroupName]="i">
+              <td class="col-num">{{ i + 1 }}</td>
+              <td class="col-fornecedor texto">
+                {{ grupo.controls.fornecedor.value || 'Item ' + (i + 1) }}
+              </td>
+              <td>
+                <app-input-number
+                  prefixo="R$"
+                  formControlName="lance"
+                  ariaLabel="Lance atual do item {{ i + 1 }}"
+                />
+              </td>
+
+              @if (calculados()[i]; as calculado) {
+                <td class="numerica calculada">{{ moeda(calculado.precoEquilibrio) }}</td>
+                <td class="numerica calculada">{{ moeda(calculado.precoMinimo) }}</td>
+              }
+
+              @if (avaliacoes()[i]; as avaliacao) {
+                <td class="numerica calculada" [class.negativo]="avaliacao.lucroSobreCusto < 0">
+                  {{ percentual(avaliacao.lucroSobreCusto) }}
+                </td>
+                <td
+                  class="numerica calculada"
+                  [class.negativo]="avaliacao.lucroLiquidoUnitario < 0"
+                >
+                  {{ moeda(avaliacao.lucroLiquidoUnitario) }}
+                </td>
+                <td class="numerica calculada" [class.negativo]="avaliacao.lucroLiquidoTotal < 0">
+                  {{ moeda(avaliacao.lucroLiquidoTotal) }}
+                </td>
+                <td class="numerica calculada">{{ moeda(avaliacao.podeBaixar) }}</td>
+                <td class="numerica calculada">{{ percentual(avaliacao.descontoDoLance) }}</td>
+                <td class="calculada col-resultado">
+                  <span [class]="'status tom-' + tom(avaliacao.status)">
+                    {{ avaliacao.status }}
+                  </span>
+                </td>
+              }
+            </tr>
+          }
+        </tbody>
+      </table>
+    </div>
+  </section>
+</form>
+
+<section class="painel">
+  <h2>Simulador de lances</h2>
+  <p class="muted nota">
+    Cinco preços entre o mínimo e o preço final, pra saber de antemão até onde dá pra baixar.
+  </p>
+
+  @if (itens.length > 1) {
+    <div class="seletor-item" role="group" aria-label="Item simulado">
+      @for (grupo of itens.controls; track grupo; let i = $index) {
+        <app-button
+          variant="ghost"
+          class="opcao"
+          [class.ativa]="itemSelecionado() === i"
+          (click)="itemSelecionado.set(i)"
+        >
+          {{ grupo.controls.fornecedor.value || 'Item ' + (i + 1) }}
+        </app-button>
+      }
+    </div>
+  }
+
+  <div class="rolagem">
+    <table class="tabela">
+      <thead>
+        <tr>
+          <th scope="col" class="numerica">Lance</th>
+          <th scope="col" class="numerica">Lucro sobre o custo</th>
+          <th scope="col" class="numerica">Lucro líq. un.</th>
+          <th scope="col" class="numerica">Lucro líq. total</th>
+          <th scope="col" class="numerica">Distância do mínimo</th>
+          <th scope="col">Situação</th>
+          <th scope="col" class="col-acao"><span class="sr-only">Usar</span></th>
+        </tr>
+      </thead>
+      <tbody>
+        @for (degrau of degraus(); track degrau.lance) {
+          <tr>
+            <td class="numerica destaque">{{ moeda(degrau.lance) }}</td>
+            <td class="numerica">{{ percentual(degrau.lucroSobreCusto) }}</td>
+            <td class="numerica">{{ moeda(degrau.lucroLiquidoUnitario) }}</td>
+            <td class="numerica">{{ moeda(degrau.lucroLiquidoTotal) }}</td>
+            <td class="numerica">{{ moeda(degrau.distanciaDoMinimo) }}</td>
+            <td>
+              <span [class]="'status tom-' + tomSituacao(degrau.situacao)">
+                {{ degrau.situacao }}
+              </span>
+            </td>
+            <td class="col-acao">
+              <app-button variant="ghost" (click)="usarLance(degrau.lance)">Usar</app-button>
+            </td>
+          </tr>
+        }
+      </tbody>
+    </table>
+  </div>
+</section>

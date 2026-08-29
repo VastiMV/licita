@@ -29,14 +29,17 @@ src/
     contracts/            interfaces *Request/*Response por domínio — o formato exato da API
     services/             um serviço por domínio, só fala com a API via ApiClient + contracts
     shared/
-      ui/                 átomos reutilizáveis: input-text, select, date-picker, checkbox,
-                           button, badge, icon, data-table (tabela com busca/ordenação/
-                           paginação integradas ao endpoint) e toast (avisos flutuantes)
+      ui/                 átomos reutilizáveis: input-text, input-number (vírgula decimal,
+                           prefixo/sufixo), select, date-picker, checkbox, button, badge,
+                           icon, data-table (tabela com busca/ordenação/paginação integradas
+                           ao endpoint) e toast (avisos flutuantes)
       overlay/             modal-shell + aviso-modal + question-modal, abertos via ModalService
     layout/shell/          topbar + router-outlet + rodapé (identidade Inside Solutions)
     pages/                 uma pasta por tela, monta átomos/modais/serviços — não redeclara nada deles
       oportunidades/       pesquisar/ (busca ao vivo) + salvas/ (lista da equipe) e o
                            edital-card/ que as duas compartilham
+      cotador/             formação de preço para pregão; as fórmulas ficam em
+                           cotador.model.ts (funções puras, sem API)
 ```
 
 **Regra de organização:** um único componente por tipo de controle/modal —

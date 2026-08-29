@@ -55,6 +55,7 @@ export class SidebarComponent {
         { path: '/oportunidades/salvas', label: 'Salvas', icon: 'bookmark' },
       ],
     },
+    { path: '/cotador', label: 'Cotador', icon: 'cotador' },
     { path: '/alertas', label: 'Alertas', icon: 'alertas' },
     { path: '/filtros', label: 'Filtros', icon: 'filtros' },
   ];
