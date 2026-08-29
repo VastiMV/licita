@@ -2,7 +2,8 @@ import { Component, computed, input, output, signal } from '@angular/core';
 
 import { OportunidadeResponse } from '../../../contracts/licitacoes/oportunidade.contracts';
 import { IconComponent } from '../../../shared/ui/icon/icon.component';
-import { DetalheEstado, EditalCard } from '../oportunidades.page';
+import { DetalheEstado, EditalCard } from './edital-card.model';
+import { PLATAFORMAS } from './plataformas';
 import {
   diasRestantes as calcularDiasRestantes,
   estaEncerrada,
@@ -13,15 +14,6 @@ import {
 } from './edital-card.utils';
 
 type Aba = 'itens' | 'documentos';
-
-/** Nome e ícone das plataformas que o backend registra
- * (`apps/integracoes/plataformas.py`) — o `id` é o contrato entre os dois.
- * Plataforma nova no backend = uma entrada aqui (com o favicon dela em
- * `public/plataformas/`). Plataforma fora desta tabela ainda abre: o botão
- * usa o nome que o PNCP deu e um ícone genérico. */
-const PLATAFORMAS: Record<string, { nome: string; icone: string }> = {
-  compras_gov: { nome: 'Compras.gov.br', icone: 'plataformas/compras_gov.png' },
-};
 
 /** Card de uma oportunidade (= um edital) na busca — layout desktop (6a) e
  * mobile (7a) do handoff em `docs/Mockups/card_oportunidades/README.md`.
@@ -39,18 +31,24 @@ export class EditalCardComponent {
   readonly card = input.required<EditalCard>();
   readonly detalhe = input<DetalheEstado | undefined>(undefined);
 
+  /** Já está na lista de salvas — quem sabe disso é a página (ver
+   * `PesquisarPage`), o card só desenha. Salvo não volta a "não salvo" por
+   * aqui: sair da lista é ação do módulo de salvas (ver docs/DOMINIO.md). */
+  readonly salva = input(false);
+  readonly salvando = input(false);
+
+  /** Desliga o botão de salvar onde ele não faz sentido — o modal de
+   * visualização do módulo de salvas mostra o mesmo card de uma
+   * oportunidade que, por definição, já está salva. */
+  readonly podeSalvar = input(true);
+
+  /** A página é quem confirma e persiste — o card só avisa que pediram. */
+  readonly salvar = output<void>();
+
   /** A página é quem sabe abrir arquivo (`window.open`) — o card só avisa. */
   readonly baixarEdital = output<void>();
 
   protected readonly abaAtiva = signal<Aba>('itens');
-
-  // "Salvar oportunidade" ainda não persiste nada — o módulo "Minhas
-  // oportunidades" (lista de salvas, com exclusão e status de expirada) está
-  // especificado em docs/DOMINIO.md ("OportunidadeSalva") mas não existe.
-  // Por enquanto é só o estado visual local, pra deixar a interação e os
-  // dois visuais prontos; quando o módulo existir, isto vira uma chamada de
-  // serviço (POST/DELETE em /api/licitacoes/salvas/).
-  protected readonly salva = signal(false);
 
   // Helpers de formatação expostos pro template (ver edital-card.utils.ts).
   protected readonly moeda = formatarMoeda;
@@ -149,14 +147,6 @@ export class EditalCardComponent {
 
   protected mudarAba(aba: Aba): void {
     this.abaAtiva.set(aba);
-  }
-
-  protected salvar(): void {
-    this.salva.set(true);
-  }
-
-  protected removerDasSalvas(): void {
-    this.salva.set(false);
   }
 
   /** Chips sob a descrição do item — só com dados reais do PNCP; CATSER e

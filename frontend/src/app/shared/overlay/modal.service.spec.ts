@@ -42,6 +42,16 @@ describe('ModalService', () => {
     expect(resultado).toBe(true);
   });
 
+  it('abrir() monta o componente recebido com os dados, sem a página tocar no Dialog do CDK', () => {
+    dialogOpenSpy.mockReturnValue({ closed: of('fechou') });
+
+    let resultado: string | undefined;
+    service.abrir<string, { id: number }>(AvisoModalComponent, { id: 7 }).subscribe((r) => (resultado = r));
+
+    expect(dialogOpenSpy).toHaveBeenCalledWith(AvisoModalComponent, { data: { id: 7 } });
+    expect(resultado).toBe('fechou');
+  });
+
   it('confirmar() resolve false quando o modal fecha sem escolha (backdrop/esc)', () => {
     dialogOpenSpy.mockReturnValue({ closed: of(undefined) });
 

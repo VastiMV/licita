@@ -5,10 +5,13 @@ import { Subject, of, throwError } from 'rxjs';
 import {
   CompraDetalheResponse,
   OportunidadeResponse,
-} from '../../contracts/licitacoes/oportunidade.contracts';
-import { LicitacoesService } from '../../services/licitacoes/licitacoes.service';
-import { formatarBr, hojeIso, somarDias } from '../../shared/ui/date-picker/date-picker.utils';
-import { OportunidadesPage } from './oportunidades.page';
+} from '../../../contracts/licitacoes/oportunidade.contracts';
+import { LicitacoesService } from '../../../services/licitacoes/licitacoes.service';
+import { OportunidadesSalvasService } from '../../../services/licitacoes/oportunidades-salvas.service';
+import { ModalService } from '../../../shared/overlay/modal.service';
+import { formatarBr, hojeIso, somarDias } from '../../../shared/ui/date-picker/date-picker.utils';
+import { ToastService } from '../../../shared/ui/toast/toast.service';
+import { PesquisarPage } from './pesquisar.page';
 
 const OPORTUNIDADE: OportunidadeResponse = {
   numero_item: '12',
@@ -42,11 +45,23 @@ const OPORTUNIDADE: OportunidadeResponse = {
 };
 
 // Segundo item do MESMO edital — casa por cnpj+ano+sequencial (ver
-// `chaveEdital` em oportunidades.page.ts).
+// `chaveEdital` em edital-card/edital-card.model.ts).
 const OPORTUNIDADE_2: OportunidadeResponse = {
   ...OPORTUNIDADE,
   numero_item: '13',
   descricao_resumida: 'Mouse óptico USB',
+};
+
+// Prazo lá na frente: os testes de salvar dependem do botão existir, e o
+// card esconde "Salvar" em oportunidade encerrada (data fixa venceria).
+const OPORTUNIDADE_ABERTA: OportunidadeResponse = {
+  ...OPORTUNIDADE,
+  contratacao_data_encerramento_proposta: '31/12/2099',
+};
+
+const OPORTUNIDADE_ABERTA_2: OportunidadeResponse = {
+  ...OPORTUNIDADE_2,
+  contratacao_data_encerramento_proposta: '31/12/2099',
 };
 
 const DETALHE: CompraDetalheResponse = {
@@ -59,20 +74,32 @@ const DETALHE: CompraDetalheResponse = {
   },
 };
 
-describe('OportunidadesPage', () => {
-  let fixture: ComponentFixture<OportunidadesPage>;
+describe('PesquisarPage', () => {
+  let fixture: ComponentFixture<PesquisarPage>;
   let licitacoes: {
     buscarOportunidades: ReturnType<typeof vi.fn>;
     detalharCompra: ReturnType<typeof vi.fn>;
   };
+  let salvas: { chaves: ReturnType<typeof vi.fn>; salvar: ReturnType<typeof vi.fn> };
+  let modal: { confirmar: ReturnType<typeof vi.fn> };
+  let toast: { sucesso: ReturnType<typeof vi.fn>; erro: ReturnType<typeof vi.fn> };
 
   beforeEach(() => {
     licitacoes = { buscarOportunidades: vi.fn(), detalharCompra: vi.fn(() => of(DETALHE)) };
+    salvas = { chaves: vi.fn(() => of([])), salvar: vi.fn(() => of({})) };
+    modal = { confirmar: vi.fn(() => of(true)) };
+    toast = { sucesso: vi.fn(), erro: vi.fn() };
+
     TestBed.configureTestingModule({
-      imports: [OportunidadesPage],
-      providers: [{ provide: LicitacoesService, useValue: licitacoes }],
+      imports: [PesquisarPage],
+      providers: [
+        { provide: LicitacoesService, useValue: licitacoes },
+        { provide: OportunidadesSalvasService, useValue: salvas },
+        { provide: ModalService, useValue: modal },
+        { provide: ToastService, useValue: toast },
+      ],
     });
-    fixture = TestBed.createComponent(OportunidadesPage);
+    fixture = TestBed.createComponent(PesquisarPage);
     fixture.detectChanges();
   });
 
@@ -245,5 +272,57 @@ describe('OportunidadesPage', () => {
     // "Limpar" devolve a janela padrão, não deixa as datas vazias.
     const campos = fixture.debugElement.queryAll(By.css('app-date-picker input'));
     expect(campos[0].nativeElement.value).toBe(formatarBr(somarDias(hojeIso(), -7)));
+  });
+  it('salvar pede confirmação antes de persistir', () => {
+    licitacoes.buscarOportunidades.mockReturnValue(of([OPORTUNIDADE_ABERTA]));
+    modal.confirmar.mockReturnValue(of(false));
+    buscar();
+
+    fixture.debugElement.query(By.css('.btn-salvar')).nativeElement.click();
+    fixture.detectChanges();
+
+    expect(modal.confirmar).toHaveBeenCalled();
+    expect(salvas.salvar).not.toHaveBeenCalled();
+  });
+
+  it('confirmado, salva o edital inteiro (itens + plataforma do detalhe) e avisa', () => {
+    licitacoes.buscarOportunidades.mockReturnValue(of([OPORTUNIDADE_ABERTA, OPORTUNIDADE_ABERTA_2]));
+    buscar();
+
+    fixture.debugElement.query(By.css('.btn-salvar')).nativeElement.click();
+    fixture.detectChanges();
+
+    expect(salvas.salvar).toHaveBeenCalledWith({
+      itens: [OPORTUNIDADE_ABERTA, OPORTUNIDADE_ABERTA_2],
+      capag: DETALHE.capag,
+      plataforma: DETALHE.plataforma,
+    });
+    expect(toast.sucesso).toHaveBeenCalled();
+    // Salvou: vira estado, não botão de desfazer (ver docs/DOMINIO.md).
+    expect(fixture.debugElement.query(By.css('.btn-salvar'))).toBeNull();
+    expect(fixture.debugElement.query(By.css('.btn-salva'))).not.toBeNull();
+  });
+
+  it('o que já está na lista de salvas abre marcado, sem botão de salvar', () => {
+    salvas.chaves.mockReturnValue(of(['12345678000199-2026-5']));
+    fixture = TestBed.createComponent(PesquisarPage);
+    fixture.detectChanges();
+    licitacoes.buscarOportunidades.mockReturnValue(of([OPORTUNIDADE_ABERTA]));
+    buscar();
+
+    expect(fixture.debugElement.query(By.css('.btn-salvar'))).toBeNull();
+    expect(fixture.debugElement.query(By.css('.btn-salva'))).not.toBeNull();
+  });
+
+  it('falha ao salvar avisa e mantém o botão disponível pra tentar de novo', () => {
+    licitacoes.buscarOportunidades.mockReturnValue(of([OPORTUNIDADE_ABERTA]));
+    salvas.salvar.mockReturnValue(throwError(() => new Error('falhou')));
+    buscar();
+
+    fixture.debugElement.query(By.css('.btn-salvar')).nativeElement.click();
+    fixture.detectChanges();
+
+    expect(toast.erro).toHaveBeenCalled();
+    expect(fixture.debugElement.query(By.css('.btn-salvar'))).not.toBeNull();
   });
 });

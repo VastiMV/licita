@@ -1,0 +1,20 @@
+<app-modal-shell titulo="Oportunidade salva" largura="larga" (fechar)="fechar()">
+  <p class="modal-meta">
+    Salva por {{ salva.salva_por ?? 'usuário removido' }}
+    @if (salva.uasg) {
+      · UASG {{ salva.uasg }}
+    }
+  </p>
+
+  <!-- `podeSalvar` desligado: já está salva — e sair da lista é a ação de
+       excluir, na própria tabela. -->
+  <app-edital-card
+    [card]="card"
+    [detalhe]="detalhe()"
+    [salva]="true"
+    [podeSalvar]="false"
+    (baixarEdital)="baixarEdital()"
+  />
+
+  <app-button modalFooter variant="ghost" (click)="fechar()">Fechar</app-button>
+</app-modal-shell>

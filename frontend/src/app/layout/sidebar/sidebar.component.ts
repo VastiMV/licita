@@ -2,6 +2,7 @@ import { Component, inject } from '@angular/core';
 
 import { IconComponent, type IconName } from '../../shared/ui/icon/icon.component';
 import { BrandComponent } from '../brand/brand.component';
+import { NavGroupComponent, type NavSubItem } from '../nav-group/nav-group.component';
 import { NavItemComponent } from '../nav-item/nav-item.component';
 import { SidebarStateService } from './sidebar-state.service';
 
@@ -9,6 +10,9 @@ interface NavLink {
   readonly path: string;
   readonly label: string;
   readonly icon: IconName;
+  /** Item de primeiro nível que agrupa outros (ver `NavGroupComponent`) —
+   * o pai não é link, quem navega são os filhos. */
+  readonly itens?: readonly NavSubItem[];
 }
 
 /**
@@ -27,15 +31,30 @@ interface NavLink {
  */
 @Component({
   selector: 'app-sidebar',
-  imports: [BrandComponent, NavItemComponent, IconComponent],
+  imports: [BrandComponent, NavItemComponent, NavGroupComponent, IconComponent],
   templateUrl: './sidebar.component.html',
   styleUrl: './sidebar.component.scss',
 })
 export class SidebarComponent {
   protected readonly state = inject(SidebarStateService);
 
+  /** Em mobile a Sidebar é um painel off-canvas: navegar fecha o painel.
+   * Abrir/fechar um grupo (ver `NavGroupComponent`), não — o clique no
+   * cabeçalho do grupo borbulha até aqui, mas não é navegação. */
+  protected fecharSeNavegou(evento: Event): void {
+    if ((evento.target as HTMLElement).closest('a')) this.state.closeMobile();
+  }
+
   protected readonly links: readonly NavLink[] = [
-    { path: '/oportunidades', label: 'Oportunidades', icon: 'oportunidades' },
+    {
+      path: '/oportunidades',
+      label: 'Oportunidades',
+      icon: 'oportunidades',
+      itens: [
+        { path: '/oportunidades/pesquisar', label: 'Pesquisar', icon: 'search' },
+        { path: '/oportunidades/salvas', label: 'Salvas', icon: 'bookmark' },
+      ],
+    },
     { path: '/alertas', label: 'Alertas', icon: 'alertas' },
     { path: '/filtros', label: 'Filtros', icon: 'filtros' },
   ];

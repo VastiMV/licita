@@ -54,6 +54,9 @@
         <app-edital-card
           [card]="card"
           [detalhe]="detalheDe(card.chave)"
+          [salva]="estaSalva(card.chave)"
+          [salvando]="estaSalvando(card.chave)"
+          (salvar)="salvar(card)"
           (baixarEdital)="baixarEdital(card.chave)"
         />
       }

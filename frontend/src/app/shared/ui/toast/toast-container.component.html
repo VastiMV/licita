@@ -1,0 +1,24 @@
+<!-- `role="status"` + `aria-live="polite"`: leitor de tela anuncia o aviso
+     sem interromper o que o usuário está fazendo. -->
+<div class="toasts" role="status" aria-live="polite">
+  @for (toast of toasts(); track toast.id) {
+    <div class="toast" [class]="'toast-' + toast.tom">
+      <span class="toast-icone">
+        <app-icon [name]="icone(toast.tom)" />
+      </span>
+
+      <div class="toast-corpo">
+        <p class="toast-mensagem">{{ toast.mensagem }}</p>
+        @if (toast.acao; as acao) {
+          <button type="button" class="toast-acao" (click)="executar(toast)">
+            {{ acao.rotulo }}
+          </button>
+        }
+      </div>
+
+      <button type="button" class="toast-fechar" aria-label="Fechar aviso" (click)="fechar(toast)">
+        ×
+      </button>
+    </div>
+  }
+</div>

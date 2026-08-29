@@ -1,0 +1,34 @@
+<h1>Oportunidades salvas</h1>
+<p class="muted">
+  O que a equipe salvou na busca fica aqui — a lista é compartilhada por todos os usuários. As
+  linhas destacadas em vermelho perderam o prazo de envio de proposta.
+</p>
+
+@if (erro()) {
+  <p class="erro">Não foi possível carregar as oportunidades salvas agora.</p>
+}
+
+<app-data-table
+  [colunas]="colunas"
+  [linhas]="linhas()"
+  [total]="total()"
+  [estado]="estado()"
+  [carregando]="carregando()"
+  [chaveDe]="chaveDe"
+  [destacada]="estaExpirada"
+  rotuloBusca="Buscar"
+  placeholderBusca="Busca na descrição e nos itens…"
+  mensagemVazia="Nenhuma oportunidade salva. Salve uma na busca (Oportunidades / Pesquisar)."
+  (estadoMudou)="aoMudarEstado($event)"
+>
+  <ng-template appTabelaAcoes let-salva>
+    <app-button variant="ghost" (click)="visualizar(salva)">
+      <app-icon name="eye" />
+      Visualizar
+    </app-button>
+    <app-button variant="danger" (click)="excluir(salva)">
+      <app-icon name="trash" />
+      Excluir
+    </app-button>
+  </ng-template>
+</app-data-table>

@@ -15,14 +15,23 @@
     </button>
   </div>
 
-  <nav aria-label="Menu principal" (click)="state.closeMobile()">
+  <nav aria-label="Menu principal" (click)="fecharSeNavegou($event)">
     @for (link of links; track link.path) {
-      <app-nav-item
-        [path]="link.path"
-        [label]="link.label"
-        [icon]="link.icon"
-        [compact]="state.iconOnly()"
-      />
+      @if (link.itens; as itens) {
+        <app-nav-group
+          [label]="link.label"
+          [icon]="link.icon"
+          [itens]="itens"
+          [compact]="state.iconOnly()"
+        />
+      } @else {
+        <app-nav-item
+          [path]="link.path"
+          [label]="link.label"
+          [icon]="link.icon"
+          [compact]="state.iconOnly()"
+        />
+      }
     }
   </nav>
 </aside>

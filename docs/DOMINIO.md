@@ -54,39 +54,105 @@ A busca de **oportunidades item a item** (tela principal do protótipo) não
 persiste — é consulta ao vivo em `ComprasGovClient`/`PncpClient`, cruzada com
 `Pdm` quando há palavra-chave. Ver "Busca de oportunidades" abaixo.
 
-### `OportunidadeSalva` — **especificado, ainda não implementado**
+### `OportunidadeSalva`
 
-O botão "Salvar oportunidade" do card (frontend,
-`pages/oportunidades/edital-card/`) já existe visualmente, mas hoje só guarda
-estado local — este model e o módulo abaixo são o que falta pra ele persistir.
-Especificação para a implementação:
+Uma compra (edital) que alguém escolheu guardar para trabalhar depois — o
+que o botão "Salvar oportunidade" do card grava. A busca continua sem
+persistir nada; salvar é o único momento em que uma oportunidade vira
+registro. Implementado em `apps/licitacoes/models.py`.
+
+Duas decisões de produto moldam o model:
+
+- **A lista é da empresa, não do usuário** (29/08/2026). Quem salvou fica
+  registrado (`salva_por`), mas a oportunidade aparece para todos os
+  usuários: o time trabalha a mesma lista. Não há filtro por dono em
+  nenhuma consulta, e a unicidade é global — a mesma compra não entra duas
+  vezes.
+- **Excluir da lista não apaga o histórico.** O log precisa poder dizer "foi
+  removida por fulano" *depois* da remoção, então excluir é remoção lógica
+  (`removida_em`/`removida_por`). A unicidade vale só entre as ativas
+  (`UniqueConstraint` com `condition=removida_em IS NULL`), o que permite
+  salvar de novo depois — criando um registro novo, com log próprio, sem
+  misturar com a história do anterior.
 
 | Campo | Tipo | Observação |
 |---|---|---|
-| `owner` | FK `User` | quem salvou |
-| `numero_controle_pncp` | string | identidade canônica da compra (única por owner+compra: `unique_together (owner, numero_controle_pncp)`) |
-| `cnpj_orgao`, `ano_compra`, `sequencial_compra` | string | pra rechamada do detalhe no PNCP |
-| `orgao_nome`, `uf`, `municipio`, `objeto`, `modalidade` | string | snapshot de exibição (a lista precisa renderizar sem rechamar API) |
-| `data_encerramento_proposta` | date, nullable | base do status "expirada" |
-| `link_plataforma`, `link_pncp` | string, nullable | como estavam no momento do salvamento |
-| `valor_total_estimado` | decimal, nullable | |
+| `cnpj_orgao`, `ano_compra`, `sequencial_compra` | string | identidade da compra no PNCP; a propriedade `chave` (`cnpj-ano-sequencial`) é a mesma que o card usa no frontend |
+| `objeto`, `orgao_nome`, `uasg`, `uf`, `municipio`, `modalidade`, `situacao` | string | snapshot de exibição (a lista renderiza sem rechamar API) |
+| `data_publicacao`, `data_encerramento_proposta` | date, nullable | a segunda é a base do status "expirada" |
+| `valor_total_estimado` | decimal, nullable | soma dos itens; nulo se algum item não tiver valor (não soma parcial) |
+| `plataforma_id`, `plataforma_nome`, `link_plataforma`, `link_pncp` | string | como estavam no momento do salvamento |
+| `capag` | JSON, nullable | selo como estava ao salvar |
+| `itens` | JSON | **snapshot** das linhas da busca daquele edital (formato de `OportunidadeSerializer`) — é com ele que o modal desenha o card sem ir na origem |
+| `texto_busca` | text | objeto + descrição dos itens, normalizado; é o que a busca da tabela varre (sem índice: a consulta é substring, que btree não serve — se a lista crescer, copiar o `GinIndex`/`gin_trgm_ops` do `Pdm`) |
+| `salva_por` | FK `User`, nullable | quem salvou (informação, não filtro) |
 | `criada_em` | datetime | |
+| `removida_em`, `removida_por` | datetime / FK `User`, nullable | remoção lógica |
 
 Regras:
 
 - **Status "expirada" é calculado, não gravado**: `data_encerramento_proposta
-  < hoje` (nula = não expira). Nada de task pra marcar expirada.
-- Endpoints REST em `apps/licitacoes`: `GET /api/licitacoes/salvas/` (lista
-  do usuário logado, com um campo `expirada: bool` no serializer),
-  `POST /api/licitacoes/salvas/` (payload = os campos snapshot; repetido é
-  204/idempotente, não erro), `DELETE /api/licitacoes/salvas/<id>/` (só do
-  próprio owner).
-- Frontend: módulo/página **"Minhas oportunidades"** (rota nova no sidebar),
-  listando as salvas com o mesmo visual de card compacto, badge "Expirada"
-  quando for o caso, e botão de excluir. O botão "Salvar oportunidade" do
-  card de busca troca o estado local (`salva` signal) por chamadas a esse
-  serviço.
-- Salvar é por **edital/compra** (o card), não por item.
+  < hoje` (nula = não expira). Nada de task pra marcar expirada. O que se
+  grava é o *evento* de que o prazo venceu — uma vez só, ver o log abaixo.
+- **Salvar é por edital/compra** (o card), não por item.
+- **Salvar é só de ida.** O botão do card pede confirmação e não volta a ser
+  um toggle: quem salvou tira a oportunidade pelo módulo de salvas. Sem
+  isso, um clique repetido viraria log de cria/apaga/cria — e o histórico
+  perderia o sentido. Salvar a mesma compra de novo é idempotente (devolve o
+  registro existente, sem novo evento).
+- **Prazo vencido não some da lista — fica destacado.** A linha da tabela
+  aparece realçada e o card (na busca e no modal) mostra em texto que o
+  prazo encerrou e que não é mais possível gerar proposta. Quando o módulo
+  de propostas existir, é `expirada` que ele consulta para bloquear a ação e
+  repetir essa mensagem — nada pode ser feito com uma oportunidade vencida.
+- **Dados voláteis não vêm do snapshot**: documentos do edital, plataforma
+  de origem e selo CAPAG são consultados ao abrir o modal, em
+  `CompraDetalheView` (cacheado, ver `services.detalhar_compra_cacheada`).
+  O snapshot é o que permite abrir sem esperar rede; a consulta é o que
+  mantém atualizado o que muda.
+
+Endpoints (`apps/licitacoes/urls.py`, todos `IsAuthenticated`):
+
+| Rota | O quê |
+|---|---|
+| `GET /api/licitacoes/salvas/` | lista paginada (`page`, `page_size`), com `busca` (objeto + itens) e `ordering` por nome de coluna da tabela; devolve `count`/`results` mais `expiradas` (total do conjunto, base do aviso da tela) |
+| `POST /api/licitacoes/salvas/` | payload = `itens` (o resultado da busca daquele edital) + `capag` + `plataforma`; o resumo é derivado no backend. Repetido = 200 com o registro existente |
+| `DELETE /api/licitacoes/salvas/<id>/` | tira da lista (remoção lógica) |
+| `DELETE /api/licitacoes/salvas/expiradas/` | tira todas as vencidas de uma vez (o link do aviso) |
+| `GET /api/licitacoes/salvas/chaves/` | só as chaves das ativas — é como a busca sabe que um card já está salvo |
+| `GET /api/licitacoes/salvas/<id>/eventos/` | o histórico (ver abaixo) |
+
+Frontend: **"Oportunidades" virou menu de primeiro nível**, com "Pesquisar"
+(a busca ao vivo, antigo módulo "Oportunidades") e "Salvas". A tela de
+salvas é uma tabela (`shared/ui/data-table`) com busca, ordenação por
+qualquer coluna e paginação — todas integradas ao endpoint, nunca em
+memória. Linha com prazo vencido fica destacada, e o modal de visualização
+mostra em texto que não é mais possível gerar proposta.
+
+### Histórico da oportunidade salva (`EventoOportunidadeSalva`)
+
+Toda oportunidade salva carrega um log detalhado. O **módulo que exibe esse
+histórico ainda não existe** — o que existe é o banco, o endpoint e a
+disciplina de escrever a história desde já (história não se reconstrói
+depois). A tela prevista: um registro principal ("a oportunidade X, com a
+descrição Y, foi salva dia tal por fulano") com um link "detalhes" que abre
+a lista do que aconteceu, no estilo de um extrato de ligação.
+
+| Campo | Tipo | Observação |
+|---|---|---|
+| `oportunidade` | FK `OportunidadeSalva` | sobrevive à remoção da lista (que é lógica) |
+| `tipo` | choices | ver tabela abaixo |
+| `descricao` | text | texto pronto para exibição ("Removida da lista por Gustavo.") |
+| `autor` | FK `User`, nullable | nulo = evento do sistema |
+| `dados` | JSON | espaço livre por tipo — é daqui que sai o link de "abrir a proposta" quando esse módulo existir (`{"proposta_id": 42}`), sem migração nova |
+| `ocorrido_em` | datetime | ordem do extrato |
+
+| `tipo` | Quando entra |
+|---|---|
+| `salva` | no `POST` — abre o histórico |
+| `prazo_vencido` | quando a lista é servida e a oportunidade já passou do prazo sem ter esse evento (idempotente). Não há task periódica: o status é calculado, e a linha do log só precisa existir antes de alguém abrir o histórico |
+| `removida` | na exclusão (individual ou em lote pelas vencidas) |
+| `proposta_gerada` | **ainda não produzido** — declarado porque o log já é escrito no formato final; entra junto com o módulo de propostas |
 
 ### `Filtro`
 Critério salvo por um usuário para monitorar novas licitações.

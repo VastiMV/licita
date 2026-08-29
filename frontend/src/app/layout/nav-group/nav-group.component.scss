@@ -1,0 +1,67 @@
+@use 'mixins' as *;
+
+:host {
+  display: contents;
+}
+
+// Mesma caixa de um item de menu (ver nav-item.component.scss) — é um botão
+// só porque o pai não navega, mas tem que parecer parte da mesma lista.
+.grupo-cabecalho {
+  appearance: none;
+  width: 100%;
+  display: flex;
+  align-items: center;
+  gap: 0.65rem;
+  border: none;
+  background: none;
+  color: var(--color-muted);
+  font: inherit;
+  font-size: var(--font-size-sm);
+  font-weight: var(--font-weight-medium);
+  text-align: left;
+  padding: 0.55rem 0.85rem;
+  border-radius: var(--radius-sm);
+  cursor: pointer;
+  transition:
+    background var(--transition-fast),
+    color var(--transition-fast);
+
+  &:hover {
+    background: rgba(43, 124, 196, 0.18);
+    color: var(--color-navy);
+  }
+
+  &:focus-visible {
+    @include focus-ring;
+  }
+}
+
+.label {
+  flex: 1;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.grupo-seta {
+  width: 14px;
+  height: 14px;
+  flex-shrink: 0;
+}
+
+// Trilho à esquerda: liga visualmente os filhos ao pai sem precisar de
+// indentação grande (a Sidebar é estreita).
+.grupo-itens {
+  display: flex;
+  flex-direction: column;
+  gap: 0.2rem;
+  margin: 0.2rem 0 0.2rem 1.1rem;
+  padding-left: 0.5rem;
+  border-left: 1px solid var(--color-border);
+}
+
+@include reduced-motion {
+  .grupo-cabecalho {
+    transition: none;
+  }
+}

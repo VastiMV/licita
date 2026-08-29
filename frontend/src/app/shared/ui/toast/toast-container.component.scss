@@ -1,0 +1,149 @@
+@use 'mixins' as *;
+
+.toasts {
+  position: fixed;
+  top: var(--space-4);
+  right: var(--space-4);
+  z-index: var(--z-modal);
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2);
+  width: min(420px, calc(100vw - var(--space-8)));
+  pointer-events: none;
+}
+
+.toast {
+  display: flex;
+  align-items: flex-start;
+  gap: var(--space-3);
+  padding: var(--space-3) var(--space-4);
+  border-radius: var(--radius-md);
+  border: 1px solid;
+  border-left-width: 4px;
+  box-shadow: var(--shadow-md);
+  pointer-events: auto;
+  animation: toast-entrada var(--transition-fast) ease-out;
+}
+
+// O ícone é chip cheio (glifo branco sobre a cor do tom): é o que garante
+// contraste do ícone em cima dos fundos claros dos três tons.
+.toast-icone {
+  flex-shrink: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 22px;
+  height: 22px;
+  margin-top: 1px;
+  border-radius: 50%;
+  color: #fff;
+
+  app-icon {
+    width: 14px;
+    height: 14px;
+  }
+}
+
+.toast-corpo {
+  flex: 1;
+  min-width: 0;
+}
+
+.toast-mensagem {
+  margin: 0;
+  font-size: var(--font-size-sm);
+  font-weight: var(--font-weight-medium);
+  // Herda a cor do tom (definida em cada .toast-*), que é escura o bastante
+  // para ler sobre o fundo claro do próprio toast.
+  color: inherit;
+}
+
+.toast-acao {
+  appearance: none;
+  margin-top: var(--space-1);
+  padding: 0;
+  border: none;
+  background: none;
+  font: inherit;
+  font-size: var(--font-size-sm);
+  font-weight: var(--font-weight-semibold);
+  color: inherit;
+  text-decoration: underline;
+  cursor: pointer;
+
+  &:focus-visible {
+    @include focus-ring;
+  }
+}
+
+.toast-fechar {
+  appearance: none;
+  flex-shrink: 0;
+  border: none;
+  background: none;
+  padding: 0;
+  font-size: var(--font-size-lg);
+  line-height: 1;
+  color: inherit;
+  opacity: 0.6;
+  cursor: pointer;
+
+  &:hover {
+    opacity: 1;
+  }
+}
+
+// Um tom = uma cor de texto/borda + o fundo claro correspondente. Todas
+// saem dos tokens globais (_tokens.scss) — nada de cor solta aqui.
+.toast-sucesso {
+  color: var(--color-success);
+  background: var(--color-success-bg);
+  border-color: var(--color-success);
+
+  .toast-icone {
+    background: var(--color-success);
+  }
+}
+
+.toast-alerta {
+  color: var(--color-warn);
+  background: var(--color-warn-bg);
+  border-color: var(--color-warn);
+
+  .toast-icone {
+    background: var(--color-warn);
+  }
+}
+
+.toast-erro {
+  color: var(--color-danger);
+  background: var(--color-danger-bg);
+  border-color: var(--color-danger);
+
+  .toast-icone {
+    background: var(--color-danger);
+  }
+}
+
+@keyframes toast-entrada {
+  from {
+    opacity: 0;
+    transform: translateY(-6px);
+  }
+}
+
+@include reduced-motion {
+  .toast {
+    animation: none;
+  }
+}
+
+@media (max-width: 640px) {
+  .toasts {
+    top: auto;
+    bottom: var(--space-4);
+    left: var(--space-4);
+    right: var(--space-4);
+    width: auto;
+  }
+}

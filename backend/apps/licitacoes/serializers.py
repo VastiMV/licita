@@ -1,14 +1,25 @@
-"""Serializa o dict de oportunidade (`services._montar_oportunidade`) no
-formato exato que o frontend já consome — ver
+"""Serializers do app de licitações — dois grupos, com naturezas diferentes.
+
+**Busca** (`OportunidadeSerializer`, `CompraDetalheSerializer` e amigos):
+serializa o dict de oportunidade (`services._montar_oportunidade`) no formato
+exato que o frontend já consome — ver
 `frontend/src/app/contracts/licitacoes/oportunidade.contracts.ts`
-(`OportunidadeResponse`). Não é `ModelSerializer`: a busca não persiste (ver
-docs/DOMINIO.md), então não há model por trás — só um dict vindo da
+(`OportunidadeResponse`). Não são `ModelSerializer`: a busca não persiste
+(ver docs/DOMINIO.md), então não há model por trás — só um dict vindo da
 orquestração em `services.py`.
+
+**Oportunidades salvas** (`OportunidadeSalvaSerializer` e amigos, no fim do
+arquivo): aí sim há model (`models.py`), porque salvar é o único momento em
+que uma oportunidade vira registro.
 """
 
 from __future__ import annotations
 
+import datetime as dt
+
 from rest_framework import serializers
+
+from .models import EventoOportunidadeSalva, OportunidadeSalva, montar_texto_busca
 
 
 class OportunidadeSerializer(serializers.Serializer):
@@ -101,3 +112,166 @@ class CompraDetalheSerializer(serializers.Serializer):
     documentos = DocumentoSerializer(many=True)
     capag = CapagSerializer(allow_null=True)
     plataforma = PlataformaSerializer(allow_null=True)
+
+
+class OportunidadeSalvaSerializer(serializers.ModelSerializer):
+    """Uma linha da lista de oportunidades salvas — e o snapshot inteiro
+    (`itens`) que o modal de visualização usa para desenhar o mesmo card da
+    busca sem ir na origem de novo. Ver
+    `frontend/src/app/contracts/licitacoes/oportunidade-salva.contracts.ts`.
+    """
+
+    chave = serializers.CharField(read_only=True)
+    # Calculado, nunca gravado (ver models.OportunidadeSalva).
+    expirada = serializers.SerializerMethodField()
+    salva_por = serializers.SerializerMethodField()
+    # Float, não Decimal: o contrato do frontend é numérico (o mesmo
+    # `valor_total` da busca), e DRF serializa Decimal como string.
+    valor_total_estimado = serializers.FloatField(allow_null=True)
+
+    class Meta:
+        model = OportunidadeSalva
+        fields = [
+            "id",
+            "chave",
+            "cnpj_orgao",
+            "ano_compra",
+            "sequencial_compra",
+            "objeto",
+            "orgao_nome",
+            "uasg",
+            "uf",
+            "municipio",
+            "modalidade",
+            "situacao",
+            "data_publicacao",
+            "data_encerramento_proposta",
+            "valor_total_estimado",
+            "plataforma_id",
+            "plataforma_nome",
+            "link_plataforma",
+            "link_pncp",
+            "capag",
+            "itens",
+            "expirada",
+            "salva_por",
+            "criada_em",
+        ]
+
+    def get_expirada(self, obj: OportunidadeSalva) -> bool:
+        return obj.expirada()
+
+    def get_salva_por(self, obj: OportunidadeSalva) -> str | None:
+        if not obj.salva_por:
+            return None
+        return obj.salva_por.nome or obj.salva_por.email
+
+
+class OportunidadeSalvaCriacaoSerializer(serializers.Serializer):
+    """Payload de `POST /api/licitacoes/salvas/`: o próprio resultado da
+    busca daquele edital (`itens`), mais o que o card já tinha resolvido à
+    parte (`plataforma` do detalhe, selo `capag`).
+
+    O resumo da lista (objeto, órgão, cidade, prazo, valor) é **derivado**
+    aqui dos itens, não recebido pronto: o card já mostra esses números a
+    partir dos mesmos dados, e derivar num lugar só evita lista e card
+    discordarem.
+    """
+
+    itens = serializers.ListField(child=serializers.DictField(), allow_empty=False)
+    capag = serializers.DictField(allow_null=True, required=False, default=None)
+    plataforma = serializers.DictField(allow_null=True, required=False, default=None)
+
+    def validate_itens(self, itens: list[dict]) -> list[dict]:
+        faltando = [
+            campo
+            for campo in (
+                "contratacao_cnpj_orgao",
+                "contratacao_ano_compra",
+                "contratacao_sequencial_compra",
+            )
+            if not itens[0].get(campo)
+        ]
+        if faltando:
+            # Sem a tripla não há identidade de compra: não dá pra impedir
+            # duplicata nem pra rebuscar o detalhe depois.
+            raise serializers.ValidationError(
+                "Oportunidade sem identificação da compra no PNCP: " + ", ".join(faltando)
+            )
+        return itens
+
+    def create(self, validated_data: dict) -> OportunidadeSalva:
+        itens = validated_data["itens"]
+        contratacao = itens[0]
+        plataforma = validated_data.get("plataforma") or {}
+        objeto = contratacao.get("contratacao_objeto") or ""
+
+        return OportunidadeSalva.objects.create(
+            cnpj_orgao=contratacao["contratacao_cnpj_orgao"],
+            ano_compra=contratacao["contratacao_ano_compra"],
+            sequencial_compra=contratacao["contratacao_sequencial_compra"],
+            objeto=objeto,
+            orgao_nome=contratacao.get("contratacao_orgao_nome") or "",
+            uasg=contratacao.get("contratacao_uasg") or "",
+            uf=contratacao.get("contratacao_uf") or "",
+            municipio=contratacao.get("contratacao_municipio") or "",
+            modalidade=contratacao.get("contratacao_modalidade") or "",
+            situacao=contratacao.get("contratacao_situacao") or "",
+            data_publicacao=_data(contratacao.get("contratacao_data_publicacao")),
+            data_encerramento_proposta=_data(
+                contratacao.get("contratacao_data_encerramento_proposta")
+            ),
+            valor_total_estimado=_valor_total(itens),
+            # A plataforma do detalhe (`linkSistemaOrigem` do PNCP) tem
+            # prioridade sobre o palpite da busca — mesma regra do card.
+            plataforma_id=plataforma.get("id") or contratacao.get("plataforma_id") or "",
+            plataforma_nome=plataforma.get("nome") or "",
+            link_plataforma=plataforma.get("link") or contratacao.get("link_plataforma") or "",
+            link_pncp=contratacao.get("link_pncp") or "",
+            capag=validated_data.get("capag") or contratacao.get("capag"),
+            itens=itens,
+            texto_busca=montar_texto_busca(objeto, itens),
+            salva_por=self.context["request"].user,
+        )
+
+
+def _data(valor: object) -> dt.date | None:
+    """As datas do PNCP chegam como texto (`AAAA-MM-DD`, ver `_so_data` no
+    client do compras.gov.br). Texto irreconhecível vira `None` — melhor sem
+    prazo (a oportunidade nunca expira) do que com um prazo inventado."""
+
+    if not isinstance(valor, str):
+        return None
+    try:
+        return dt.date.fromisoformat(valor[:10])
+    except ValueError:
+        return None
+
+
+def _valor_total(itens: list[dict]) -> float | None:
+    """Soma dos itens — `None` se algum item não tiver valor, em vez de somar
+    parcial e passar por total (mesma regra do card, ver
+    `valorTotalEdital` em edital-card.component.ts)."""
+
+    valores = [item.get("valor_total") for item in itens]
+    if not valores or any(valor is None for valor in valores):
+        return None
+    return sum(valores)
+
+
+class EventoOportunidadeSalvaSerializer(serializers.ModelSerializer):
+    """Uma linha do histórico (ver `models.EventoOportunidadeSalva`). O
+    módulo que exibe isso ainda não existe; o endpoint existe para que o log
+    seja verificável desde já."""
+
+    autor = serializers.SerializerMethodField()
+    tipo_label = serializers.CharField(source="get_tipo_display", read_only=True)
+
+    class Meta:
+        model = EventoOportunidadeSalva
+        fields = ["id", "tipo", "tipo_label", "descricao", "autor", "dados", "ocorrido_em"]
+
+    def get_autor(self, obj: EventoOportunidadeSalva) -> str | None:
+        if not obj.autor:
+            return None
+        return obj.autor.nome or obj.autor.email

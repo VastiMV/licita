@@ -1,0 +1,125 @@
+<div class="tabela-bloco">
+  <div class="tabela-topo">
+    <app-input-text
+      class="tabela-busca"
+      [label]="rotuloBusca()"
+      [placeholder]="placeholderBusca()"
+      [formControl]="buscaControl"
+    />
+
+    <div class="tabela-tamanho">
+      <span class="tabela-tamanho-rotulo">Linhas</span>
+      <div class="tabela-tamanho-opcoes">
+        @for (tamanho of tamanhosPagina(); track tamanho) {
+          <button
+            type="button"
+            [class.ativo]="tamanho === estado().tamanhoPagina"
+            [attr.aria-pressed]="tamanho === estado().tamanhoPagina"
+            (click)="mudarTamanho(tamanho)"
+          >
+            {{ tamanho }}
+          </button>
+        }
+      </div>
+    </div>
+  </div>
+
+  <!-- Rolagem horizontal só do quadro da tabela: em telas médias o conteúdo
+       largo rola aqui dentro, sem empurrar a página inteira. -->
+  <div class="tabela-rolagem">
+    <table class="tabela">
+      <thead>
+        <tr>
+          @for (coluna of colunas(); track coluna.chave) {
+            <th scope="col" [class.numerica]="coluna.numerica" [attr.aria-sort]="ariaSort(coluna)">
+              @if (coluna.ordenavel === false) {
+                {{ coluna.titulo }}
+              } @else {
+                <button type="button" class="ordenar" (click)="ordenar(coluna)">
+                  <span>{{ coluna.titulo }}</span>
+                  @if (direcaoDe(coluna); as direcao) {
+                    <app-icon [name]="direcao === 'asc' ? 'chevron-up' : 'chevron-down'" />
+                  } @else {
+                    <app-icon name="chevron-down" class="ordenar-inativo" />
+                  }
+                </button>
+              }
+            </th>
+          }
+          @if (acoes()) {
+            <th scope="col" class="coluna-acoes">Ações</th>
+          }
+        </tr>
+      </thead>
+
+      <tbody>
+        @if (carregando()) {
+          <tr class="linha-status">
+            <td [attr.colspan]="colunasTotal()">
+              <app-icon name="spinner" class="status-spinner" />
+              Carregando…
+            </td>
+          </tr>
+        } @else if (linhas().length === 0) {
+          <tr class="linha-status">
+            <td [attr.colspan]="colunasTotal()">{{ mensagemVazia() }}</td>
+          </tr>
+        } @else {
+          @for (linha of linhas(); track chaveDe()(linha)) {
+            <tr [class.destacada]="destacada()(linha)">
+              @for (coluna of colunas(); track coluna.chave) {
+                <td
+                  [attr.data-rotulo]="coluna.titulo"
+                  [class.numerica]="coluna.numerica"
+                  [class]="classeCelula(coluna, linha)"
+                >
+                  <span class="celula-conteudo">{{ coluna.valor(linha) }}</span>
+                </td>
+              }
+              @if (acoes(); as acoesTemplate) {
+                <td class="coluna-acoes" data-rotulo="Ações">
+                  <div class="acoes">
+                    <ng-container
+                      [ngTemplateOutlet]="acoesTemplate.template"
+                      [ngTemplateOutletContext]="{ $implicit: linha }"
+                    />
+                  </div>
+                </td>
+              }
+            </tr>
+          }
+        }
+      </tbody>
+    </table>
+  </div>
+
+  <div class="tabela-rodape">
+    <p class="tabela-contador">
+      @if (total() === 0) {
+        Nenhum registro
+      } @else {
+        Mostrando {{ primeiroDaPagina() }}–{{ ultimoDaPagina() }} de {{ total() }}
+      }
+    </p>
+
+    <div class="paginador">
+      <button
+        type="button"
+        aria-label="Página anterior"
+        [disabled]="estado().pagina <= 1 || carregando()"
+        (click)="irPara(estado().pagina - 1)"
+      >
+        <app-icon name="chevron-left" />
+      </button>
+      <span class="paginador-posicao"> Página {{ estado().pagina }} de {{ totalPaginas() }} </span>
+      <button
+        type="button"
+        aria-label="Próxima página"
+        [disabled]="estado().pagina >= totalPaginas() || carregando()"
+        (click)="irPara(estado().pagina + 1)"
+      >
+        <app-icon name="chevron-right" />
+      </button>
+    </div>
+  </div>
+</div>
