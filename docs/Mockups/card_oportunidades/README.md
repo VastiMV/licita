@@ -5,8 +5,12 @@
 > mais "Selecionar licitação": é **"Abrir na plataforma"** (link pra
 > plataforma de origem da compra, com o favicon dela no segmento de ícone —
 > ver docs/DOMINIO.md, achado de 28/08/2026). A ação de guardar virou o botão
-> outline **"Salvar oportunidade"** (persistência especificada em
-> docs/DOMINIO.md, entidade `OportunidadeSalva`). O restante do handoff
+> outline **"Salvar oportunidade"** (persistência em docs/DOMINIO.md,
+> entidade `OportunidadeSalva`). Desde 29/08/2026 esse botão pede
+> confirmação e **não é mais um toggle**: depois de salva, o card só mostra
+> o estado "Oportunidade salva" — tirar da lista é ação do módulo
+> Oportunidades / Salvas. Card de oportunidade com prazo vencido ganhou uma
+> faixa avisando que não dá mais pra gerar proposta. O restante do handoff
 > (layout, paleta, abas, prazos, estados) continua valendo.
 
 ## Overview

@@ -1,0 +1,390 @@
+@use 'mixins' as *;
+
+:host {
+  display: block;
+}
+
+.tabela-bloco {
+  background: var(--color-surface);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-lg);
+  box-shadow: var(--shadow-sm);
+  overflow: hidden;
+}
+
+// ---------- Topo (busca + tamanho da página) ----------
+
+.tabela-topo {
+  display: flex;
+  align-items: flex-end;
+  justify-content: space-between;
+  gap: var(--space-4);
+  flex-wrap: wrap;
+  padding: var(--space-4);
+  border-bottom: 1px solid var(--color-border);
+}
+
+.tabela-busca {
+  flex: 1 1 260px;
+  max-width: 420px;
+}
+
+.tabela-tamanho {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+}
+
+.tabela-tamanho-rotulo {
+  @include uppercase-label;
+}
+
+.tabela-tamanho-opcoes {
+  display: flex;
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-sm);
+  overflow: hidden;
+
+  button {
+    appearance: none;
+    border: none;
+    background: var(--color-surface);
+    font: inherit;
+    font-size: var(--font-size-sm);
+    font-weight: var(--font-weight-medium);
+    color: var(--color-muted);
+    padding: 0.35rem 0.6rem;
+    cursor: pointer;
+
+    & + button {
+      border-left: 1px solid var(--color-border);
+    }
+
+    &:hover {
+      background: var(--color-blue-soft);
+      color: var(--color-navy);
+    }
+
+    &.ativo {
+      background: var(--color-navy);
+      color: #fff;
+    }
+
+    &:focus-visible {
+      @include focus-ring;
+    }
+  }
+}
+
+// ---------- Tabela ----------
+
+.tabela-rolagem {
+  overflow-x: auto;
+}
+
+.tabela {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: var(--font-size-sm);
+}
+
+thead th {
+  text-align: left;
+  white-space: nowrap;
+  padding: var(--space-2) var(--space-4);
+  background: var(--color-blue-soft);
+  border-bottom: 1px solid var(--color-border);
+  @include uppercase-label;
+  color: var(--color-navy);
+
+  &.numerica {
+    text-align: right;
+  }
+}
+
+.ordenar {
+  appearance: none;
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-1);
+  border: none;
+  background: none;
+  padding: 0;
+  font: inherit;
+  color: inherit;
+  cursor: pointer;
+
+  app-icon {
+    width: 13px;
+    height: 13px;
+  }
+
+  // Coluna ordenável, mas não é por ela que a tabela está ordenada: a seta
+  // fica apagada em vez de sumir — é o que anuncia "dá pra ordenar aqui".
+  .ordenar-inativo {
+    opacity: 0.35;
+  }
+
+  &:focus-visible {
+    @include focus-ring;
+    border-radius: var(--radius-sm);
+  }
+}
+
+th.numerica .ordenar {
+  flex-direction: row-reverse;
+}
+
+tbody td {
+  padding: var(--space-3) var(--space-4);
+  border-bottom: 1px solid var(--color-border);
+  vertical-align: top;
+
+  &.numerica {
+    text-align: right;
+    font-variant-numeric: tabular-nums;
+  }
+
+  &.uma-linha {
+    white-space: nowrap;
+  }
+}
+
+tbody tr:last-child td {
+  border-bottom: none;
+}
+
+tbody tr:hover td {
+  background: var(--color-blue-soft);
+}
+
+// Linha que precisa saltar aos olhos (nas salvas: prazo de proposta
+// vencido). Fundo + barra à esquerda, para não depender só de cor.
+tbody tr.destacada td {
+  background: var(--color-danger-bg);
+}
+
+tbody tr.destacada td:first-child {
+  box-shadow: inset 3px 0 0 var(--color-danger);
+}
+
+tbody tr.destacada:hover td {
+  background: color-mix(in srgb, var(--color-danger-bg) 85%, var(--color-danger));
+}
+
+// Destaque de célula (`ColunaTabela.tom`) — pílula, não só cor de texto.
+.celula-alerta .celula-conteudo,
+.celula-perigo .celula-conteudo,
+.celula-sucesso .celula-conteudo {
+  display: inline-block;
+  padding: 0.15rem 0.5rem;
+  border-radius: var(--radius-pill);
+  font-weight: var(--font-weight-semibold);
+}
+
+.celula-alerta .celula-conteudo {
+  color: var(--color-warn);
+  background: var(--color-warn-bg);
+}
+
+.celula-perigo .celula-conteudo {
+  color: var(--color-danger);
+  background: var(--color-danger-bg);
+}
+
+.celula-sucesso .celula-conteudo {
+  color: var(--color-success);
+  background: var(--color-success-bg);
+}
+
+.linha-status td {
+  padding: var(--space-6) var(--space-4);
+  text-align: center;
+  color: var(--color-muted);
+}
+
+.status-spinner {
+  width: 16px;
+  height: 16px;
+  vertical-align: -3px;
+  margin-right: var(--space-2);
+}
+
+.coluna-acoes {
+  width: 1%;
+  white-space: nowrap;
+}
+
+.acoes {
+  display: flex;
+  gap: var(--space-2);
+  justify-content: flex-end;
+}
+
+// ---------- Rodapé (contador + paginação) ----------
+
+.tabela-rodape {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-4);
+  flex-wrap: wrap;
+  padding: var(--space-3) var(--space-4);
+  border-top: 1px solid var(--color-border);
+  background: var(--color-surface);
+}
+
+.tabela-contador {
+  margin: 0;
+  font-size: var(--font-size-sm);
+  color: var(--color-muted);
+}
+
+.paginador {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+
+  button {
+    appearance: none;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 32px;
+    height: 32px;
+    border: 1px solid var(--color-border);
+    border-radius: var(--radius-sm);
+    background: var(--color-surface);
+    color: var(--color-navy);
+    cursor: pointer;
+
+    &:hover:not(:disabled) {
+      background: var(--color-blue-soft);
+    }
+
+    &:disabled {
+      color: var(--color-placeholder);
+      cursor: default;
+    }
+
+    &:focus-visible {
+      @include focus-ring;
+    }
+
+    app-icon {
+      width: 16px;
+      height: 16px;
+    }
+  }
+}
+
+.paginador-posicao {
+  font-size: var(--font-size-sm);
+  color: var(--color-muted);
+  white-space: nowrap;
+}
+
+// ---------- Estreito: cada linha vira um cartão ----------
+//
+// Mesmo DOM da versão larga; o rótulo de cada célula vem do `data-rotulo`
+// que o template já escreve (o cabeçalho some, senão viraria uma coluna
+// espremida ilegível).
+@media (max-width: 720px) {
+  .tabela-topo {
+    flex-direction: column;
+    align-items: stretch;
+  }
+
+  .tabela-busca {
+    max-width: none;
+  }
+
+  .tabela,
+  tbody,
+  tbody tr,
+  tbody td {
+    display: block;
+    width: auto;
+  }
+
+  thead {
+    @include visually-hidden;
+  }
+
+  tbody tr {
+    border-bottom: 1px solid var(--color-border);
+    padding: var(--space-2) 0;
+
+    &:last-child {
+      border-bottom: none;
+    }
+  }
+
+  tbody tr.destacada {
+    background: var(--color-danger-bg);
+    border-left: 3px solid var(--color-danger);
+  }
+
+  tbody tr.destacada td,
+  tbody tr.destacada:hover td,
+  tbody tr:hover td {
+    background: none;
+  }
+
+  tbody td {
+    display: flex;
+    align-items: baseline;
+    justify-content: space-between;
+    gap: var(--space-4);
+    padding: var(--space-1) var(--space-4);
+    border-bottom: none;
+    text-align: left;
+
+    &.numerica {
+      text-align: right;
+    }
+
+    &.uma-linha {
+      white-space: normal;
+    }
+
+    &::before {
+      content: attr(data-rotulo);
+      flex-shrink: 0;
+      @include uppercase-label;
+    }
+  }
+
+  // A primeira coluna é o "título" do cartão: mesmo par rótulo/valor das
+  // outras, só que em destaque (o rótulo fica, porque a primeira coluna nem
+  // sempre se explica sozinha — pode ser um número, uma data, um código).
+  tbody td:first-child {
+    padding-top: var(--space-2);
+    font-weight: var(--font-weight-semibold);
+    color: var(--color-navy);
+  }
+
+  tbody tr.destacada td:first-child {
+    box-shadow: none;
+  }
+
+  .coluna-acoes {
+    width: auto;
+    white-space: normal;
+    padding-top: var(--space-2);
+    padding-bottom: var(--space-2);
+
+    &::before {
+      display: none;
+    }
+  }
+
+  .acoes {
+    width: 100%;
+    justify-content: flex-start;
+  }
+
+  .tabela-rodape {
+    justify-content: space-between;
+  }
+}

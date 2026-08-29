@@ -1,0 +1,44 @@
+<button
+  type="button"
+  class="gatilho"
+  cdkOverlayOrigin
+  #origem="cdkOverlayOrigin"
+  aria-haspopup="menu"
+  [attr.aria-expanded]="aberto()"
+  [attr.aria-label]="descricao() || null"
+  (click)="alternar()"
+>
+  <span class="gatilho-rotulo">{{ rotulo() }}</span>
+  <app-icon name="chevron-down" class="gatilho-seta" />
+</button>
+
+<ng-template
+  cdkConnectedOverlay
+  [cdkConnectedOverlayOrigin]="origem"
+  [cdkConnectedOverlayOpen]="aberto()"
+  [cdkConnectedOverlayPositions]="posicoes"
+  [cdkConnectedOverlayScrollStrategy]="scrollStrategy"
+  [cdkConnectedOverlayHasBackdrop]="true"
+  cdkConnectedOverlayBackdropClass="cdk-overlay-transparent-backdrop"
+  (backdropClick)="fechar()"
+  (overlayKeydown)="aoTeclar($event)"
+  (detach)="fechar()"
+>
+  <div class="menu" role="menu">
+    @for (item of itens(); track item.rotulo) {
+      <button
+        type="button"
+        role="menuitem"
+        class="menu-item"
+        [class.perigo]="item.tom === 'perigo'"
+        [disabled]="item.desabilitado"
+        (click)="executar(item)"
+      >
+        @if (item.icone) {
+          <app-icon [name]="item.icone" />
+        }
+        {{ item.rotulo }}
+      </button>
+    }
+  </div>
+</ng-template>

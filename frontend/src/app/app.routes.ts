@@ -18,10 +18,24 @@ export const routes: Routes = [
     canActivate: [authGuard],
     children: [
       { path: '', pathMatch: 'full', redirectTo: 'oportunidades' },
+      // "Oportunidades" é um menu de primeiro nível, não uma tela: quem abre
+      // é "Pesquisar" (a busca ao vivo, tela inicial do app) ou "Salvas" (a
+      // lista que a equipe montou a partir dela).
       {
         path: 'oportunidades',
-        loadComponent: () =>
-          import('./pages/oportunidades/oportunidades.page').then((m) => m.OportunidadesPage),
+        children: [
+          { path: '', pathMatch: 'full', redirectTo: 'pesquisar' },
+          {
+            path: 'pesquisar',
+            loadComponent: () =>
+              import('./pages/oportunidades/pesquisar/pesquisar.page').then((m) => m.PesquisarPage),
+          },
+          {
+            path: 'salvas',
+            loadComponent: () =>
+              import('./pages/oportunidades/salvas/salvas.page').then((m) => m.SalvasPage),
+          },
+        ],
       },
       {
         path: 'filtros',
@@ -33,5 +47,5 @@ export const routes: Routes = [
       },
     ],
   },
-  { path: '**', redirectTo: 'oportunidades' },
+  { path: '**', redirectTo: 'oportunidades/pesquisar' },
 ];

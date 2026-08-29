@@ -3,7 +3,7 @@ import { ComponentFixture, TestBed } from '@angular/core/testing';
 import { By } from '@angular/platform-browser';
 
 import { OportunidadeResponse } from '../../../contracts/licitacoes/oportunidade.contracts';
-import { DetalheEstado, EditalCard } from '../oportunidades.page';
+import { DetalheEstado, EditalCard } from './edital-card.model';
 import { EditalCardComponent } from './edital-card.component';
 
 // Construído com componentes locais (não uma string ISO) pra não depender
@@ -64,12 +64,20 @@ const DETALHE_CARREGADO: DetalheEstado = {
   template: `<app-edital-card
     [card]="card()"
     [detalhe]="detalhe()"
+    [salva]="salva()"
+    [salvando]="salvando()"
+    [podeSalvar]="podeSalvar()"
+    (salvar)="salvarPedido.set(true)"
     (baixarEdital)="baixarEdital.set(true)"
   />`,
 })
 class HostComponent {
   readonly card = signal<EditalCard>(montarCard());
   readonly detalhe = signal<DetalheEstado | undefined>(undefined);
+  readonly salva = signal(false);
+  readonly salvando = signal(false);
+  readonly podeSalvar = signal(true);
+  readonly salvarPedido = signal(false);
   readonly baixarEdital = signal(false);
 }
 
@@ -183,14 +191,39 @@ describe('EditalCardComponent', () => {
     expect(host.baixarEdital()).toBe(true);
   });
 
-  it('"Salvar oportunidade" alterna pro estado salvo e "Remover das salvas" volta', () => {
+  it('"Salvar oportunidade" só avisa o pai — quem confirma e persiste é a página', () => {
     expect(texto()).toContain('Salvar oportunidade');
 
     clicarBotao('.btn-salvar');
-    expect(texto()).toContain('Oportunidade salva');
 
-    clicarBotao('.link-remover');
+    expect(host.salvarPedido()).toBe(true);
+    // O card não decide sozinho que salvou: o estado vem do pai.
     expect(texto()).toContain('Salvar oportunidade');
+  });
+
+  it('já salva, mostra o estado sem caminho de volta (remover é no módulo de salvas)', () => {
+    host.salva.set(true);
+    fixture.detectChanges();
+
+    expect(texto()).toContain('Oportunidade salva');
+    expect(fixture.debugElement.query(By.css('.btn-salvar'))).toBeNull();
+    expect(fixture.debugElement.query(By.css('.link-remover'))).toBeNull();
+  });
+
+  it('enquanto a página salva, o botão fica desabilitado e avisa', () => {
+    host.salvando.set(true);
+    fixture.detectChanges();
+
+    const botao = fixture.debugElement.query(By.css('.btn-salvar'));
+    expect(botao.nativeElement.disabled).toBe(true);
+    expect(botao.nativeElement.textContent).toContain('Salvando');
+  });
+
+  it('`podeSalvar` desligado tira o botão (modal do módulo de salvas)', () => {
+    host.podeSalvar.set(false);
+    fixture.detectChanges();
+
+    expect(fixture.debugElement.query(By.css('.btn-salvar'))).toBeNull();
   });
 
   it('botão dourado abre o link da plataforma, com nome e favicon da registrada', () => {
@@ -240,5 +273,17 @@ describe('EditalCardComponent', () => {
 
     expect(fixture.debugElement.query(By.css('.btn-salvar'))).toBeNull();
     expect(texto()).toContain('Encerrada');
+  });
+
+  it('encerrada avisa, em texto, que não dá mais pra gerar proposta', () => {
+    host.card.set(
+      montarCard([{ ...OPORTUNIDADE, contratacao_data_encerramento_proposta: '2026-08-01' }]),
+    );
+    fixture.detectChanges();
+
+    const aviso = fixture.debugElement.query(By.css('.aviso-encerrada'));
+    expect(aviso).not.toBeNull();
+    expect(aviso.nativeElement.textContent).toContain('01/08/2026');
+    expect(aviso.nativeElement.textContent).toContain('Não é mais possível gerar proposta');
   });
 });

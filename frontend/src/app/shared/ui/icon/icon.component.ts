@@ -19,7 +19,12 @@ export type IconName =
   | 'external-link'
   | 'check'
   | 'bookmark'
-  | 'calendar';
+  | 'calendar'
+  | 'chevron-up'
+  | 'exclamation'
+  | 'eye'
+  | 'search'
+  | 'trash';
 
 /**
  * Catálogo de ícones inline (SVG) do projeto — único lugar que sabe

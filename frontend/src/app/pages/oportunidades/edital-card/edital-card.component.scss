@@ -136,6 +136,30 @@
   background: currentColor;
 }
 
+// Faixa de prazo encerrado: aparece nas duas telas que usam o card (busca e
+// modal das salvas) — é a resposta a "por que não dá pra fazer mais nada
+// com esta oportunidade".
+.aviso-encerrada {
+  display: flex;
+  align-items: flex-start;
+  gap: 10px;
+  margin: 0;
+  padding: 12px 22px;
+  font-weight: 600;
+  font-size: 12.5px;
+  line-height: 1.45;
+  color: var(--ec-urgente-texto);
+  background: var(--ec-urgente-bg);
+  border-bottom: 1px solid var(--ec-urgente-borda);
+
+  app-icon {
+    flex-shrink: 0;
+    width: 16px;
+    height: 16px;
+    margin-top: 1px;
+  }
+}
+
 // ---------- (2) Corpo ----------
 
 .corpo {
@@ -402,9 +426,14 @@
   border-radius: 10px;
   cursor: pointer;
 
-  &:hover {
+  &:hover:not(:disabled) {
     border-color: var(--ec-dourado-borda);
     background: var(--ec-superficie-2);
+  }
+
+  &:disabled {
+    cursor: default;
+    opacity: 0.65;
   }
 
   app-icon {
@@ -413,6 +442,7 @@
   }
 }
 
+// Estado, não botão: salvo não volta atrás por aqui (ver o template).
 .btn-salva {
   display: flex;
   align-items: center;
@@ -426,7 +456,6 @@
   background: var(--ec-superficie);
   border: 1.5px solid var(--ec-dourado-borda);
   border-radius: 10px;
-  cursor: pointer;
 
   app-icon {
     width: 16px;
@@ -434,21 +463,6 @@
   }
 }
 
-.link-remover {
-  appearance: none;
-  border: none;
-  background: none;
-  font-weight: 600;
-  font-size: 12px;
-  line-height: 1;
-  color: var(--ec-texto-secundario);
-  cursor: pointer;
-  padding: 2px 0;
-
-  &:hover {
-    text-decoration: underline;
-  }
-}
 
 // -- Botão "Baixar edital" --
 
@@ -1058,10 +1072,6 @@
     font-size: 13.5px;
   }
 
-  .link-remover {
-    margin: 8px 14px 0;
-    text-align: center;
-  }
 
   .btn-baixar {
     height: 52px;
@@ -1096,3 +1106,4 @@
     display: block;
   }
 }
+

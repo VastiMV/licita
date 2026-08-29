@@ -52,10 +52,13 @@ apps/
   accounts/           User (login por e-mail) — primeiro model, AUTH_USER_MODEL
   integracoes/        Clients HTTP (compras.gov.br, PNCP) — isolados, mockáveis nos testes
   catalogo/           Model Pdm, sync assíncrono (Celery) e busca por similaridade
+  capag/              Nota CAPAG (Tesouro) de municípios/estados — selo do card
+  licitacoes/         Busca de oportunidades (ao vivo, sem persistir) + oportunidades
+                      salvas e o histórico de cada uma (models.py)
 ```
 
-Próximos apps de domínio (`licitacoes`, `filtros`, `alertas`) entram um de
-cada vez conforme documentado em `docs/ARQUITETURA.md`.
+Próximos apps de domínio (`filtros`, `alertas`) entram um de cada vez
+conforme documentado em `docs/ARQUITETURA.md`.
 
 ## Variáveis de ambiente
 

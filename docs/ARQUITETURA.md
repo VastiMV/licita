@@ -44,7 +44,7 @@ manifests já usam esse nome; o valor `licita` que aparecia aqui antes nunca foi
 |---|---|
 | `accounts` | usuários, autenticação (JWT), perfil |
 | `catalogo` | model `Pdm`, sincronização do catálogo de materiais |
-| `licitacoes` | model `Licitacao`, busca de oportunidades (live, cruza PNCP + catálogo) |
+| `licitacoes` | busca de oportunidades (live, cruza PNCP + catálogo) e os models `OportunidadeSalva`/`EventoOportunidadeSalva` (lista salva + histórico) |
 | `filtros` | model `Filtro` (dono = usuário autenticado) |
 | `alertas` | model `Alerta`, geração e disparo de notificação |
 | `integracoes` | clients HTTP para PNCP e compras.gov.br, isolados do resto (mockáveis nos testes) |
@@ -53,7 +53,8 @@ manifests já usam esse nome; o valor `licita` que aparecia aqui antes nunca foi
 ### Frontend — organização Angular
 
 - Standalone components (padrão atual do Angular), lazy-loaded por feature:
-  `oportunidades/`, `filtros/`, `alertas/`, `auth/`.
+  `oportunidades/` (com os submódulos `pesquisar/` e `salvas/`), `filtros/`,
+  `alertas/`, `auth/`.
   Sinaliza-se aqui a intenção; a estrutura definitiva de módulos é detalhada
   quando o harness de código for gerado.
 - Um `ApiService`/`HttpInterceptor` central cuida do token JWT e do refresh.

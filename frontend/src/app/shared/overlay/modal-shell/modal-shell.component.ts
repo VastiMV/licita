@@ -13,5 +13,10 @@ import { Component, input, output } from '@angular/core';
 })
 export class ModalShellComponent {
   readonly titulo = input('');
+
+  /** `larga` para conteúdo que não cabe na caixa de diálogo padrão — hoje o
+   * card inteiro de uma oportunidade salva. */
+  readonly largura = input<'padrao' | 'larga'>('padrao');
+
   readonly fechar = output<void>();
 }

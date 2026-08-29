@@ -1,13 +1,23 @@
-"""`GET /api/licitacoes/oportunidades/` — busca de oportunidades ao vivo, não
+"""Endpoints do app de licitações.
+
+**Busca** (`OportunidadesView`, `CompraDetalheView`): consulta ao vivo, não
 persiste (ver docs/DOMINIO.md). Parâmetros batem 1:1 com
 `OportunidadeBuscaParams` no frontend
 (`frontend/src/app/contracts/licitacoes/oportunidade.contracts.ts`).
+
+**Oportunidades salvas** (`OportunidadesSalvasView` e as demais no fim do
+arquivo): a lista que a equipe monta a partir da busca — persiste, com
+histórico. Ver `models.py` para as duas decisões que moldam essas views (a
+lista é compartilhada por todos os usuários; remover é lógico, para o log
+sobreviver).
 """
 
 from __future__ import annotations
 
 import datetime as dt
 
+from django.shortcuts import get_object_or_404
+from rest_framework.pagination import PageNumberPagination
 from rest_framework.request import Request
 from rest_framework.response import Response
 from rest_framework.views import APIView
@@ -18,7 +28,19 @@ from apps.integracoes.clients.compras_gov import ComprasGovClientError
 from apps.integracoes.clients.pncp import PncpClient, PncpClientError
 from apps.integracoes.plataformas import identificar_plataforma, plataforma_padrao
 
-from .serializers import CompraDetalheSerializer, OportunidadeSerializer
+from .models import (
+    EventoOportunidadeSalva,
+    OportunidadeSalva,
+    nome_de_usuario,
+    registrar_prazos_vencidos,
+)
+from .serializers import (
+    CompraDetalheSerializer,
+    EventoOportunidadeSalvaSerializer,
+    OportunidadeSalvaCriacaoSerializer,
+    OportunidadeSalvaSerializer,
+    OportunidadeSerializer,
+)
 from .services import (
     BuscaSemCorrespondenciaNoCatalogo,
     buscar_oportunidades,
@@ -153,3 +175,176 @@ class CompraDetalheView(APIView):
             {"documentos": documentos, "capag": capag, "plataforma": plataforma}
         )
         return Response(serializer.data)
+
+
+class OportunidadesSalvasPaginacao(PageNumberPagination):
+    """Paginação só desta lista (o resto da API não é paginado). Página
+    pequena porque a tabela do frontend é o consumidor — quem quiser mais
+    pede `page_size`."""
+
+    page_size = 10
+    page_size_query_param = "page_size"
+    max_page_size = 100
+
+
+# Colunas ordenáveis da tabela do frontend -> campo real. Whitelist, não
+# `OrderingFilter` aberto: o nome da coluna é contrato de tela, e ordenar por
+# um campo interno (`texto_busca`, `itens`) não faz sentido nenhum. O objeto
+# do edital não está aqui porque saiu da tabela — continua sendo o texto que
+# a busca varre (`texto_busca`), só não é coluna.
+ORDENACOES = {
+    "uasg": "uasg",
+    "modalidade": "modalidade",
+    "cidade": "municipio",
+    "data_publicacao": "data_publicacao",
+    "prazo": "data_encerramento_proposta",
+    "valor": "valor_total_estimado",
+    "criada_em": "criada_em",
+}
+ORDENACAO_PADRAO = "-criada_em"
+
+
+def _ordenacao(pedida: str | None) -> str:
+    """Traduz `ordering=-prazo` (nome de coluna) para o campo do model.
+    Coluna desconhecida cai no padrão em vez de estourar 400 — ordenação é
+    preferência de exibição, não parâmetro crítico."""
+
+    pedida = (pedida or "").strip()
+    descendente = pedida.startswith("-")
+    campo = ORDENACOES.get(pedida.lstrip("-"))
+    if not campo:
+        return ORDENACAO_PADRAO
+    return f"-{campo}" if descendente else campo
+
+
+class OportunidadesSalvasView(APIView):
+    """`GET/POST /api/licitacoes/salvas/`.
+
+    A lista é da equipe inteira, não do usuário logado (decisão de produto —
+    ver docstring de `models.py`): não há filtro por dono nem no GET nem no
+    DELETE.
+    """
+
+    def get(self, request: Request) -> Response:
+        # O log ganha a linha "prazo encerrado" no momento em que alguém
+        # abre a lista — ver `registrar_prazos_vencidos` para o porquê de
+        # não haver task periódica.
+        registrar_prazos_vencidos()
+
+        salvas = (
+            OportunidadeSalva.objects.ativas()
+            .select_related("salva_por")
+            .buscar(request.query_params.get("busca", ""))
+            .order_by(_ordenacao(request.query_params.get("ordering")))
+        )
+
+        paginacao = OportunidadesSalvasPaginacao()
+        pagina = paginacao.paginate_queryset(salvas, request, view=self)
+        resposta = paginacao.get_paginated_response(
+            OportunidadeSalvaSerializer(pagina, many=True).data
+        )
+        # Contagem do conjunto inteiro, não da página nem da busca em curso:
+        # é o número do aviso "N oportunidades sem prazo para proposta" e o
+        # que o link de apagar do aviso vai remover.
+        resposta.data["expiradas"] = OportunidadeSalva.objects.ativas().expiradas().count()
+        return resposta
+
+    def post(self, request: Request) -> Response:
+        serializer = OportunidadeSalvaCriacaoSerializer(
+            data=request.data, context={"request": request}
+        )
+        serializer.is_valid(raise_exception=True)
+
+        contratacao = serializer.validated_data["itens"][0]
+        existente = (
+            OportunidadeSalva.objects.ativas()
+            .filter(
+                cnpj_orgao=contratacao["contratacao_cnpj_orgao"],
+                ano_compra=contratacao["contratacao_ano_compra"],
+                sequencial_compra=contratacao["contratacao_sequencial_compra"],
+            )
+            .first()
+        )
+        # Idempotente: salvar de novo o que já está na lista devolve o
+        # registro existente e **não** cria evento — o histórico não pode
+        # ganhar ruído por causa de um clique repetido.
+        if existente:
+            return Response(OportunidadeSalvaSerializer(existente).data, status=200)
+
+        salva = serializer.save()
+        salva.registrar(
+            EventoOportunidadeSalva.Tipo.SALVA,
+            autor=request.user,
+            descricao=f"Oportunidade salva por {nome_de_usuario(request.user)}.",
+        )
+        return Response(OportunidadeSalvaSerializer(salva).data, status=201)
+
+
+class OportunidadeSalvaView(APIView):
+    """`DELETE /api/licitacoes/salvas/<id>/` — tira da lista. Remoção lógica:
+    o histórico continua existindo (ver `models.OportunidadeSalva.remover`)."""
+
+    def delete(self, request: Request, pk: int) -> Response:
+        salva = get_object_or_404(OportunidadeSalva.objects.ativas(), pk=pk)
+        salva.remover(por=request.user)
+        return Response(status=204)
+
+
+class OportunidadesSalvasExpiradasView(APIView):
+    """`DELETE /api/licitacoes/salvas/expiradas/` — remove de uma vez todas
+    as que perderam o prazo de proposta. É o link do aviso que a tela mostra
+    ao abrir."""
+
+    def delete(self, request: Request) -> Response:
+        expiradas = list(OportunidadeSalva.objects.ativas().expiradas())
+        for salva in expiradas:
+            salva.remover(por=request.user)
+        return Response({"removidas": len(expiradas)})
+
+
+class OportunidadesSalvasChavesView(APIView):
+    """`GET /api/licitacoes/salvas/chaves/` — só as chaves (`cnpj-ano-seq`)
+    das que estão na lista.
+
+    Existe para a tela de busca saber quais cards já estão salvos sem baixar
+    a lista inteira (e sem lidar com a paginação dela) — salvar não é mais um
+    toggle: o que já está salvo só sai pelo módulo de salvas.
+    """
+
+    def get(self, request: Request) -> Response:
+        chaves = [
+            f"{cnpj}-{ano}-{seq}"
+            for cnpj, ano, seq in OportunidadeSalva.objects.ativas().values_list(
+                "cnpj_orgao", "ano_compra", "sequencial_compra"
+            )
+        ]
+        return Response({"chaves": chaves})
+
+
+class OportunidadeSalvaEventosView(APIView):
+    """`GET /api/licitacoes/salvas/<id>/eventos/` — o histórico de uma
+    oportunidade salva: o registro principal (o que foi salvo, por quem,
+    quando) e a lista do que aconteceu depois, em ordem.
+
+    O módulo de tela que lê isso ainda não existe (ver docs/DOMINIO.md,
+    "Histórico da oportunidade salva"); o endpoint existe porque o log já é
+    escrito — inclusive para oportunidades removidas, que continuam
+    consultáveis por aqui.
+    """
+
+    def get(self, request: Request, pk: int) -> Response:
+        salva = get_object_or_404(OportunidadeSalva, pk=pk)
+        eventos = salva.eventos.select_related("autor")
+        return Response(
+            {
+                "id": salva.id,
+                "chave": salva.chave,
+                "resumo": salva.resumo,
+                "salva_por": (salva.salva_por.nome or salva.salva_por.email)
+                if salva.salva_por
+                else None,
+                "criada_em": salva.criada_em,
+                "removida_em": salva.removida_em,
+                "eventos": EventoOportunidadeSalvaSerializer(eventos, many=True).data,
+            }
+        )

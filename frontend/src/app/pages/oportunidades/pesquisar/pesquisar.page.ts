@@ -1,19 +1,27 @@
-import { Component, computed, inject, signal } from '@angular/core';
+import { Component, OnInit, computed, inject, signal } from '@angular/core';
 import { FormBuilder, ReactiveFormsModule } from '@angular/forms';
 import { Subscription } from 'rxjs';
 
-import { MODALIDADES } from '../../contracts/licitacoes/modalidade';
-import { OportunidadeResponse } from '../../contracts/licitacoes/oportunidade.contracts';
-import { UFS } from '../../contracts/localidades/uf';
-import { LicitacoesService } from '../../services/licitacoes/licitacoes.service';
-import { ButtonComponent } from '../../shared/ui/button/button.component';
-import { DatePickerComponent } from '../../shared/ui/date-picker/date-picker.component';
-import { hojeIso, somarDias } from '../../shared/ui/date-picker/date-picker.utils';
-import { IconComponent } from '../../shared/ui/icon/icon.component';
-import { InputTextComponent } from '../../shared/ui/input-text/input-text.component';
-import { SelectComponent } from '../../shared/ui/select/select.component';
-import { VoltarTopoComponent } from '../../shared/ui/voltar-topo/voltar-topo.component';
-import { EditalCardComponent } from './edital-card/edital-card.component';
+import { MODALIDADES } from '../../../contracts/licitacoes/modalidade';
+import { OportunidadeResponse } from '../../../contracts/licitacoes/oportunidade.contracts';
+import { UFS } from '../../../contracts/localidades/uf';
+import { LicitacoesService } from '../../../services/licitacoes/licitacoes.service';
+import { OportunidadesSalvasService } from '../../../services/licitacoes/oportunidades-salvas.service';
+import { ModalService } from '../../../shared/overlay/modal.service';
+import { ButtonComponent } from '../../../shared/ui/button/button.component';
+import { DatePickerComponent } from '../../../shared/ui/date-picker/date-picker.component';
+import { hojeIso, somarDias } from '../../../shared/ui/date-picker/date-picker.utils';
+import { IconComponent } from '../../../shared/ui/icon/icon.component';
+import { InputTextComponent } from '../../../shared/ui/input-text/input-text.component';
+import { SelectComponent } from '../../../shared/ui/select/select.component';
+import { ToastService } from '../../../shared/ui/toast/toast.service';
+import { VoltarTopoComponent } from '../../../shared/ui/voltar-topo/voltar-topo.component';
+import { EditalCardComponent } from '../edital-card/edital-card.component';
+import {
+  DetalheEstado,
+  EditalCard,
+  agruparPorEdital,
+} from '../edital-card/edital-card.model';
 
 /** Janela de publicação que a tela já vem preenchida: a última semana. É
  * mais estreita que o default de 30 dias do backend (`JANELA_PADRAO_DIAS` em
@@ -36,59 +44,11 @@ function formInicial() {
   };
 }
 
-/** Um card = um edital. A busca devolve 1 linha por item batido (mesmo
- * edital repete se mais de um item casar) — agrupado aqui pra tela, o
- * backend continua devolvendo a lista flat (ver `OportunidadeResponse`).
- * Exportado porque `EditalCardComponent` recebe isso pronto via `@Input` —
- * quem monta o agrupamento é a página, o card só exibe. */
-export interface EditalCard {
-  readonly chave: string;
-  readonly contratacao: OportunidadeResponse;
-  readonly itens: readonly OportunidadeResponse[];
-}
-
-/** Documentos + CAPAG + plataforma de origem de um card, buscados em
- * `apps.licitacoes.CompraDetalheView`. */
-export interface DetalheEstado {
-  readonly carregando: boolean;
-  readonly documentos: readonly {
-    titulo: string | null;
-    tipo_documento: string | null;
-    url: string | null;
-  }[];
-  readonly capag: { nota: string; cor: 'verde' | 'amarelo' | 'vermelho' } | null;
-  /** Onde a compra de fato acontece — corrige o palpite `link_plataforma`
-   * da busca (o PNCP agrega todas as plataformas, ver docs/DOMINIO.md). */
-  readonly plataforma: { id: string | null; nome: string | null; link: string } | null;
-  readonly erro: boolean;
-}
-
-function chaveEdital(op: OportunidadeResponse): string {
-  const { contratacao_cnpj_orgao, contratacao_ano_compra, contratacao_sequencial_compra } = op;
-  if (contratacao_cnpj_orgao && contratacao_ano_compra && contratacao_sequencial_compra) {
-    return `${contratacao_cnpj_orgao}-${contratacao_ano_compra}-${contratacao_sequencial_compra}`;
-  }
-  // Identificador incompleto (degradação do PNCP, ver docs/DOMINIO.md) — cada
-  // item vira o card dele mesmo, em vez de agrupar errado.
-  return `${op.contratacao_uasg ?? '?'}-${op.numero_item ?? '?'}`;
-}
-
-function agruparPorEdital(resultados: readonly OportunidadeResponse[]): EditalCard[] {
-  const grupos = new Map<string, OportunidadeResponse[]>();
-  for (const op of resultados) {
-    const chave = chaveEdital(op);
-    const itens = grupos.get(chave);
-    if (itens) {
-      itens.push(op);
-    } else {
-      grupos.set(chave, [op]);
-    }
-  }
-  return Array.from(grupos, ([chave, itens]) => ({ chave, contratacao: itens[0], itens }));
-}
-
+/** Busca de oportunidades — o módulo "Oportunidades / Pesquisar". Consulta
+ * ao vivo, não persiste nada (ver docs/DOMINIO.md); o que persiste é o que
+ * o usuário salva daqui, e isso vive em "Oportunidades / Salvas". */
 @Component({
-  selector: 'app-oportunidades-page',
+  selector: 'app-pesquisar-page',
   imports: [
     ReactiveFormsModule,
     InputTextComponent,
@@ -99,12 +59,15 @@ function agruparPorEdital(resultados: readonly OportunidadeResponse[]): EditalCa
     EditalCardComponent,
     VoltarTopoComponent,
   ],
-  templateUrl: './oportunidades.page.html',
-  styleUrl: './oportunidades.page.scss',
+  templateUrl: './pesquisar.page.html',
+  styleUrl: './pesquisar.page.scss',
 })
-export class OportunidadesPage {
+export class PesquisarPage implements OnInit {
   private readonly fb = inject(FormBuilder);
   private readonly licitacoes = inject(LicitacoesService);
+  private readonly salvasService = inject(OportunidadesSalvasService);
+  private readonly modal = inject(ModalService);
+  private readonly toast = inject(ToastService);
 
   /** Requisição em andamento — guardada só pra `cancelarBusca()` poder abortá-la. */
   private buscaEmAndamento: Subscription | null = null;
@@ -121,10 +84,20 @@ export class OportunidadesPage {
 
   protected readonly editais = computed(() => agruparPorEdital(this.resultados()));
 
+  /** Chaves (`cnpj-ano-seq`) do que já está na lista de salvas — é o que
+   * marca o card como salvo. Salvar deixou de ser um toggle: quem sai da
+   * lista sai pelo módulo de salvas (ver `salvar`). */
+  private readonly salvas = signal<ReadonlySet<string>>(new Set());
+  private readonly salvando = signal<string | null>(null);
+
   /** Documentos + CAPAG de cada card — carregados automaticamente assim que a
    * busca volta (um card não espera o outro; cada um mostra "carregando" até
    * a própria resposta chegar). Nada fica atrás de um clique. */
   private readonly detalhes = signal<ReadonlyMap<string, DetalheEstado>>(new Map());
+
+  ngOnInit(): void {
+    this.carregarSalvas();
+  }
 
   protected buscar(): void {
     this.buscando.set(true);
@@ -168,11 +141,72 @@ export class OportunidadesPage {
     return this.detalhes().get(chave);
   }
 
+  protected estaSalva(chave: string): boolean {
+    return this.salvas().has(chave);
+  }
+
+  protected estaSalvando(chave: string): boolean {
+    return this.salvando() === chave;
+  }
+
+  /**
+   * Salvar pede confirmação e é **só de ida**: a lista de salvas é
+   * compartilhada pela equipe e cada salvamento abre um histórico (ver
+   * docs/DOMINIO.md). Um toggle aqui viraria log de cria/apaga/cria — por
+   * isso o caminho de volta é o módulo de salvas, com a exclusão dele.
+   */
+  protected salvar(card: EditalCard): void {
+    if (this.estaSalva(card.chave) || this.estaSalvando(card.chave)) return;
+
+    this.modal
+      .confirmar({
+        titulo: 'Salvar oportunidade',
+        mensagem:
+          'Esta oportunidade ficará na lista de salvas de toda a equipe, com histórico próprio. ' +
+          'Para tirá-la depois, use o módulo Oportunidades / Salvas.',
+        confirmarLabel: 'Salvar',
+      })
+      .subscribe((confirmou) => {
+        if (!confirmou) return;
+
+        this.salvando.set(card.chave);
+        const detalhe = this.detalheDe(card.chave);
+        this.salvasService
+          .salvar({
+            itens: card.itens,
+            capag: card.contratacao.capag ?? detalhe?.capag ?? null,
+            plataforma: detalhe?.plataforma ?? null,
+          })
+          .subscribe({
+            next: () => {
+              this.salvando.set(null);
+              this.salvas.update((atual) => new Set(atual).add(card.chave));
+              this.toast.sucesso('Oportunidade salva.');
+            },
+            error: () => {
+              this.salvando.set(null);
+              this.toast.erro('Não foi possível salvar a oportunidade agora.');
+            },
+          });
+      });
+  }
+
   /** Abre o arquivo principal do edital (1º documento) numa aba nova — o
    * botão fica desabilitado até o detalhe carregar (ver `carregarDetalhe`). */
   protected baixarEdital(chave: string): void {
     const url = this.detalheDe(chave)?.documentos[0]?.url;
     if (url) window.open(url, '_blank', 'noopener');
+  }
+
+  /** Só as chaves, não a lista inteira: a lista é paginada e pode ser
+   * grande, e aqui só interessa "este card já está salvo?". */
+  private carregarSalvas(): void {
+    this.salvasService.chaves().subscribe({
+      next: (chaves) => this.salvas.set(new Set(chaves)),
+      // Falhar aqui não pode atrapalhar a busca: no pior caso o card
+      // aparece como não salvo, e o backend é idempotente se salvarem de novo.
+      error: () => this.salvas.set(new Set()),
+    });
   }
 
   private carregarDetalhe(card: EditalCard): void {
