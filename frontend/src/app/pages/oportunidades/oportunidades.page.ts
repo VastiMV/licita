@@ -9,6 +9,7 @@ import { ButtonComponent } from '../../shared/ui/button/button.component';
 import { IconComponent } from '../../shared/ui/icon/icon.component';
 import { InputTextComponent } from '../../shared/ui/input-text/input-text.component';
 import { SelectComponent } from '../../shared/ui/select/select.component';
+import { VoltarTopoComponent } from '../../shared/ui/voltar-topo/voltar-topo.component';
 import { EditalCardComponent } from './edital-card/edital-card.component';
 
 const FORM_INICIAL = {
@@ -80,6 +81,7 @@ function agruparPorEdital(resultados: readonly OportunidadeResponse[]): EditalCa
     ButtonComponent,
     IconComponent,
     EditalCardComponent,
+    VoltarTopoComponent,
   ],
   templateUrl: './oportunidades.page.html',
   styleUrl: './oportunidades.page.scss',

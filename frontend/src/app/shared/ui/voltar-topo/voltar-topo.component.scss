@@ -1,0 +1,57 @@
+@use "mixins" as *;
+
+// `display: contents` porque o host não desenha nada: o botão é `fixed` e o
+// elemento `<app-voltar-topo>` nunca deve entrar no fluxo (nem virar um item
+// vazio num container flex com `gap`) de quem o inclui.
+:host {
+  display: contents;
+}
+
+.voltar-topo {
+  position: fixed;
+  // `env(...)` pro botão não cair embaixo da barra de gestos do celular.
+  right: calc(var(--space-6) + env(safe-area-inset-right));
+  bottom: calc(var(--space-6) + env(safe-area-inset-bottom));
+  z-index: var(--z-fab);
+
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 44px; // alvo mínimo de toque
+  height: 44px;
+  padding: 0;
+  border: none;
+  border-radius: var(--radius-pill);
+  background: var(--color-blue);
+  color: #fff;
+  cursor: pointer;
+  box-shadow: var(--shadow-md);
+  transition: background var(--transition-fast), transform var(--transition-fast);
+  animation: voltar-topo-entrada var(--transition-fast);
+
+  &:hover {
+    background: var(--color-blue-light);
+  }
+
+  &:active {
+    transform: scale(0.94);
+  }
+
+  &:focus-visible {
+    @include focus-ring;
+  }
+}
+
+@keyframes voltar-topo-entrada {
+  from {
+    opacity: 0;
+    transform: translateY(8px) scale(0.9);
+  }
+}
+
+@include reduced-motion {
+  .voltar-topo {
+    animation: none;
+    transition: none;
+  }
+}

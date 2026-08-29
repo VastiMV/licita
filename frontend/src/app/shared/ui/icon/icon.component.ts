@@ -14,6 +14,7 @@ export type IconName =
   | 'edit'
   | 'spinner'
   | 'arrow-right'
+  | 'arrow-up'
   | 'download'
   | 'external-link'
   | 'check'
