@@ -2,6 +2,7 @@ from django.urls import path
 
 from .views import (
     CompraDetalheView,
+    OportunidadeSalvaCotacaoView,
     OportunidadeSalvaEventosView,
     OportunidadeSalvaView,
     OportunidadesSalvasChavesView,
@@ -27,6 +28,11 @@ urlpatterns = [
         name="licitacoes-salvas-expiradas",
     ),
     path("salvas/<int:pk>/", OportunidadeSalvaView.as_view(), name="licitacoes-salva"),
+    path(
+        "salvas/<int:pk>/cotacao/",
+        OportunidadeSalvaCotacaoView.as_view(),
+        name="licitacoes-salva-cotacao",
+    ),
     path(
         "salvas/<int:pk>/eventos/",
         OportunidadeSalvaEventosView.as_view(),

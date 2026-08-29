@@ -14,6 +14,28 @@ h2 {
   @include visually-hidden;
 }
 
+// Barra de vínculo: a que edital esta cotação pertence. Fica fora dos
+// painéis porque é contexto da página inteira, não de uma seção — e antes
+// deles pra deixar claro que salvar depende dessa escolha.
+.vinculo {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: end;
+  gap: var(--space-3) var(--space-4);
+  margin: var(--space-5) 0;
+
+  app-select {
+    flex: 1 1 320px;
+    min-width: 0;
+  }
+
+  .estado {
+    flex: 1 1 100%;
+    margin: 0;
+    font-size: var(--font-size-sm);
+  }
+}
+
 .painel {
   background: var(--color-surface);
   border: 1px solid var(--color-border);
@@ -156,36 +178,135 @@ h2 {
 }
 
 // Um lance ou está seguro, ou merece atenção, ou está no vermelho — três
-// tons só, pra ler no meio de um pregão sem interpretar legenda.
-.tom-ok {
-  background: var(--color-success-bg);
-  color: var(--color-success);
+// tons só, pra ler no meio de um pregão sem interpretar legenda. Os mesmos
+// tons servem à pílula de status e ao fundo da linha inteira.
+$tons: (
+  'ok': (
+    var(--color-success-bg),
+    var(--color-success),
+  ),
+  'atencao': (
+    var(--color-warn-bg),
+    var(--color-warn),
+  ),
+  'perigo': (
+    var(--color-danger-bg),
+    var(--color-danger),
+  ),
+  'neutro': (
+    var(--color-bg),
+    var(--color-muted),
+  ),
+);
+
+@each $nome, $par in $tons {
+  $fundo: nth($par, 1);
+  $texto: nth($par, 2);
+
+  .status.tom-#{$nome} {
+    background: $fundo;
+    color: $texto;
+  }
+
+  // Pinta a célula, não a linha: `background` em `<tr>` não é pintado por
+  // cima da coluna fixa, que precisa de fundo opaco próprio pra não deixar
+  // o conteúdo rolar visível por baixo.
+  .linha-lance.tom-#{$nome} > td {
+    background: $fundo;
+  }
 }
 
-.tom-atencao {
-  background: var(--color-warn-bg);
-  color: var(--color-warn);
+// A linha inteira só é neutra enquanto não há lance; aí ela não deve
+// chamar atenção nenhuma.
+.linha-lance.tom-neutro > td {
+  background: var(--color-surface);
 }
 
-.tom-perigo {
-  background: var(--color-danger-bg);
-  color: var(--color-danger);
+.linha-lance {
+  &.clicavel {
+    cursor: pointer;
+  }
+
+  // A linha escolhida é a que o simulador está mostrando — a barra à
+  // esquerda diz isso sem depender de cor (as linhas já são coloridas
+  // pelo status).
+  &.selecionada > td:first-child {
+    box-shadow: inset 3px 0 0 var(--color-navy);
+  }
+
+  &:focus-visible {
+    outline: 2px solid var(--color-blue);
+    outline-offset: -2px;
+  }
 }
 
-.tom-neutro {
-  background: var(--color-bg);
-  color: var(--color-muted);
+// Cabeçalho que abre/fecha o card de percentuais.
+.cabecalho-colapso {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+  width: 100%;
+  padding: 0;
+  border: 0;
+  background: none;
+  color: inherit;
+  font: inherit;
+  text-align: left;
+  cursor: pointer;
+
+  h2 {
+    margin: 0;
+  }
+
+  .resumo {
+    margin-left: auto;
+    font-size: var(--font-size-sm);
+    color: var(--color-muted);
+  }
+
+  &:focus-visible {
+    @include focus-ring;
+
+    border-radius: var(--radius-sm);
+  }
 }
 
-.seletor-item {
+.corpo-colapso {
+  margin-top: var(--space-4);
+}
+
+// Fecho de cada painel: os números que respondem "quanto isso vale" e
+// "quanto sobra".
+.totais {
   display: flex;
   flex-wrap: wrap;
-  gap: var(--space-2);
-  margin-bottom: var(--space-4);
+  gap: var(--space-3) var(--space-6);
+  margin: var(--space-5) 0 0;
+  padding-top: var(--space-4);
+  border-top: 1px solid var(--color-border);
 
-  .ativa {
-    outline: 2px solid var(--color-blue);
-    outline-offset: 1px;
-    border-radius: var(--radius-sm);
+  div {
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+  }
+
+  dt {
+    @include uppercase-label;
+  }
+
+  dd {
+    margin: 0;
+    font-size: var(--font-size-md);
+    font-variant-numeric: tabular-nums;
+  }
+
+  .forte dd {
+    font-size: var(--font-size-lg);
+    font-weight: var(--font-weight-semibold);
+  }
+
+  .negativo {
+    color: var(--color-danger);
   }
 }

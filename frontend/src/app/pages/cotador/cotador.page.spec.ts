@@ -1,3 +1,5 @@
+import { provideHttpClient } from '@angular/common/http';
+import { HttpTestingController, provideHttpClientTesting } from '@angular/common/http/testing';
 import { ComponentFixture, TestBed } from '@angular/core/testing';
 import { By } from '@angular/platform-browser';
 
@@ -33,12 +35,33 @@ describe('CotadorPage', () => {
     return form().controls.itens.at(0).controls;
   }
 
+  let http: HttpTestingController;
+
   beforeEach(() => {
-    TestBed.configureTestingModule({ imports: [CotadorPage] });
+    TestBed.configureTestingModule({
+      imports: [CotadorPage],
+      providers: [provideHttpClient(), provideHttpClientTesting()],
+    });
     fixture = TestBed.createComponent(CotadorPage);
     page = fixture.componentInstance;
+    http = TestBed.inject(HttpTestingController);
+    fixture.detectChanges();
+
+    // A tela busca as oportunidades salvas ao abrir; sem responder, toda
+    // asserção depois disso ficaria com uma requisição pendente aberta.
+    http
+      .expectOne((r) => r.url.includes('licitacoes/salvas'))
+      .flush({
+        count: 2,
+        results: [
+          { id: 7, objeto: 'Aquisição de papel A4', uf: 'SP' },
+          { id: 9, objeto: 'Toner para impressora', uf: 'RJ' },
+        ],
+      });
     fixture.detectChanges();
   });
+
+  afterEach(() => http.verify());
 
   it('abre com os percentuais padrão da planilha', () => {
     const parametros = form().controls.parametros.value;
@@ -134,7 +157,8 @@ describe('CotadorPage', () => {
     expect(primeiroItem().lance.value).toBe(131.11);
   });
 
-  it('avisa quando o lucro mínimo passa o desejado', () => {
+  it('avisa quando o lucro mínimo passa o máximo', () => {
+    (page as any).alternarParametros();
     form().controls.parametros.controls.lucroMinimo.setValue(50);
     fixture.detectChanges();
 
@@ -143,6 +167,7 @@ describe('CotadorPage', () => {
   });
 
   it('avisa quando os tributos somam 100% da venda', () => {
+    (page as any).alternarParametros();
     form().controls.parametros.controls.icms.setValue(100);
     fixture.detectChanges();
 
@@ -158,5 +183,193 @@ describe('CotadorPage', () => {
     const simulador = tabelas[tabelas.length - 1];
 
     expect(simulador.queryAll(By.css('tbody tr')).length).toBe(5);
+  });
+
+  it('começa com o card de percentuais fechado, já que os valores vêm preenchidos', () => {
+    expect(fixture.debugElement.queryAll(By.css('.form-grid')).length).toBe(0);
+
+    (page as any).alternarParametros();
+    fixture.detectChanges();
+
+    expect(fixture.debugElement.queryAll(By.css('.form-grid')).length).toBeGreaterThan(0);
+  });
+
+  it('põe os itens da cotação antes dos percentuais na página', () => {
+    const titulos = fixture.debugElement
+      .queryAll(By.css('h2'))
+      .map((h) => h.nativeElement.textContent.trim());
+
+    expect(titulos[0]).toBe('Itens da cotação');
+    expect(titulos[1]).toBe('Custos e percentuais');
+  });
+
+  it('tem uma linha no painel de lances para cada item da cotação', () => {
+    (page as any).adicionarItem();
+    (page as any).adicionarItem();
+    fixture.detectChanges();
+
+    const linhas = fixture.debugElement.queryAll(By.css('.linha-lance.clicavel'));
+    expect(linhas.length).toBe(form().controls.itens.length);
+    expect(linhas.length).toBe(3);
+  });
+
+  it('colore a linha do painel de lances conforme o status do lance', () => {
+    primeiroItem().valorUnitarioProduto.setValue(100);
+    fixture.detectChanges();
+    const linha = () => fixture.debugElement.queryAll(By.css('.linha-lance.clicavel'))[0];
+
+    // Sem lance a linha não chama atenção.
+    expect(linha().nativeElement.className).toContain('tom-neutro');
+
+    primeiroItem().lance.setValue(110); // abaixo do equilíbrio
+    fixture.detectChanges();
+    expect(linha().nativeElement.className).toContain('tom-perigo');
+
+    primeiroItem().lance.setValue(140); // entre mínimo e máximo
+    fixture.detectChanges();
+    expect(linha().nativeElement.className).toContain('tom-ok');
+  });
+
+  it('troca o item do simulador ao clicar numa linha do painel de lances', () => {
+    (page as any).adicionarItem();
+    fixture.detectChanges();
+    form().controls.itens.at(1).controls.fornecedor.setValue('Toner HP');
+    fixture.detectChanges();
+
+    fixture.debugElement.queryAll(By.css('.linha-lance.clicavel'))[1].nativeElement.click();
+    fixture.detectChanges();
+
+    expect((page as any).itemSelecionado()).toBe(1);
+    const titulos = fixture.debugElement
+      .queryAll(By.css('h2'))
+      .map((h) => h.nativeElement.textContent.trim());
+    expect(titulos.some((t) => t.includes('Toner HP'))).toBe(true);
+  });
+
+  it('mostra o valor total cotado e o lucro total', () => {
+    primeiroItem().quantidade.setValue(10);
+    primeiroItem().valorUnitarioProduto.setValue(100);
+    fixture.detectChanges();
+
+    const textos = fixture.debugElement
+      .queryAll(By.css('.totais div'))
+      .map((d) => d.nativeElement.textContent.replace(/\s+/g, ' ').trim());
+
+    expect(textos.some((t) => t.includes('Valor total cotado') && t.includes('1.588,89'))).toBe(
+      true,
+    );
+    expect(textos.some((t) => t.includes('Lucro total') && t.includes('350,00'))).toBe(true);
+  });
+
+  it('só mostra totais de lance depois que existe algum lance', () => {
+    primeiroItem().quantidade.setValue(10);
+    primeiroItem().valorUnitarioProduto.setValue(100);
+    fixture.detectChanges();
+    expect((page as any).totaisLance().algumLance).toBe(false);
+
+    primeiroItem().lance.setValue(140);
+    fixture.detectChanges();
+
+    expect((page as any).totaisLance().algumLance).toBe(true);
+    expect((page as any).totaisLance().valorTotal).toBeCloseTo(1400, 10);
+    expect((page as any).totaisLance().lucroTotal).toBeCloseTo(180, 10);
+  });
+
+  it('lista as oportunidades salvas para vincular a cotação', () => {
+    expect((page as any).oportunidades()).toEqual([
+      { value: '7', label: 'Aquisição de papel A4 — SP' },
+      { value: '9', label: 'Toner para impressora — RJ' },
+    ]);
+  });
+
+  it('não deixa salvar sem escolher a oportunidade', () => {
+    (page as any).salvarCotacao();
+
+    // Nenhuma requisição sai: não há a que edital anexar a cotação.
+    http.expectNone((r) => r.url.includes('/cotacao/'));
+  });
+
+  it('carrega a cotação gravada ao escolher um edital', () => {
+    (page as any).oportunidadeId.setValue('7');
+    fixture.detectChanges();
+
+    http.expectOne('/api/licitacoes/salvas/7/cotacao/').flush({
+      id: 1,
+      parametros: {
+        transporte: 0.1,
+        garantia: 0,
+        icms: 0.18,
+        pis: 0,
+        cofins: 0,
+        ipi: 0,
+        iss: 0,
+        lucro_desejado: 0.4,
+        lucro_minimo: 0.15,
+      },
+      itens: [
+        {
+          fornecedor: 'Papel A4',
+          quantidade: 5,
+          valor_unitario_produto: 200,
+          frete_fixo_unitario: 0,
+          outros_custos_unitarios: 0,
+          valor_referencia_edital: 0,
+          lance: 300,
+        },
+      ],
+      valor_total: '1000.00',
+      lucro_total: '100.00',
+      atualizada_por_nome: '',
+      criada_em: '2026-08-29T12:00:00Z',
+      atualizada_em: '2026-08-29T12:00:00Z',
+    });
+    fixture.detectChanges();
+
+    // Percentual volta de fração para o número que a tela mostra.
+    expect(form().controls.parametros.value.icms).toBe(18);
+    expect(form().controls.parametros.value.lucroDesejado).toBe(40);
+    expect(primeiroItem().quantidade.value).toBe(5);
+    expect(primeiroItem().lance.value).toBe(300);
+  });
+
+  it('trata 404 como edital ainda não cotado, não como erro', () => {
+    (page as any).oportunidadeId.setValue('9');
+    fixture.detectChanges();
+
+    http
+      .expectOne('/api/licitacoes/salvas/9/cotacao/')
+      .flush({ detail: 'Não encontrado.' }, { status: 404, statusText: 'Not Found' });
+    fixture.detectChanges();
+
+    expect((page as any).carregandoCotacao()).toBe(false);
+    expect((page as any).gravadaEm()).toBeNull();
+  });
+
+  it('manda a cotação em fração e snake_case ao salvar', () => {
+    (page as any).oportunidadeId.setValue('7');
+    fixture.detectChanges();
+    http.expectOne('/api/licitacoes/salvas/7/cotacao/').flush({}, { status: 404, statusText: 'x' });
+
+    primeiroItem().fornecedor.setValue('Papel A4');
+    primeiroItem().quantidade.setValue(10);
+    primeiroItem().valorUnitarioProduto.setValue(100);
+    fixture.detectChanges();
+
+    (page as any).salvarCotacao();
+
+    const req = http.expectOne('/api/licitacoes/salvas/7/cotacao/');
+    expect(req.request.method).toBe('PUT');
+    // 35 na tela, 0,35 no corpo.
+    expect(req.request.body.parametros.lucro_desejado).toBeCloseTo(0.35, 10);
+    expect(req.request.body.parametros.icms).toBeCloseTo(0.1, 10);
+    expect(req.request.body.itens[0]).toMatchObject({
+      fornecedor: 'Papel A4',
+      quantidade: 10,
+      valor_unitario_produto: 100,
+    });
+
+    req.flush({ id: 1, atualizada_em: '2026-08-29T13:00:00Z' });
+    fixture.detectChanges();
+    expect((page as any).gravadaEm()).toBe('2026-08-29T13:00:00Z');
   });
 });

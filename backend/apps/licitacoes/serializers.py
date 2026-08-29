@@ -19,7 +19,7 @@ import datetime as dt
 
 from rest_framework import serializers
 
-from .models import EventoOportunidadeSalva, OportunidadeSalva, montar_texto_busca
+from .models import Cotacao, EventoOportunidadeSalva, OportunidadeSalva, montar_texto_busca
 
 
 class OportunidadeSerializer(serializers.Serializer):
@@ -275,3 +275,64 @@ class EventoOportunidadeSalvaSerializer(serializers.ModelSerializer):
         if not obj.autor:
             return None
         return obj.autor.nome or obj.autor.email
+
+
+class CotacaoSerializer(serializers.ModelSerializer):
+    """Leitura/escrita da cotação de uma oportunidade salva.
+
+    `valor_total` e `lucro_total` são somente-leitura de propósito: quem os
+    calcula é o `save()` do model, a partir de `parametros`/`itens` (ver
+    docstring de `Cotacao`). Total enviado pelo cliente é descartado.
+    """
+
+    atualizada_por_nome = serializers.CharField(
+        source="atualizada_por.get_full_name", read_only=True, default=""
+    )
+
+    class Meta:
+        model = Cotacao
+        fields = [
+            "id",
+            "parametros",
+            "itens",
+            "valor_total",
+            "lucro_total",
+            "atualizada_por_nome",
+            "criada_em",
+            "atualizada_em",
+        ]
+        read_only_fields = ["id", "valor_total", "lucro_total", "criada_em", "atualizada_em"]
+
+    def validate_parametros(self, parametros: dict) -> dict:
+        if not isinstance(parametros, dict):
+            raise serializers.ValidationError("Os percentuais devem vir como objeto.")
+
+        for chave, valor in parametros.items():
+            if not isinstance(valor, (int, float)) or isinstance(valor, bool):
+                raise serializers.ValidationError(f"O percentual '{chave}' não é um número.")
+
+        return parametros
+
+    def validate_itens(self, itens: list) -> list:
+        if not isinstance(itens, list):
+            raise serializers.ValidationError("Os itens devem vir como lista.")
+        # Cotação sem item nenhum não é rascunho: é linha vazia ocupando a
+        # oportunidade e mentindo um total de zero na lista.
+        if not itens:
+            raise serializers.ValidationError("Uma cotação precisa de pelo menos um item.")
+
+        for item in itens:
+            if not isinstance(item, dict):
+                raise serializers.ValidationError("Cada item deve ser um objeto.")
+            if _decimal_invalido(item.get("quantidade")) or _decimal_invalido(
+                item.get("valor_unitario_produto")
+            ):
+                raise serializers.ValidationError(
+                    "Quantidade e valor unitário do produto precisam ser números."
+                )
+
+        return itens
+
+
+def _decimal_invalido(valor: object) -> bool:
+    return valor is not None and (isinstance(valor, bool) or not isinstance(valor, (int, float)))

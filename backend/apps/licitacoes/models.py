@@ -312,3 +312,83 @@ class EventoOportunidadeSalva(models.Model):
 
     def __str__(self) -> str:
         return f"{self.ocorrido_em:%d/%m/%Y %H:%M} — {self.descricao}"
+
+
+class Cotacao(models.Model):
+    """A formação de preço de uma oportunidade salva — o Cotador gravado.
+
+    **Um-para-um com a oportunidade.** O Cotador responde "por quanto eu
+    disputo *este* edital", então a cotação não faz sentido solta: ela nasce
+    presa a uma `OportunidadeSalva` e salvar de novo sobrescreve a mesma
+    linha. Se um dia a equipe precisar comparar cenários do mesmo edital,
+    isto vira `ForeignKey` — e aí a UI precisa ganhar nome/versão por
+    cenário, que hoje não existe.
+
+    **O que se grava são as entradas, não a tela.** `parametros` e `itens`
+    guardam o que o usuário digitou; todo o resto (preço final, preço
+    mínimo, equilíbrio, degraus do simulador) é derivado e recalculado na
+    abertura. Guardar derivado congelaria números que mudam quando a
+    alíquota muda.
+
+    **Os totais são exceção, e são recalculados no servidor.** Ficam
+    materializados porque a lista de cotações precisa mostrá-los sem
+    reprocessar item a item — mas nunca vêm do cliente: `save()` os refaz a
+    partir de `parametros`/`itens` com `cotacao.py`. Total enviado pelo
+    frontend é ignorado de propósito.
+    """
+
+    oportunidade = models.OneToOneField(
+        "licitacoes.OportunidadeSalva",
+        verbose_name="oportunidade salva",
+        related_name="cotacao",
+        on_delete=models.CASCADE,
+    )
+
+    # Percentuais da operação, como fração (0.08 = 8%) — mesmo formato do
+    # frontend. JSON e não colunas: a lista de tributos muda com o regime
+    # tributário da empresa, e migrar coluna a cada mudança não se paga.
+    parametros = models.JSONField("percentuais", default=dict)
+
+    # Uma entrada por item cotado, na ordem em que aparecem na tela.
+    itens = models.JSONField("itens cotados", default=list)
+
+    valor_total = models.DecimalField(
+        "valor total cotado", max_digits=14, decimal_places=2, default=0
+    )
+    lucro_total = models.DecimalField(
+        "lucro total", max_digits=14, decimal_places=2, default=0
+    )
+
+    atualizada_por = models.ForeignKey(
+        settings.AUTH_USER_MODEL,
+        verbose_name="atualizada por",
+        related_name="cotacoes",
+        null=True,
+        blank=True,
+        on_delete=models.SET_NULL,
+    )
+    criada_em = models.DateTimeField("criada em", auto_now_add=True)
+    atualizada_em = models.DateTimeField("atualizada em", auto_now=True)
+
+    class Meta:
+        verbose_name = "cotação"
+        verbose_name_plural = "cotações"
+        ordering = ["-atualizada_em"]
+
+    def __str__(self) -> str:
+        return f"Cotação de {self.oportunidade_id}"
+
+    def recalcular_totais(self) -> None:
+        """Refaz os totais a partir das entradas — ver docstring da classe."""
+        from .cotacao import itens_de_lista, parametros_de_dict, totalizar
+
+        totais = totalizar(
+            itens_de_lista(self.itens or []),
+            parametros_de_dict(self.parametros or {}),
+        )
+        self.valor_total = totais.valor_total
+        self.lucro_total = totais.lucro_total
+
+    def save(self, *args, **kwargs):
+        self.recalcular_totais()
+        return super().save(*args, **kwargs)

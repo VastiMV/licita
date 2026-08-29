@@ -163,6 +163,59 @@ a lista do que aconteceu, no estilo de um extrato de ligação.
 | `removida` | na exclusão (individual ou em lote pelas vencidas) |
 | `proposta_gerada` | **ainda não produzido** — declarado porque o log já é escrito no formato final; entra junto com o módulo de propostas |
 
+### `Cotacao` — a formação de preço de um edital
+
+O que o **Cotador** grava. Porta para o app a planilha "Lucro Sobre Custo"
+que a equipe usava no Excel: quanto pagar ao fornecedor, quais percentuais
+incidem, por quanto disputar e até onde dá pra baixar num pregão.
+Implementado em `apps/licitacoes/models.py` (fórmulas em
+`apps/licitacoes/cotacao.py`).
+
+Três decisões moldam o model:
+
+- **Um-para-um com a oportunidade salva** (29/08/2026). A pergunta que o
+  Cotador responde é "por quanto eu disputo *este* edital", então a cotação
+  não existe solta: nasce presa a uma `OportunidadeSalva` e salvar de novo
+  sobrescreve. Comparar cenários do mesmo edital exigiria `ForeignKey` mais
+  nome/versão por cenário — não existe hoje.
+- **Grava-se a entrada, não a tela.** `parametros` e `itens` guardam o que
+  foi digitado; preço final, preço mínimo, equilíbrio e os degraus do
+  simulador são derivados e recalculados na abertura. Gravar derivado
+  congelaria números que mudam quando a alíquota muda.
+- **Os totais são recalculados no servidor.** Ficam materializados
+  (`valor_total`, `lucro_total`) porque a listagem precisa deles sem
+  reprocessar item a item, mas total vindo do cliente é ignorado: o `save()`
+  refaz a conta. Caso contrário uma requisição adulterada gravaria um lucro
+  que não corresponde aos itens ao lado dele.
+
+| Campo | Tipo | Observação |
+|---|---|---|
+| `oportunidade` | OneToOne `OportunidadeSalva` | `on_delete=CASCADE` — tirar o edital leva a cotação junto |
+| `parametros` | JSON | percentuais como **fração** (0,08 = 8%); JSON e não colunas porque a lista de tributos muda com o regime tributário |
+| `itens` | JSON | um por item cotado, na ordem da tela, incluindo o `lance` corrente |
+| `valor_total`, `lucro_total` | decimal | recalculados no `save()`, somente-leitura na API |
+| `atualizada_por` | FK `User`, nullable | |
+| `criada_em`, `atualizada_em` | datetime | |
+
+Regras da conta (as mesmas da planilha de origem):
+
+- **Duas bases de percentual.** Transporte, garantia e lucro incidem sobre o
+  **custo** (o valor pago ao fornecedor): "35% de lucro" é ganhar 35% sobre
+  o que o produto custou. Os tributos (ICMS/Simples, PIS, COFINS, IPI, ISS)
+  incidem sobre a **venda**. Por isso o preço não é custo + margem, e sim
+  `(custo + produto × lucro) / (1 − impostos)` — a divisão embute o imposto
+  que ainda vai cair sobre o próprio preço.
+- **Três preços de referência por item**: o *final* (com o lucro desejado),
+  o *mínimo* (com o lucro mínimo) e o de *equilíbrio* (lucro zero — cobre
+  custo e imposto e nada mais).
+- **Tributo somando 100% ou mais da venda devolve zero**, não infinito — é o
+  `IFERROR` da planilha; propagar infinito envenenaria todos os totais.
+- A conta existe **duas vezes**, no frontend (`cotador.model.ts`, que
+  recalcula a cada tecla) e no backend (`cotacao.py`, que grava). As duas
+  são ancoradas no mesmo exemplo documentado na planilha (R$100 + 8% + 10% +
+  35% = R$158,89, lucro líquido R$35), então divergência entre elas quebra
+  um teste dos dois lados.
+
 ### `Filtro`
 Critério salvo por um usuário para monitorar novas licitações.
 

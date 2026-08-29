@@ -1,57 +1,33 @@
 <h1>Cotador</h1>
 <p class="muted">
-  Formação de preço para disputar um pregão. Informe o que você paga ao fornecedor e os percentuais
-  da sua operação; a tela recalcula a cada tecla. Nada aqui é salvo — sair da página descarta a
-  cotação.
+  Formação de preço para disputar um pregão. Informe o que você paga ao fornecedor; a tela recalcula
+  a cada tecla.
 </p>
 
+<div class="vinculo">
+  <app-select
+    label="Oportunidade salva"
+    placeholder="Nenhuma — cotação avulsa"
+    [options]="oportunidades()"
+    [formControl]="oportunidadeId"
+  />
+  <app-button [disabled]="salvando() || carregandoCotacao()" (click)="salvarCotacao()">
+    {{ salvando() ? 'Salvando…' : 'Salvar cotação' }}
+  </app-button>
+  <p class="muted estado">
+    @if (carregandoCotacao()) {
+      Carregando a cotação deste edital…
+    } @else if (gravadaEm()) {
+      Salva nesta oportunidade.
+    } @else if (oportunidadeEscolhida()) {
+      Este edital ainda não tem cotação — salvar cria a primeira.
+    } @else {
+      Escolha um edital para poder salvar. Sem isso, a cotação some ao sair da página.
+    }
+  </p>
+</div>
+
 <form [formGroup]="form" novalidate>
-  <section class="painel" formGroupName="parametros">
-    <h2>Custos e percentuais</h2>
-    <p class="muted nota">
-      Transporte, garantia e lucro incidem sobre o <strong>custo</strong> (o valor pago ao
-      fornecedor). Os tributos incidem sobre a <strong>venda</strong> — por isso o preço não é custo
-      + margem, e sim uma conta que já embute o imposto que vai cair sobre ele mesmo.
-    </p>
-
-    <div class="form-grid">
-      <app-input-number label="Transporte" sufixo="% do custo" formControlName="transporte" />
-      <app-input-number label="Garantia extra" sufixo="% do custo" formControlName="garantia" />
-      <app-input-number
-        label="Lucro desejado"
-        sufixo="% do custo"
-        formControlName="lucroDesejado"
-      />
-      <app-input-number label="Lucro mínimo" sufixo="% do custo" formControlName="lucroMinimo" />
-    </div>
-
-    <div class="form-grid">
-      <app-input-number label="ICMS / Simples" sufixo="% da venda" formControlName="icms" />
-      <app-input-number label="PIS" sufixo="% da venda" formControlName="pis" />
-      <app-input-number label="COFINS" sufixo="% da venda" formControlName="cofins" />
-      <app-input-number label="IPI" sufixo="% da venda" formControlName="ipi" />
-      <app-input-number label="ISS" sufixo="% da venda" formControlName="iss" />
-    </div>
-
-    @if (parametros().lucroMinimo > parametros().lucroDesejado) {
-      <p class="aviso">
-        O lucro mínimo está acima do desejado — o preço mínimo ficaria maior que o preço final.
-      </p>
-    }
-    @if (
-      parametros().icms +
-        parametros().pis +
-        parametros().cofins +
-        parametros().ipi +
-        parametros().iss >=
-      1
-    ) {
-      <p class="aviso">
-        Os tributos somam 100% ou mais da venda: não existe preço que feche essa conta.
-      </p>
-    }
-  </section>
-
   <section class="painel">
     <h2>Itens da cotação</h2>
 
@@ -136,32 +112,109 @@
             </tr>
           }
         </tbody>
-        <tfoot>
-          <tr>
-            <td colspan="3">
-              Total · {{ itens.length }} {{ itens.length === 1 ? 'item' : 'itens' }}
-            </td>
-            <td class="numerica">{{ totais().quantidade }}</td>
-            <td class="numerica" colspan="4">
-              Custo dos produtos: {{ moeda(totais().custoTotalProdutos) }} · preço médio un.:
-              {{ moeda(totais().precoUnitarioMedio) }}
-            </td>
-            <td class="numerica calculada">{{ moeda(totais().capitalNecessario) }}</td>
-            <td class="numerica calculada destaque col-resultado">
-              {{ moeda(totais().precoTotalFinal) }}
-            </td>
-          </tr>
-        </tfoot>
       </table>
     </div>
 
     <app-button variant="ghost" (click)="adicionarItem()">Adicionar item</app-button>
+
+    <dl class="totais">
+      <div>
+        <dt>Itens</dt>
+        <dd>{{ itens.length }} · {{ totais().quantidade }} un.</dd>
+      </div>
+      <div>
+        <dt>Custo dos produtos</dt>
+        <dd>{{ moeda(totais().custoTotalProdutos) }}</dd>
+      </div>
+      <div>
+        <dt>Capital necessário</dt>
+        <dd>{{ moeda(totais().capitalNecessario) }}</dd>
+      </div>
+      <div class="forte">
+        <dt>Valor total cotado</dt>
+        <dd>{{ moeda(totais().precoTotalFinal) }}</dd>
+      </div>
+      <div class="forte">
+        <dt>Lucro total</dt>
+        <dd [class.negativo]="lucroTotalNegativo()">{{ moeda(totais().lucroLiquidoTotal) }}</dd>
+      </div>
+    </dl>
+  </section>
+
+  <section class="painel" formGroupName="parametros">
+    <button
+      type="button"
+      class="cabecalho-colapso"
+      (click)="alternarParametros()"
+      [attr.aria-expanded]="parametrosAbertos()"
+    >
+      <app-icon [name]="parametrosAbertos() ? 'chevron-up' : 'chevron-down'" />
+      <h2>Custos e percentuais</h2>
+      <span class="resumo">
+        Transporte {{ percentual(parametros().transporte) }} · ICMS
+        {{ percentual(parametros().icms) }} · lucro {{ percentual(parametros().lucroMinimo) }}–{{
+          percentual(parametros().lucroDesejado)
+        }}
+      </span>
+    </button>
+
+    @if (parametrosAbertos()) {
+      <div class="corpo-colapso">
+        <p class="muted nota">
+          Transporte, garantia e lucro incidem sobre o <strong>custo</strong> (o valor pago ao
+          fornecedor). Os tributos incidem sobre a <strong>venda</strong> — por isso o preço não é
+          custo + margem, e sim uma conta que já embute o imposto que vai cair sobre ele mesmo.
+        </p>
+
+        <div class="form-grid">
+          <app-input-number label="Transporte" sufixo="% do custo" formControlName="transporte" />
+          <app-input-number label="Garantia extra" sufixo="% do custo" formControlName="garantia" />
+          <app-input-number
+            label="Lucro máximo"
+            sufixo="% do custo"
+            formControlName="lucroDesejado"
+          />
+          <app-input-number
+            label="Lucro mínimo"
+            sufixo="% do custo"
+            formControlName="lucroMinimo"
+          />
+        </div>
+
+        <div class="form-grid">
+          <app-input-number label="ICMS / Simples" sufixo="% da venda" formControlName="icms" />
+          <app-input-number label="PIS" sufixo="% da venda" formControlName="pis" />
+          <app-input-number label="COFINS" sufixo="% da venda" formControlName="cofins" />
+          <app-input-number label="IPI" sufixo="% da venda" formControlName="ipi" />
+          <app-input-number label="ISS" sufixo="% da venda" formControlName="iss" />
+        </div>
+
+        @if (parametros().lucroMinimo > parametros().lucroDesejado) {
+          <p class="aviso">
+            O lucro mínimo está acima do máximo — o preço mínimo ficaria maior que o preço final.
+          </p>
+        }
+        @if (
+          parametros().icms +
+            parametros().pis +
+            parametros().cofins +
+            parametros().ipi +
+            parametros().iss >=
+          1
+        ) {
+          <p class="aviso">
+            Os tributos somam 100% ou mais da venda: não existe preço que feche essa conta.
+          </p>
+        }
+      </div>
+    }
   </section>
 
   <section class="painel">
     <h2>Painel de lances</h2>
     <p class="muted nota">
-      Com o pregão acontecendo, altere apenas a coluna <strong>Lance atual</strong>.
+      Com o pregão acontecendo, altere apenas a coluna <strong>Lance atual</strong>. Clique numa
+      linha para simular aquele item.
     </p>
 
     <div class="rolagem">
@@ -171,19 +224,27 @@
             <th scope="col" class="col-num">#</th>
             <th scope="col">Fornecedor / produto</th>
             <th scope="col" class="numerica">Lance atual</th>
-            <th scope="col" class="numerica calculada">Equilíbrio</th>
-            <th scope="col" class="numerica calculada">Preço mínimo</th>
-            <th scope="col" class="numerica calculada">Lucro sobre o custo</th>
-            <th scope="col" class="numerica calculada">Lucro líq. un.</th>
-            <th scope="col" class="numerica calculada">Lucro líq. total</th>
-            <th scope="col" class="numerica calculada">Pode baixar</th>
-            <th scope="col" class="numerica calculada">Desconto do lance</th>
-            <th scope="col" class="calculada col-resultado">Status</th>
+            <th scope="col" class="numerica">Equilíbrio</th>
+            <th scope="col" class="numerica">Preço mínimo</th>
+            <th scope="col" class="numerica">Lucro sobre o custo</th>
+            <th scope="col" class="numerica">Lucro líq. un.</th>
+            <th scope="col" class="numerica">Lucro líq. total</th>
+            <th scope="col" class="numerica">Pode baixar</th>
+            <th scope="col" class="col-resultado">Status</th>
           </tr>
         </thead>
         <tbody>
           @for (grupo of itens.controls; track grupo; let i = $index) {
-            <tr [formGroupName]="i">
+            <tr
+              [formGroupName]="i"
+              [class]="'linha-lance clicavel tom-' + tom(avaliacoes()[i].status)"
+              [class.selecionada]="itemSelecionado() === i"
+              [attr.aria-selected]="itemSelecionado() === i"
+              tabindex="0"
+              (click)="selecionarItem(i)"
+              (keydown.enter)="selecionarItem(i)"
+              (keydown.space)="selecionarItem(i)"
+            >
               <td class="col-num">{{ i + 1 }}</td>
               <td class="col-fornecedor texto">
                 {{ grupo.controls.fornecedor.value || 'Item ' + (i + 1) }}
@@ -197,29 +258,25 @@
               </td>
 
               @if (calculados()[i]; as calculado) {
-                <td class="numerica calculada">{{ moeda(calculado.precoEquilibrio) }}</td>
-                <td class="numerica calculada">{{ moeda(calculado.precoMinimo) }}</td>
+                <td class="numerica">{{ moeda(calculado.precoEquilibrio) }}</td>
+                <td class="numerica">{{ moeda(calculado.precoMinimo) }}</td>
               }
 
               @if (avaliacoes()[i]; as avaliacao) {
-                <td class="numerica calculada" [class.negativo]="avaliacao.lucroSobreCusto < 0">
+                <td class="numerica" [class.negativo]="avaliacao.lucroSobreCusto < 0">
                   {{ percentual(avaliacao.lucroSobreCusto) }}
                 </td>
-                <td
-                  class="numerica calculada"
-                  [class.negativo]="avaliacao.lucroLiquidoUnitario < 0"
-                >
+                <td class="numerica" [class.negativo]="avaliacao.lucroLiquidoUnitario < 0">
                   {{ moeda(avaliacao.lucroLiquidoUnitario) }}
                 </td>
-                <td class="numerica calculada" [class.negativo]="avaliacao.lucroLiquidoTotal < 0">
+                <td class="numerica" [class.negativo]="avaliacao.lucroLiquidoTotal < 0">
                   {{ moeda(avaliacao.lucroLiquidoTotal) }}
                 </td>
-                <td class="numerica calculada">{{ moeda(avaliacao.podeBaixar) }}</td>
-                <td class="numerica calculada">{{ percentual(avaliacao.descontoDoLance) }}</td>
-                <td class="calculada col-resultado">
-                  <span [class]="'status tom-' + tom(avaliacao.status)">
-                    {{ avaliacao.status }}
-                  </span>
+                <td class="numerica">{{ moeda(avaliacao.podeBaixar) }}</td>
+                <td class="col-resultado">
+                  <span [class]="'status tom-' + tom(avaliacao.status)">{{
+                    avaliacao.status
+                  }}</span>
                 </td>
               }
             </tr>
@@ -227,29 +284,28 @@
         </tbody>
       </table>
     </div>
+
+    <dl class="totais">
+      <div class="forte">
+        <dt>Valor total dos lances</dt>
+        <dd>{{ totaisLance().algumLance ? moeda(totaisLance().valorTotal) : '—' }}</dd>
+      </div>
+      <div class="forte">
+        <dt>Lucro total nos lances</dt>
+        <dd [class.negativo]="totaisLance().lucroTotal < 0">
+          {{ totaisLance().algumLance ? moeda(totaisLance().lucroTotal) : '—' }}
+        </dd>
+      </div>
+    </dl>
   </section>
 </form>
 
 <section class="painel">
-  <h2>Simulador de lances</h2>
+  <h2>Simulador de lances — {{ nomeItemSelecionado() }}</h2>
   <p class="muted nota">
-    Cinco preços entre o mínimo e o preço final, pra saber de antemão até onde dá pra baixar.
+    Cinco preços entre o mínimo e o preço final deste item. Clique em outra linha do painel de
+    lances para simular outro item.
   </p>
-
-  @if (itens.length > 1) {
-    <div class="seletor-item" role="group" aria-label="Item simulado">
-      @for (grupo of itens.controls; track grupo; let i = $index) {
-        <app-button
-          variant="ghost"
-          class="opcao"
-          [class.ativa]="itemSelecionado() === i"
-          (click)="itemSelecionado.set(i)"
-        >
-          {{ grupo.controls.fornecedor.value || 'Item ' + (i + 1) }}
-        </app-button>
-      }
-    </div>
-  }
 
   <div class="rolagem">
     <table class="tabela">
@@ -266,7 +322,7 @@
       </thead>
       <tbody>
         @for (degrau of degraus(); track degrau.lance) {
-          <tr>
+          <tr [class]="'linha-lance tom-' + tomSituacao(degrau.situacao)">
             <td class="numerica destaque">{{ moeda(degrau.lance) }}</td>
             <td class="numerica">{{ percentual(degrau.lucroSobreCusto) }}</td>
             <td class="numerica">{{ moeda(degrau.lucroLiquidoUnitario) }}</td>
