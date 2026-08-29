@@ -3,6 +3,7 @@ import { FormBuilder, ReactiveFormsModule, Validators } from '@angular/forms';
 
 import { FiltroResponse } from '../../contracts/filtros/filtro.contracts';
 import { MODALIDADES } from '../../contracts/licitacoes/modalidade';
+import { UFS } from '../../contracts/localidades/uf';
 import { FiltrosService } from '../../services/filtros/filtros.service';
 import { ModalService } from '../../shared/overlay/modal.service';
 import { ButtonComponent } from '../../shared/ui/button/button.component';
@@ -22,6 +23,7 @@ export class FiltrosPage implements OnInit {
   private readonly modal = inject(ModalService);
 
   protected readonly modalidades = MODALIDADES;
+  protected readonly ufs = UFS;
   protected readonly filtros = signal<FiltroResponse[]>([]);
   protected readonly carregando = signal(true);
   protected readonly salvando = signal(false);

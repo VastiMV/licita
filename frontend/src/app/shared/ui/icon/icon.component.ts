@@ -18,7 +18,8 @@ export type IconName =
   | 'download'
   | 'external-link'
   | 'check'
-  | 'bookmark';
+  | 'bookmark'
+  | 'calendar';
 
 /**
  * Catálogo de ícones inline (SVG) do projeto — único lugar que sabe

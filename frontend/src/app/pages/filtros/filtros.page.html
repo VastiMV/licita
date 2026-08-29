@@ -10,7 +10,7 @@
   />
   <app-input-text label="Palavras-chave" formControlName="palavras_chave" placeholder="separadas por vírgula" />
   <app-select label="Modalidade" [options]="modalidades" formControlName="modalidade" />
-  <app-input-text label="UF" formControlName="uf" placeholder="ex: SP" />
+  <app-select label="UF" [options]="ufs" formControlName="uf" />
   <app-input-text label="UASG" formControlName="uasg" placeholder="opcional" />
   <app-input-text
     label="E-mail para avisos"

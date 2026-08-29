@@ -11,10 +11,10 @@
     placeholder="ex: notebook, cimento, uniforme..."
   />
   <app-select label="Modalidade" [options]="modalidades" formControlName="modalidade" />
-  <app-input-text label="UF" formControlName="uf" placeholder="ex: SP" />
+  <app-select label="UF" [options]="ufs" formControlName="uf" />
   <app-input-text label="UASG" formControlName="codigo_unidade" placeholder="opcional" />
-  <app-input-text label="Publicadas de" type="date" formControlName="data_inicial" />
-  <app-input-text label="até" type="date" formControlName="data_final" />
+  <app-date-picker label="Publicadas de" formControlName="data_inicial" />
+  <app-date-picker label="até" formControlName="data_final" />
   <div class="form-acoes">
     <app-button type="submit" [disabled]="buscando()">{{
       buscando() ? 'Buscando…' : 'Buscar'

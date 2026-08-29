@@ -7,6 +7,7 @@ import {
   OportunidadeResponse,
 } from '../../contracts/licitacoes/oportunidade.contracts';
 import { LicitacoesService } from '../../services/licitacoes/licitacoes.service';
+import { formatarBr, hojeIso, somarDias } from '../../shared/ui/date-picker/date-picker.utils';
 import { OportunidadesPage } from './oportunidades.page';
 
 const OPORTUNIDADE: OportunidadeResponse = {
@@ -82,6 +83,39 @@ describe('OportunidadesPage', () => {
 
   it('antes de qualquer busca, não mostra mensagem de resultado', () => {
     expect(fixture.debugElement.query(By.css('.oportunidades'))).toBeNull();
+  });
+
+  it('abre com a janela da última semana já preenchida, não em branco', () => {
+    const campos = fixture.debugElement.queryAll(By.css('app-date-picker input'));
+
+    expect(campos[0].nativeElement.value).toBe(formatarBr(somarDias(hojeIso(), -7)));
+    expect(campos[1].nativeElement.value).toBe(formatarBr(hojeIso()));
+  });
+
+  it('manda a janela preenchida na busca, sem o usuário digitar data', () => {
+    licitacoes.buscarOportunidades.mockReturnValue(of([]));
+
+    buscar();
+
+    expect(licitacoes.buscarOportunidades).toHaveBeenCalledWith(
+      expect.objectContaining({
+        data_inicial: somarDias(hojeIso(), -7),
+        data_final: hojeIso(),
+      }),
+    );
+  });
+
+  it('UF é um select das 27 unidades federativas, começando em "Todas"', () => {
+    const uf = fixture.debugElement
+      .queryAll(By.css('app-select'))
+      .find((el) => el.nativeElement.textContent.includes('UF'))!;
+    const options = uf.queryAll(By.css('option'));
+
+    expect(options).toHaveLength(28); // 27 UFs + "Todas"
+    expect(options[0].nativeElement.textContent.trim()).toBe('Todas');
+    expect(options[0].nativeElement.value).toBe('');
+    expect(options.some((o) => o.nativeElement.value === 'SP')).toBe(true);
+    expect(uf.query(By.css('select')).nativeElement.value).toBe('');
   });
 
   it('em sucesso, lista 1 card por edital com órgão/objeto visíveis', () => {
@@ -208,5 +242,8 @@ describe('OportunidadesPage', () => {
     expect(fixture.debugElement.query(By.css('.oportunidades'))).toBeNull();
     expect(fixture.debugElement.query(By.css('.erro'))).toBeNull();
     expect(fixture.debugElement.nativeElement.textContent).not.toContain('Nenhum item encontrado');
+    // "Limpar" devolve a janela padrão, não deixa as datas vazias.
+    const campos = fixture.debugElement.queryAll(By.css('app-date-picker input'));
+    expect(campos[0].nativeElement.value).toBe(formatarBr(somarDias(hojeIso(), -7)));
   });
 });
