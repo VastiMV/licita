@@ -4,22 +4,37 @@ import { Subscription } from 'rxjs';
 
 import { MODALIDADES } from '../../contracts/licitacoes/modalidade';
 import { OportunidadeResponse } from '../../contracts/licitacoes/oportunidade.contracts';
+import { UFS } from '../../contracts/localidades/uf';
 import { LicitacoesService } from '../../services/licitacoes/licitacoes.service';
 import { ButtonComponent } from '../../shared/ui/button/button.component';
+import { DatePickerComponent } from '../../shared/ui/date-picker/date-picker.component';
+import { hojeIso, somarDias } from '../../shared/ui/date-picker/date-picker.utils';
 import { IconComponent } from '../../shared/ui/icon/icon.component';
 import { InputTextComponent } from '../../shared/ui/input-text/input-text.component';
 import { SelectComponent } from '../../shared/ui/select/select.component';
 import { VoltarTopoComponent } from '../../shared/ui/voltar-topo/voltar-topo.component';
 import { EditalCardComponent } from './edital-card/edital-card.component';
 
-const FORM_INICIAL = {
-  palavra_chave: '',
-  modalidade: '',
-  uf: '',
-  codigo_unidade: '',
-  data_inicial: '',
-  data_final: '',
-};
+/** Janela de publicação que a tela já vem preenchida: a última semana. É
+ * mais estreita que o default de 30 dias do backend (`JANELA_PADRAO_DIAS` em
+ * `apps/licitacoes/views.py`) de propósito — a busca sem período é a mais
+ * lenta que existe (ver docs/DOMINIO.md), e quem abre a tela quer ver o que
+ * saiu agora. Ampliar continua a um clique de distância nos dois campos. */
+const JANELA_PADRAO_DIAS = 7;
+
+/** Função, não constante: as datas dependem de quando a tela abriu (e de
+ * quando "Limpar" foi clicado), então não dá pra congelar no módulo. */
+function formInicial() {
+  const hoje = hojeIso();
+  return {
+    palavra_chave: '',
+    modalidade: '',
+    uf: '',
+    codigo_unidade: '',
+    data_inicial: somarDias(hoje, -JANELA_PADRAO_DIAS),
+    data_final: hoje,
+  };
+}
 
 /** Um card = um edital. A busca devolve 1 linha por item batido (mesmo
  * edital repete se mais de um item casar) — agrupado aqui pra tela, o
@@ -78,6 +93,7 @@ function agruparPorEdital(resultados: readonly OportunidadeResponse[]): EditalCa
     ReactiveFormsModule,
     InputTextComponent,
     SelectComponent,
+    DatePickerComponent,
     ButtonComponent,
     IconComponent,
     EditalCardComponent,
@@ -94,8 +110,9 @@ export class OportunidadesPage {
   private buscaEmAndamento: Subscription | null = null;
 
   protected readonly modalidades = MODALIDADES;
+  protected readonly ufs = UFS;
 
-  protected readonly form = this.fb.nonNullable.group(FORM_INICIAL);
+  protected readonly form = this.fb.nonNullable.group(formInicial());
 
   protected readonly resultados = signal<OportunidadeResponse[]>([]);
   protected readonly buscando = signal(false);
@@ -140,7 +157,7 @@ export class OportunidadesPage {
   /** Volta a tela ao estado inicial — filtros, resultado e mensagens, tudo junto. */
   protected limpar(): void {
     this.cancelarBusca();
-    this.form.reset(FORM_INICIAL);
+    this.form.reset(formInicial());
     this.resultados.set([]);
     this.erro.set(null);
     this.buscou.set(false);

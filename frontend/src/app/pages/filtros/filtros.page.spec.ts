@@ -43,6 +43,17 @@ describe('FiltrosPage', () => {
     fixture.detectChanges();
   });
 
+  it('UF é o mesmo select de UFs da busca de oportunidades, começando em "Todas"', () => {
+    const uf = fixture.debugElement
+      .queryAll(By.css('app-select'))
+      .find((el) => el.nativeElement.textContent.includes('UF'))!;
+    const options = uf.queryAll(By.css('option'));
+
+    expect(options).toHaveLength(28); // 27 UFs + "Todas"
+    expect(options[0].nativeElement.textContent.trim()).toBe('Todas');
+    expect(options.some((o) => o.nativeElement.value === 'SP')).toBe(true);
+  });
+
   it('carrega e lista os filtros do usuário ao iniciar', () => {
     expect(filtrosService.listar).toHaveBeenCalled();
     const item = fixture.debugElement.query(By.css('.filtro-item strong'));

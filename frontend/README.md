@@ -29,7 +29,7 @@ src/
     contracts/            interfaces *Request/*Response por domínio — o formato exato da API
     services/             um serviço por domínio, só fala com a API via ApiClient + contracts
     shared/
-      ui/                 átomos reutilizáveis: input-text, select, checkbox, button, badge
+      ui/                 átomos reutilizáveis: input-text, select, date-picker, checkbox, button, badge
       overlay/             modal-shell + aviso-modal + question-modal, abertos via ModalService
     layout/shell/          topbar + router-outlet + rodapé (identidade Inside Solutions)
     pages/                 uma pasta por tela, monta átomos/modais/serviços — não redeclara nada deles

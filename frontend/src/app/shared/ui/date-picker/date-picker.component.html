@@ -1,0 +1,188 @@
+<div class="field" [class.desabilitado]="disabled()">
+  @if (label()) {
+    <label class="field-label" [for]="inputId">{{ label() }}</label>
+  }
+
+  <div
+    class="controle"
+    [class.has-error]="error()"
+    [class.aberto]="aberto()"
+    cdkOverlayOrigin
+    #origem="cdkOverlayOrigin"
+  >
+    <input
+      [id]="inputId"
+      type="text"
+      inputmode="numeric"
+      autocomplete="off"
+      [placeholder]="placeholder()"
+      [value]="texto()"
+      [disabled]="disabled()"
+      [attr.aria-invalid]="error() ? 'true' : null"
+      (input)="digitou($any($event.target).value)"
+      (blur)="saiuDoCampo()"
+      (keydown.arrowdown)="abrir()"
+    />
+    <button
+      #gatilho
+      type="button"
+      class="gatilho"
+      [disabled]="disabled()"
+      [attr.aria-label]="label() ? 'Abrir calendário: ' + label() : 'Abrir calendário'"
+      [attr.aria-expanded]="aberto()"
+      aria-haspopup="dialog"
+      (click)="alternar()"
+    >
+      <app-icon name="calendar" />
+    </button>
+  </div>
+
+  @if (error()) {
+    <span class="field-error">{{ error() }}</span>
+  }
+</div>
+
+<ng-template
+  cdkConnectedOverlay
+  [cdkConnectedOverlayOrigin]="origem"
+  [cdkConnectedOverlayOpen]="aberto()"
+  [cdkConnectedOverlayPositions]="posicoes"
+  [cdkConnectedOverlayHasBackdrop]="true"
+  cdkConnectedOverlayBackdropClass="cdk-overlay-transparent-backdrop"
+  (backdropClick)="fechar()"
+  (overlayKeydown)="teclaNoOverlay($event)"
+  (detach)="fechar()"
+>
+  <div class="calendario" role="dialog" [attr.aria-label]="'Calendário: ' + (label() || 'data')">
+    <div class="calendario-cabecalho">
+      <button
+        type="button"
+        class="seta"
+        [disabled]="!podeVoltar()"
+        aria-label="Período anterior"
+        (click)="voltar()"
+      >
+        <app-icon name="chevron-left" />
+      </button>
+
+      <button
+        type="button"
+        class="periodo"
+        [attr.aria-label]="'Mudar a visão do calendário. Mostrando ' + titulo()"
+        (click)="alternarVisao()"
+      >
+        {{ titulo() }}
+        <app-icon name="chevron-down" />
+      </button>
+
+      <button
+        type="button"
+        class="seta"
+        [disabled]="!podeAvancar()"
+        aria-label="Próximo período"
+        (click)="avancar()"
+      >
+        <app-icon name="chevron-right" />
+      </button>
+    </div>
+
+    @switch (visao()) {
+      @case ('dias') {
+        <div class="titulos-semana" aria-hidden="true">
+          @for (dia of titulosSemana(); track $index) {
+            <span>{{ dia }}</span>
+          }
+        </div>
+
+        <!-- Grade com aria-activedescendant em vez de um botão por dia: o
+             foco fica na grade e as setas movem o dia ativo, que é o padrão
+             ARIA de grid (e o que o Material faz). -->
+        <div
+          #grade
+          class="grade"
+          role="grid"
+          tabindex="0"
+          [attr.aria-activedescendant]="idDia(dataAtiva())"
+          (keydown)="teclaNaGrade($event)"
+        >
+          @for (semana of semanas(); track $index) {
+            <div class="semana" role="row">
+              @for (celula of semana; track chaveCelula(celula, $index)) {
+                @if (celula) {
+                  <div
+                    role="gridcell"
+                    class="dia"
+                    [id]="idDia(celula.iso)"
+                    [class.selecionado]="celula.iso === valor()"
+                    [class.hoje]="celula.iso === hoje"
+                    [class.ativo]="celula.iso === dataAtiva()"
+                    [class.bloqueado]="foraDoLimite(celula.iso)"
+                    [attr.aria-selected]="celula.iso === valor()"
+                    [attr.aria-disabled]="foraDoLimite(celula.iso) ? 'true' : null"
+                    [attr.aria-label]="rotuloDia(celula.iso)"
+                    (mousedown)="$event.preventDefault()"
+                    (click)="escolherDia(celula.iso)"
+                  >
+                    {{ celula.dia }}
+                  </div>
+                } @else {
+                  <div role="gridcell" class="dia vazio"></div>
+                }
+              }
+            </div>
+          }
+        </div>
+      }
+
+      @case ('meses') {
+        <div class="grade-periodo">
+          @for (mes of meses; track $index) {
+            <button
+              type="button"
+              class="celula-periodo"
+              [class.selecionado]="mesSelecionado($index)"
+              [disabled]="mesBloqueado($index)"
+              (click)="escolherMes($index)"
+            >
+              {{ mes }}
+            </button>
+          }
+        </div>
+      }
+
+      @case ('anos') {
+        <div class="grade-periodo anos">
+          @for (ano of anosDaPagina(); track ano) {
+            <button
+              type="button"
+              class="celula-periodo"
+              [class.selecionado]="anoSelecionado(ano)"
+              [disabled]="anoBloqueado(ano)"
+              (click)="escolherAno(ano)"
+            >
+              {{ ano }}
+            </button>
+          }
+        </div>
+      }
+    }
+
+    @if (showToday() || clearable()) {
+      <div class="calendario-rodape">
+        @if (showToday()) {
+          <button
+            type="button"
+            class="acao"
+            [disabled]="foraDoLimite(hoje)"
+            (click)="escolherHoje()"
+          >
+            Hoje
+          </button>
+        }
+        @if (clearable()) {
+          <button type="button" class="acao" (click)="limpar()">Limpar</button>
+        }
+      </div>
+    }
+  </div>
+</ng-template>

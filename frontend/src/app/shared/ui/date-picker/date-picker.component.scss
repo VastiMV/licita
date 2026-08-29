@@ -1,0 +1,284 @@
+@use 'field' as *;
+@use 'mixins' as *;
+
+.field {
+  @include field-wrapper;
+}
+
+.field-label {
+  @include field-label;
+}
+
+.field-error {
+  @include field-error;
+}
+
+// O contorno do campo é do wrapper, não do <input> — quem desenha a borda
+// precisa envolver o input E o botão do calendário. Daí o mixin vir pra cá
+// (mesma borda, raio e cor dos outros campos) e o input ficar transparente.
+.controle {
+  @include field-control;
+  display: flex;
+  align-items: center;
+  gap: var(--space-1);
+  padding: 0.3rem 0.3rem 0.3rem 0.7rem;
+
+  &:focus-within,
+  &.aberto {
+    @include focus-ring;
+  }
+}
+
+.field.desabilitado .controle {
+  background: var(--color-bg);
+  color: var(--color-muted);
+}
+
+input {
+  flex: 1;
+  min-width: 0;
+  font: inherit;
+  font-size: var(--font-size-base);
+  padding: 0.25rem 0;
+  border: none;
+  background: transparent;
+  color: inherit;
+
+  &::placeholder {
+    color: var(--color-placeholder);
+  }
+
+  &:focus {
+    outline: none;
+  }
+
+  &:disabled {
+    color: var(--color-muted);
+    cursor: not-allowed;
+  }
+}
+
+.gatilho {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: var(--space-1);
+  border: none;
+  border-radius: var(--radius-sm);
+  background: transparent;
+  color: var(--color-muted);
+  cursor: pointer;
+  transition:
+    background var(--transition-fast),
+    color var(--transition-fast);
+
+  app-icon {
+    width: 18px;
+    height: 18px;
+  }
+
+  &:hover:not(:disabled) {
+    background: var(--color-blue-soft);
+    color: var(--color-blue);
+  }
+
+  &:disabled {
+    cursor: not-allowed;
+  }
+}
+
+// ---------- calendário (overlay do CDK) ----------
+
+.calendario {
+  width: 296px;
+  padding: var(--space-2);
+  background: var(--color-surface);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-md);
+  box-shadow: var(--shadow-md);
+  font-size: var(--font-size-sm);
+  color: var(--color-fg);
+}
+
+.calendario-cabecalho {
+  display: flex;
+  align-items: center;
+  gap: var(--space-1);
+  margin-bottom: var(--space-2);
+}
+
+.seta,
+.periodo,
+.acao {
+  border: none;
+  background: transparent;
+  color: inherit;
+  font: inherit;
+  border-radius: var(--radius-sm);
+  cursor: pointer;
+  transition:
+    background var(--transition-fast),
+    color var(--transition-fast);
+
+  &:hover:not(:disabled) {
+    background: var(--color-blue-soft);
+    color: var(--color-navy);
+  }
+
+  &:disabled {
+    color: var(--color-placeholder);
+    cursor: not-allowed;
+  }
+}
+
+.seta {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 32px;
+  height: 32px;
+  flex-shrink: 0;
+  color: var(--color-muted);
+
+  app-icon {
+    width: 18px;
+    height: 18px;
+  }
+}
+
+.periodo {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: var(--space-1);
+  flex: 1;
+  height: 32px;
+  font-weight: var(--font-weight-semibold);
+  color: var(--color-navy);
+  text-transform: capitalize;
+
+  app-icon {
+    width: 14px;
+    height: 14px;
+    color: var(--color-muted);
+  }
+}
+
+.titulos-semana,
+.semana {
+  display: grid;
+  grid-template-columns: repeat(7, 1fr);
+}
+
+.titulos-semana span {
+  @include uppercase-label;
+  text-align: center;
+  padding-bottom: var(--space-1);
+}
+
+.grade {
+  border-radius: var(--radius-sm);
+
+  &:focus-visible {
+    @include focus-ring;
+  }
+}
+
+.dia {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  height: 36px;
+  border-radius: var(--radius-sm);
+  cursor: pointer;
+  transition:
+    background var(--transition-fast),
+    color var(--transition-fast);
+
+  &:hover:not(.bloqueado):not(.vazio) {
+    background: var(--color-blue-soft);
+  }
+
+  &.vazio {
+    cursor: default;
+  }
+
+  // Dia de hoje: só um contorno — o preenchimento é reservado pra seleção,
+  // senão os dois competem pela mesma leitura.
+  &.hoje:not(.selecionado) {
+    box-shadow: inset 0 0 0 1px var(--color-blue);
+    color: var(--color-blue);
+    font-weight: var(--font-weight-semibold);
+  }
+
+  // Dia "ativo" = onde as setas do teclado estão. Marca discreta, some
+  // debaixo da seleção.
+  &.ativo:not(.selecionado):not(.hoje) {
+    background: var(--color-bg);
+  }
+
+  &.selecionado {
+    background: var(--color-blue);
+    color: #fff;
+    font-weight: var(--font-weight-semibold);
+  }
+
+  &.bloqueado {
+    color: var(--color-placeholder);
+    cursor: not-allowed;
+  }
+}
+
+.grade-periodo {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: var(--space-1);
+
+  &.anos {
+    grid-template-columns: repeat(4, 1fr);
+  }
+}
+
+.celula-periodo {
+  height: 40px;
+  border: none;
+  border-radius: var(--radius-sm);
+  background: transparent;
+  color: inherit;
+  font: inherit;
+  cursor: pointer;
+  transition:
+    background var(--transition-fast),
+    color var(--transition-fast);
+
+  &:hover:not(:disabled) {
+    background: var(--color-blue-soft);
+  }
+
+  &.selecionado {
+    background: var(--color-blue);
+    color: #fff;
+    font-weight: var(--font-weight-semibold);
+  }
+
+  &:disabled {
+    color: var(--color-placeholder);
+    cursor: not-allowed;
+  }
+}
+
+.calendario-rodape {
+  display: flex;
+  justify-content: flex-end;
+  gap: var(--space-1);
+  margin-top: var(--space-2);
+  padding-top: var(--space-2);
+  border-top: 1px solid var(--color-border);
+}
+
+.acao {
+  padding: var(--space-1) var(--space-3);
+  color: var(--color-blue);
+  font-size: var(--font-size-sm);
+  font-weight: var(--font-weight-semibold);
+}
