@@ -32,6 +32,10 @@ export class InputTextComponent implements ControlValueAccessor {
   readonly placeholder = input('');
   readonly maxlength = input<number | null>(null);
   readonly error = input<string | null>(null);
+  /** Rótulo pra leitor de tela quando o `label` visual não cabe — numa
+   * célula de tabela, por exemplo, onde o cabeçalho da coluna já diz o
+   * que é o campo. */
+  readonly ariaLabel = input('');
 
   protected readonly inputId = `input-text-${++nextId}`;
   protected readonly value = signal('');

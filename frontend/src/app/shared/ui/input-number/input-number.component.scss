@@ -1,0 +1,32 @@
+@use 'field' as *;
+
+.field {
+  @include field-wrapper;
+}
+
+.field-label {
+  @include field-label;
+}
+
+.control {
+  display: flex;
+  align-items: center;
+  gap: var(--space-1);
+}
+
+input {
+  @include field-control;
+
+  width: 100%;
+  min-width: 0;
+  // Número se lê melhor alinhado à direita, e as colunas da tabela do
+  // Cotador ficam comparáveis entre si.
+  text-align: right;
+  font-variant-numeric: tabular-nums;
+}
+
+.afixo {
+  flex: 0 0 auto;
+  font-size: var(--font-size-xs);
+  color: var(--color-muted);
+}

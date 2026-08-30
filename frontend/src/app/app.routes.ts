@@ -38,6 +38,10 @@ export const routes: Routes = [
         ],
       },
       {
+        path: 'cotador',
+        loadComponent: () => import('./pages/cotador/cotador.page').then((m) => m.CotadorPage),
+      },
+      {
         path: 'filtros',
         loadComponent: () => import('./pages/filtros/filtros.page').then((m) => m.FiltrosPage),
       },

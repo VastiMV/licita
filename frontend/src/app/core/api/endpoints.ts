@@ -21,6 +21,8 @@ export const ENDPOINTS = {
     salvasChaves: 'licitacoes/salvas/chaves/',
     salvasExpiradas: 'licitacoes/salvas/expiradas/',
     salva: (id: number) => `licitacoes/salvas/${id}/`,
+    /** Cotação (Cotador) de uma salva — GET/PUT/DELETE, um-para-um. */
+    salvaCotacao: (id: number) => `licitacoes/salvas/${id}/cotacao/`,
     /** Histórico de uma salva — a tela que lê isso ainda não existe (ver
      * docs/DOMINIO.md, "Histórico da oportunidade salva"). */
     salvaEventos: (id: number) => `licitacoes/salvas/${id}/eventos/`,

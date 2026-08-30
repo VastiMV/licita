@@ -24,7 +24,8 @@ export type IconName =
   | 'exclamation'
   | 'eye'
   | 'search'
-  | 'trash';
+  | 'trash'
+  | 'cotador';
 
 /**
  * Catálogo de ícones inline (SVG) do projeto — único lugar que sabe

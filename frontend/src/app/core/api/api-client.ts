@@ -25,6 +25,14 @@ export class ApiClient {
     return this.http.post<TResponse>(this.url(path), body);
   }
 
+  /** Substitui o recurso inteiro. Usado onde o backend trata a rota como
+   * idempotente — mandar o mesmo corpo duas vezes tem que dar o mesmo
+   * resultado, sem criar uma segunda linha (ver a cotação de uma
+   * oportunidade salva). */
+  put<TResponse, TRequest = unknown>(path: string, body: TRequest): Observable<TResponse> {
+    return this.http.put<TResponse>(this.url(path), body);
+  }
+
   patch<TResponse, TRequest = unknown>(path: string, body: TRequest): Observable<TResponse> {
     return this.http.patch<TResponse>(this.url(path), body);
   }

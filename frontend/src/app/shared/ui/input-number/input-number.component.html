@@ -1,0 +1,29 @@
+<label class="field" [for]="inputId">
+  @if (label()) {
+    <span class="field-label">{{ label() }}</span>
+  }
+  <span class="control" [class.com-afixo]="temAfixo()">
+    @if (prefixo()) {
+      <span class="afixo" aria-hidden="true">{{ prefixo() }}</span>
+    }
+    <input
+      [id]="inputId"
+      type="text"
+      inputmode="decimal"
+      autocomplete="off"
+      [placeholder]="placeholder()"
+      [attr.aria-label]="ariaLabel() || null"
+      [disabled]="disabled()"
+      [value]="texto()"
+      [class.has-error]="error()"
+      (input)="handleInput($any($event.target).value)"
+      (blur)="handleBlur()"
+    />
+    @if (sufixo()) {
+      <span class="afixo" aria-hidden="true">{{ sufixo() }}</span>
+    }
+  </span>
+  @if (error()) {
+    <span class="field-error">{{ error() }}</span>
+  }
+</label>

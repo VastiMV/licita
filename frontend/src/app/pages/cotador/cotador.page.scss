@@ -1,0 +1,312 @@
+@use 'mixins' as *;
+
+h1 {
+  font-size: var(--font-size-xl);
+  margin-bottom: var(--space-1);
+}
+
+h2 {
+  font-size: var(--font-size-md);
+  margin: 0 0 var(--space-2);
+}
+
+.sr-only {
+  @include visually-hidden;
+}
+
+// Barra de vínculo: a que edital esta cotação pertence. Fica fora dos
+// painéis porque é contexto da página inteira, não de uma seção — e antes
+// deles pra deixar claro que salvar depende dessa escolha.
+.vinculo {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: end;
+  gap: var(--space-3) var(--space-4);
+  margin: var(--space-5) 0;
+
+  app-select {
+    flex: 1 1 320px;
+    min-width: 0;
+  }
+
+  .estado {
+    flex: 1 1 100%;
+    margin: 0;
+    font-size: var(--font-size-sm);
+  }
+}
+
+.painel {
+  background: var(--color-surface);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-lg);
+  padding: var(--space-5);
+  box-shadow: var(--shadow-sm);
+  margin: var(--space-5) 0;
+}
+
+.nota {
+  margin: 0 0 var(--space-4);
+  font-size: var(--font-size-sm);
+}
+
+.form-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+  gap: var(--space-3) var(--space-4);
+  align-items: end;
+
+  & + .form-grid {
+    margin-top: var(--space-4);
+    padding-top: var(--space-4);
+    border-top: 1px solid var(--color-border);
+  }
+}
+
+.aviso {
+  margin: var(--space-4) 0 0;
+  font-size: var(--font-size-sm);
+  color: var(--color-danger);
+}
+
+// A cotação tem mais colunas do que cabe em tela estreita e nenhuma delas é
+// descartável: rola na horizontal dentro do painel, sem empurrar a página.
+.rolagem {
+  overflow-x: auto;
+  margin-bottom: var(--space-4);
+}
+
+.tabela {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: var(--font-size-sm);
+
+  th,
+  td {
+    padding: var(--space-2);
+    text-align: left;
+    vertical-align: middle;
+    white-space: nowrap;
+    // Ancora os rótulos `.sr-only` (que são `position: absolute`) na própria
+    // célula. Sem isso eles caem na posição estática dentro da tabela larga
+    // e esticam a largura do documento — a página inteira passava a rolar
+    // na horizontal no celular.
+    position: relative;
+  }
+
+  thead th {
+    @include uppercase-label;
+
+    border-bottom: 1px solid var(--color-border);
+    vertical-align: bottom;
+  }
+
+  tbody tr + tr td {
+    border-top: 1px solid var(--color-border);
+  }
+
+  tfoot td {
+    border-top: 2px solid var(--color-border);
+    font-weight: 600;
+    padding-top: var(--space-3);
+    // Quebra em vez de passar por baixo da coluna fixa da direita.
+    white-space: normal;
+  }
+
+  .numerica {
+    text-align: right;
+    font-variant-numeric: tabular-nums;
+  }
+
+  // Colunas que a tela calcula, não o usuário — fundo levemente distinto
+  // pra separar do que é campo digitável.
+  .calculada {
+    background: var(--color-bg);
+  }
+
+  .destaque {
+    font-weight: 600;
+  }
+
+  .negativo {
+    color: var(--color-danger);
+  }
+
+  .col-num {
+    width: 2.5rem;
+    color: var(--color-muted);
+  }
+
+  .col-fornecedor {
+    min-width: 150px;
+  }
+
+  // Sem largura mínima o campo encolhe até esconder o próprio valor
+  // (a coluna "Qtd." chegava a 30px).
+  app-input-number {
+    display: block;
+    min-width: 88px;
+  }
+
+  .col-acao {
+    width: 1%;
+  }
+
+  // A coluna que responde a pergunta da tela (o preço, o status) fica
+  // grudada na direita: a tabela é larga demais pra caber num notebook, e
+  // rolar até o fim pra ver a resposta é justamente o que não pode
+  // acontecer no meio de um pregão.
+  .col-resultado {
+    position: sticky;
+    right: 0;
+    background: var(--color-blue-soft);
+    box-shadow: inset 1px 0 0 var(--color-border);
+  }
+
+  .texto {
+    white-space: normal;
+  }
+}
+
+.status {
+  display: inline-block;
+  padding: 0.15rem 0.55rem;
+  border-radius: var(--radius-sm);
+  font-size: var(--font-size-xs);
+  font-weight: 600;
+  white-space: nowrap;
+}
+
+// Um lance ou está seguro, ou merece atenção, ou está no vermelho — três
+// tons só, pra ler no meio de um pregão sem interpretar legenda. Os mesmos
+// tons servem à pílula de status e ao fundo da linha inteira.
+$tons: (
+  'ok': (
+    var(--color-success-bg),
+    var(--color-success),
+  ),
+  'atencao': (
+    var(--color-warn-bg),
+    var(--color-warn),
+  ),
+  'perigo': (
+    var(--color-danger-bg),
+    var(--color-danger),
+  ),
+  'neutro': (
+    var(--color-bg),
+    var(--color-muted),
+  ),
+);
+
+@each $nome, $par in $tons {
+  $fundo: nth($par, 1);
+  $texto: nth($par, 2);
+
+  .status.tom-#{$nome} {
+    background: $fundo;
+    color: $texto;
+  }
+
+  // Pinta a célula, não a linha: `background` em `<tr>` não é pintado por
+  // cima da coluna fixa, que precisa de fundo opaco próprio pra não deixar
+  // o conteúdo rolar visível por baixo.
+  .linha-lance.tom-#{$nome} > td {
+    background: $fundo;
+  }
+}
+
+// A linha inteira só é neutra enquanto não há lance; aí ela não deve
+// chamar atenção nenhuma.
+.linha-lance.tom-neutro > td {
+  background: var(--color-surface);
+}
+
+.linha-lance {
+  &.clicavel {
+    cursor: pointer;
+  }
+
+  // A linha escolhida é a que o simulador está mostrando — a barra à
+  // esquerda diz isso sem depender de cor (as linhas já são coloridas
+  // pelo status).
+  &.selecionada > td:first-child {
+    box-shadow: inset 3px 0 0 var(--color-navy);
+  }
+
+  &:focus-visible {
+    outline: 2px solid var(--color-blue);
+    outline-offset: -2px;
+  }
+}
+
+// Cabeçalho que abre/fecha o card de percentuais.
+.cabecalho-colapso {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+  width: 100%;
+  padding: 0;
+  border: 0;
+  background: none;
+  color: inherit;
+  font: inherit;
+  text-align: left;
+  cursor: pointer;
+
+  h2 {
+    margin: 0;
+  }
+
+  .resumo {
+    margin-left: auto;
+    font-size: var(--font-size-sm);
+    color: var(--color-muted);
+  }
+
+  &:focus-visible {
+    @include focus-ring;
+
+    border-radius: var(--radius-sm);
+  }
+}
+
+.corpo-colapso {
+  margin-top: var(--space-4);
+}
+
+// Fecho de cada painel: os números que respondem "quanto isso vale" e
+// "quanto sobra".
+.totais {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-3) var(--space-6);
+  margin: var(--space-5) 0 0;
+  padding-top: var(--space-4);
+  border-top: 1px solid var(--color-border);
+
+  div {
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+  }
+
+  dt {
+    @include uppercase-label;
+  }
+
+  dd {
+    margin: 0;
+    font-size: var(--font-size-md);
+    font-variant-numeric: tabular-nums;
+  }
+
+  .forte dd {
+    font-size: var(--font-size-lg);
+    font-weight: var(--font-weight-semibold);
+  }
+
+  .negativo {
+    color: var(--color-danger);
+  }
+}
