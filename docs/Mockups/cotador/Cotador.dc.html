@@ -1,0 +1,625 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet data-dc-atomics>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+html,body{margin:0;padding:0;background:#f4f3f8;-webkit-font-smoothing:antialiased}
+*{box-sizing:border-box}
+input,button,select,textarea{font-family:'Plus Jakarta Sans',system-ui,sans-serif}
+input[type=number]::-webkit-outer-spin-button,input[type=number]::-webkit-inner-spin-button{-webkit-appearance:none;margin:0}
+input[type=number]{-moz-appearance:textfield}
+a{color:#4f46b8}a:hover{color:#3a3390}
+input[type=range]{accent-color:#4f46b8}
+@keyframes popIn{from{opacity:0;transform:translateY(-4px)}to{opacity:1;transform:none}}
+.om-scroll::-webkit-scrollbar{width:6px;height:6px}
+.om-scroll::-webkit-scrollbar-track{background:transparent}
+.om-scroll::-webkit-scrollbar-thumb{background:#d9d5e8;border-radius:99px}
+.om-scroll::-webkit-scrollbar-thumb:hover{background:#c2bde4}
+</style>
+</helmet>
+
+<div style="min-height:100vh;font-family:'Plus Jakarta Sans',system-ui,sans-serif;color:#191823;padding-bottom:120px">
+
+  <div style="position:sticky;top:0;z-index:30;background:rgba(244,243,248,.92);backdrop-filter:blur(10px);border-bottom:1px solid #e4e1ef">
+    <div style="max-width:1240px;margin:0 auto;padding:14px 22px 0;display:flex;flex-wrap:wrap;gap:14px;align-items:center;justify-content:space-between">
+      <div style="display:flex;align-items:center;gap:12px;min-width:240px">
+        <div style="width:34px;height:34px;border-radius:10px;background:#4f46b8;display:flex;align-items:center;justify-content:center;color:#fff;font-weight:800;font-size:15px">C</div>
+        <div style="display:flex;flex-direction:column;gap:2px">
+          <input value="{{ tituloCot }}" onChange="{{ onTitulo }}" style="border:1px solid transparent;background:transparent;font:700 17px/1.2 'Plus Jakarta Sans',sans-serif;color:#191823;padding:3px 6px;margin-left:-6px;border-radius:7px;width:280px;outline:none" style-hover="background:#eceafa" style-focus="background:#fff;border-color:#4f46b8">
+          <div style="font:500 11.5px/1 'Plus Jakarta Sans',sans-serif;color:#8a86a0;padding-left:0">Rascunho · salvo automaticamente</div>
+        </div>
+      </div>
+      <div style="display:flex;flex-wrap:wrap;gap:8px;align-items:center">
+        <button onClick="{{ toggleAtalhos }}" style="border:1px solid #dedbeb;background:#fff;color:#403c55;font:600 13px/1 'JetBrains Mono',monospace;padding:10px 12px;border-radius:10px;cursor:pointer" style-hover="border-color:#4f46b8;color:#4f46b8">?</button>
+      </div>
+    </div>
+
+    <div style="max-width:1240px;margin:0 auto;padding:10px 22px 16px">
+      <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(134px,1fr));gap:9px">
+        <div style="background:#eceaf4;border:1px solid #d8d4e8;border-radius:12px;padding:11px 12px 12px;display:flex;flex-direction:column;gap:5px">
+          <span style="min-height:24px;font:700 9.5px/1.25 'Plus Jakarta Sans',sans-serif;letter-spacing:.1em;text-transform:uppercase;color:#8a86a0">Itens</span>
+          <span style="white-space:nowrap;font:600 15px/1 'JetBrains Mono',monospace;font-variant-numeric:tabular-nums;color:#191823">{{ tot.itensCount }}</span>
+          <span style="font:500 11px/1.35 'Plus Jakarta Sans',sans-serif;color:#a9a5bd">{{ tot.itensUn }}</span>
+        </div>
+        <div style="background:#eceaf4;border:1px solid #d8d4e8;border-radius:12px;padding:11px 12px 12px;display:flex;flex-direction:column;gap:5px">
+          <span style="min-height:24px;font:700 9.5px/1.25 'Plus Jakarta Sans',sans-serif;letter-spacing:.1em;text-transform:uppercase;color:#8a86a0">Custo dos produtos</span>
+          <span style="white-space:nowrap;font:600 15px/1 'JetBrains Mono',monospace;font-variant-numeric:tabular-nums;color:#191823">{{ tot.custo }}</span>
+          <span style="font:500 11px/1.35 'Plus Jakarta Sans',sans-serif;color:#a9a5bd">sem frete e extras</span>
+        </div>
+        <div style="background:#eceaf4;border:1px solid #d8d4e8;border-radius:12px;padding:11px 12px 12px;display:flex;flex-direction:column;gap:5px">
+          <span style="min-height:24px;font:700 9.5px/1.25 'Plus Jakarta Sans',sans-serif;letter-spacing:.1em;text-transform:uppercase;color:#8a86a0">Capital necessário</span>
+          <span style="white-space:nowrap;font:600 15px/1 'JetBrains Mono',monospace;font-variant-numeric:tabular-nums;color:#191823">{{ tot.capital }}</span>
+          <span style="font:500 11px/1.35 'Plus Jakarta Sans',sans-serif;color:#a9a5bd">com frete e extras</span>
+        </div>
+        <div style="background:#eceaf4;border:1px solid #d8d4e8;border-radius:12px;padding:11px 12px 12px;display:flex;flex-direction:column;gap:5px">
+          <span style="min-height:24px;font:700 9.5px/1.25 'Plus Jakarta Sans',sans-serif;letter-spacing:.1em;text-transform:uppercase;color:#8a86a0">Transporte</span>
+          <span style="white-space:nowrap;font:600 15px/1 'JetBrains Mono',monospace;font-variant-numeric:tabular-nums;color:#191823">{{ tot.transporte }}</span>
+          <span style="font:500 11px/1.35 'Plus Jakarta Sans',sans-serif;color:#a9a5bd">{{ tot.transporteSub }}</span>
+        </div>
+        <div style="background:#eceaf4;border:1px solid #d8d4e8;border-radius:12px;padding:11px 12px 12px;display:flex;flex-direction:column;gap:5px">
+          <span style="min-height:24px;font:700 9.5px/1.25 'Plus Jakarta Sans',sans-serif;letter-spacing:.1em;text-transform:uppercase;color:#8a86a0">Impostos embutidos</span>
+          <span style="white-space:nowrap;font:600 15px/1 'JetBrains Mono',monospace;font-variant-numeric:tabular-nums;color:#191823">{{ tot.impostos }}</span>
+          <span style="font:500 11px/1.35 'Plus Jakarta Sans',sans-serif;color:#a9a5bd">{{ tot.impostosSub }}</span>
+        </div>
+        <div style="background:#eceaf4;border:1px solid #d8d4e8;border-radius:12px;padding:11px 12px 12px;display:flex;flex-direction:column;gap:5px">
+          <span style="min-height:24px;font:700 9.5px/1.25 'Plus Jakarta Sans',sans-serif;letter-spacing:.1em;text-transform:uppercase;color:#0d7a5c">Margem média</span>
+          <span style="white-space:nowrap;font:700 15px/1 'JetBrains Mono',monospace;font-variant-numeric:tabular-nums;color:#0b6d52">{{ tot.margemMedia }}</span>
+          <span style="font:500 11px/1.35 'Plus Jakarta Sans',sans-serif;color:#a9a5bd">lucro sobre o capital</span>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div style="max-width:1240px;margin:0 auto;padding:20px 22px 0">
+
+    <div style="display:flex;align-items:baseline;justify-content:space-between;gap:12px;flex-wrap:wrap;margin:0 0 10px">
+      <div style="display:flex;align-items:baseline;gap:10px">
+        <h2 style="margin:0;font:700 16px/1.2 'Plus Jakarta Sans',sans-serif;color:#191823">Itens da cotação</h2>
+        <span style="font:500 12.5px/1.2 'Plus Jakarta Sans',sans-serif;color:#8a86a0">clique num item para ver fornecedores, impostos e o cálculo</span>
+      </div>
+      <sc-if value="{{ temEconomia }}" hint-placeholder-val="{{ false }}">
+        <button onClick="{{ aplicarMelhores }}" style="display:flex;align-items:center;gap:8px;border:1px solid #c6e9dc;background:#e9f7f1;color:#0b6d52;font:700 12.5px/1 'Plus Jakarta Sans',sans-serif;padding:9px 13px;border-radius:9px;cursor:pointer" style-hover="background:#d9f0e6">Usar o fornecedor mais barato em tudo · economiza {{ economia }}</button>
+      </sc-if>
+    </div>
+
+    <div style="display:flex;flex-direction:column;gap:8px">
+      <sc-for list="{{ rows }}" as="r" hint-placeholder-count="3">
+        <div style="background:#fff;border:1px solid #e7e5f0;border-radius:14px;overflow:hidden">
+
+          <div style="display:flex;flex-wrap:wrap;align-items:center;gap:10px;padding:11px 12px">
+            <div style="width:26px;flex:none;font:600 12px/1 'JetBrains Mono',monospace;color:#a9a5bd;text-align:center">{{ r.n }}</div>
+
+            <div style="flex:1 1 220px;min-width:180px;display:flex;flex-direction:column;gap:4px">
+              <input data-desc="{{ r.id }}" value="{{ r.desc }}" onChange="{{ r.onDesc }}" onKeyDown="{{ r.onDescKey }}" placeholder="ex.: Papel A4 75g — resma" style="width:100%;border:1px solid #e4e1ef;border-radius:9px;padding:9px 11px;font:600 14px/1.2 'Plus Jakarta Sans',sans-serif;color:#191823;background:#fbfbfe;outline:none" style-hover="border-color:#cfcbe4" style-focus="border-color:#4f46b8;background:#fff;box-shadow:0 0 0 3px rgba(79,70,184,.13)">
+              <div style="display:flex;flex-wrap:wrap;gap:6px;align-items:center;padding-left:2px">
+                <button onClick="{{ r.toggle }}" style="display:flex;align-items:center;gap:6px;border:1px solid #e4e1ef;background:#fff;border-radius:20px;padding:4px 9px;cursor:pointer;font:600 11.5px/1 'Plus Jakarta Sans',sans-serif;color:#403c55" style-hover="border-color:#4f46b8;color:#4f46b8">
+                  <span style="width:6px;height:6px;border-radius:50%;background:#4f46b8"></span>{{ r.supplierName }}
+                </button>
+                <sc-if value="{{ r.naoMelhor }}" hint-placeholder-val="{{ false }}">
+                  <button onClick="{{ r.useBest }}" style="border:1px solid #f3ddb8;background:#fdf6e8;color:#8a6414;border-radius:20px;padding:4px 9px;cursor:pointer;font:600 11.5px/1 'Plus Jakarta Sans',sans-serif" style-hover="background:#fbeed2">{{ r.bestDelta }} mais barato em {{ r.bestName }}</button>
+                </sc-if>
+                <sc-if value="{{ r.taxOverride }}" hint-placeholder-val="{{ false }}">
+                  <span style="border:1px solid #dcd8f4;background:#f1effc;color:#4f46b8;border-radius:20px;padding:4px 9px;font:600 11.5px/1 'Plus Jakarta Sans',sans-serif">impostos próprios</span>
+                </sc-if>
+                <sc-if value="{{ r.incompleto }}" hint-placeholder-val="{{ false }}">
+                  <span style="border:1px solid #f5cfcf;background:#fdefef;color:#a52d2d;border-radius:20px;padding:4px 9px;font:600 11.5px/1 'Plus Jakarta Sans',sans-serif">falta preço do fornecedor</span>
+                </sc-if>
+              </div>
+            </div>
+
+            <div style="flex:1 1 460px;min-width:280px;display:flex;flex-wrap:wrap;gap:10px;align-items:flex-end;justify-content:flex-end">
+              <div style="width:66px;flex:none;display:flex;flex-direction:column;gap:3px">
+                <span style="font:700 9px/1 'Plus Jakarta Sans',sans-serif;letter-spacing:.09em;text-transform:uppercase;color:#a9a5bd">Qtd.</span>
+                <input type="number" value="{{ r.qty }}" onChange="{{ r.onQty }}" style="width:100%;border:1px solid #e4e1ef;border-radius:9px;padding:8px 9px;font:600 13.5px/1.2 'JetBrains Mono',monospace;font-variant-numeric:tabular-nums;text-align:right;color:#191823;background:#fbfbfe;outline:none" style-focus="border-color:#4f46b8;background:#fff;box-shadow:0 0 0 3px rgba(79,70,184,.13)">
+              </div>
+
+              <div style="width:92px;flex:none;display:flex;flex-direction:column;gap:3px;text-align:right">
+                <span style="font:700 9px/1 'Plus Jakarta Sans',sans-serif;letter-spacing:.09em;text-transform:uppercase;color:#a9a5bd">Custo un.</span>
+                <span style="display:block;white-space:nowrap;font:500 13.5px/1.2 'JetBrains Mono',monospace;font-variant-numeric:tabular-nums;color:#6f6c7d;padding:8px 0">{{ r.custoUn }}</span>
+              </div>
+
+              <div style="width:100px;flex:none;display:flex;flex-direction:column;gap:3px;text-align:right">
+                <span style="font:700 9px/1 'Plus Jakarta Sans',sans-serif;letter-spacing:.09em;text-transform:uppercase;color:#4f46b8">Preço un.</span>
+                <span style="display:block;white-space:nowrap;font:700 15px/1.2 'JetBrains Mono',monospace;font-variant-numeric:tabular-nums;color:#191823;padding:7px 0">{{ r.precoUn }}</span>
+              </div>
+
+              <div style="width:118px;flex:none;display:flex;flex-direction:column;gap:3px;text-align:right">
+                <span style="font:700 9px/1 'Plus Jakarta Sans',sans-serif;letter-spacing:.09em;text-transform:uppercase;color:#a9a5bd">Lucro</span>
+                <span style="display:block;white-space:nowrap;font:600 13.5px/1.2 'JetBrains Mono',monospace;font-variant-numeric:tabular-nums;color:#0b6d52;padding:8px 0">{{ r.lucroTotal }} <span style="font-size:11px;color:#8fb3a7">{{ r.marginPct }}</span></span>
+              </div>
+
+              <div style="width:116px;flex:none;display:flex;flex-direction:column;gap:3px;text-align:right">
+                <span style="font:700 9px/1 'Plus Jakarta Sans',sans-serif;letter-spacing:.09em;text-transform:uppercase;color:#a9a5bd">Total</span>
+                <span style="display:block;white-space:nowrap;font:600 13.5px/1.2 'JetBrains Mono',monospace;font-variant-numeric:tabular-nums;color:#191823;padding:8px 0">{{ r.totalStr }}</span>
+              </div>
+
+              <div style="flex:none;display:flex;gap:4px;padding-bottom:2px">
+              <button onClick="{{ r.dup }}" title="Duplicar" style="width:30px;height:30px;border:1px solid #e4e1ef;background:#fff;border-radius:8px;cursor:pointer;color:#8a86a0;font:600 13px/1 'Plus Jakarta Sans',sans-serif" style-hover="border-color:#4f46b8;color:#4f46b8">⧉</button>
+              <button onClick="{{ r.remove }}" title="Remover" style="width:30px;height:30px;border:1px solid #e4e1ef;background:#fff;border-radius:8px;cursor:pointer;color:#a52d2d;font:600 14px/1 'Plus Jakarta Sans',sans-serif" style-hover="border-color:#e79c9c;background:#fdefef">×</button>
+              <button onClick="{{ r.toggle }}" title="Detalhes" style="width:30px;height:30px;border:1px solid #e4e1ef;background:#fff;border-radius:8px;cursor:pointer;color:#403c55;font:600 11px/1 'Plus Jakarta Sans',sans-serif" style-hover="border-color:#4f46b8;color:#4f46b8">{{ r.chev }}</button>
+              </div>
+            </div>
+          </div>
+
+          <sc-if value="{{ r.expanded }}" hint-placeholder-val="{{ false }}">
+            <div style="border-top:1px solid #eeecf6;background:#faf9fd;padding:16px 14px 18px;display:flex;flex-wrap:wrap;gap:16px">
+
+              <sc-if value="{{ comparativo }}" hint-placeholder-val="{{ true }}">
+                <div style="flex:1 1 420px;min-width:320px;display:flex;flex-direction:column;gap:9px">
+                  <div style="display:flex;align-items:baseline;justify-content:space-between;gap:10px">
+                    <div style="font:700 11px/1 'Plus Jakarta Sans',sans-serif;letter-spacing:.09em;text-transform:uppercase;color:#8a86a0">Fornecedores</div>
+                    <button onClick="{{ r.addSupplier }}" style="border:1px dashed #c2bde4;background:#fff;color:#4f46b8;border-radius:8px;padding:6px 10px;cursor:pointer;font:700 11.5px/1 'Plus Jakarta Sans',sans-serif" style-hover="background:#f1effc">+ fornecedor</button>
+                  </div>
+                  <div style="display:flex;flex-direction:column;gap:6px">
+                    <sc-for list="{{ r.suppliers }}" as="s" hint-placeholder-count="2">
+                      <div style="display:flex;flex-wrap:wrap;gap:8px;align-items:flex-end;background:{{ s.bg }};border:1px solid {{ s.border }};border-radius:10px;padding:8px">
+                        <div style="flex:1 1 190px;min-width:150px;display:flex;gap:8px;align-items:center">
+                          <button onClick="{{ s.choose }}" style="flex:none;width:18px;height:18px;border-radius:50%;border:2px solid {{ s.dot }};background:{{ s.dotFill }};cursor:pointer;padding:0"></button>
+                          <input value="{{ s.name }}" onChange="{{ s.onName }}" placeholder="nome do fornecedor" style="flex:1 1 auto;min-width:0;border:1px solid transparent;background:transparent;border-radius:7px;padding:6px 7px;font:600 13px/1.2 'Plus Jakarta Sans',sans-serif;color:#191823;outline:none" style-hover="background:rgba(0,0,0,.03)" style-focus="background:#fff;border-color:#4f46b8">
+                          <button onClick="{{ s.remove }}" style="flex:none;width:26px;height:26px;border:none;background:transparent;color:#b9b5cc;cursor:pointer;font:600 15px/1 'Plus Jakarta Sans',sans-serif" style-hover="color:#a52d2d">×</button>
+                        </div>
+                        <div style="flex:1 1 300px;min-width:250px;display:flex;flex-wrap:wrap;gap:8px;align-items:flex-end;justify-content:flex-end">
+                          <div style="width:82px;flex:none;display:flex;flex-direction:column;gap:3px">
+                            <span style="font:700 9px/1 'Plus Jakarta Sans',sans-serif;letter-spacing:.09em;text-transform:uppercase;color:#a9a5bd">Produto</span>
+                            <input type="number" value="{{ s.cost }}" onChange="{{ s.onCost }}" style="width:100%;border:1px solid #e4e1ef;background:#fff;border-radius:7px;padding:6px 7px;font:500 12.5px/1.2 'JetBrains Mono',monospace;font-variant-numeric:tabular-nums;text-align:right;color:#191823;outline:none" style-focus="border-color:#4f46b8;box-shadow:0 0 0 3px rgba(79,70,184,.13)">
+                          </div>
+                          <div style="width:70px;flex:none;display:flex;flex-direction:column;gap:3px">
+                            <span style="font:700 9px/1 'Plus Jakarta Sans',sans-serif;letter-spacing:.09em;text-transform:uppercase;color:#a9a5bd">Frete</span>
+                            <input type="number" value="{{ s.freight }}" onChange="{{ s.onFreight }}" style="width:100%;border:1px solid #e4e1ef;background:#fff;border-radius:7px;padding:6px 7px;font:500 12.5px/1.2 'JetBrains Mono',monospace;font-variant-numeric:tabular-nums;text-align:right;color:#191823;outline:none" style-focus="border-color:#4f46b8;box-shadow:0 0 0 3px rgba(79,70,184,.13)">
+                          </div>
+                          <div style="width:70px;flex:none;display:flex;flex-direction:column;gap:3px">
+                            <span style="font:700 9px/1 'Plus Jakarta Sans',sans-serif;letter-spacing:.09em;text-transform:uppercase;color:#a9a5bd">Outros</span>
+                            <input type="number" value="{{ s.other }}" onChange="{{ s.onOther }}" style="width:100%;border:1px solid #e4e1ef;background:#fff;border-radius:7px;padding:6px 7px;font:500 12.5px/1.2 'JetBrains Mono',monospace;font-variant-numeric:tabular-nums;text-align:right;color:#191823;outline:none" style-focus="border-color:#4f46b8;box-shadow:0 0 0 3px rgba(79,70,184,.13)">
+                          </div>
+                          <div style="width:88px;flex:none;display:flex;flex-direction:column;gap:3px;text-align:right">
+                            <span style="font:700 9px/1 'Plus Jakarta Sans',sans-serif;letter-spacing:.09em;text-transform:uppercase;color:#a9a5bd">Custo un.</span>
+                            <span style="padding:7px 0;font:600 12.5px/1.2 'JetBrains Mono',monospace;font-variant-numeric:tabular-nums;color:{{ s.custoColor }}">{{ s.custoStr }}</span>
+                          </div>
+                        </div>
+                      </div>
+                    </sc-for>
+                  </div>
+                  <div style="font:500 11.5px/1.5 'Plus Jakarta Sans',sans-serif;color:#8a86a0">O fornecedor marcado é o que entra no cálculo. O mais barato fica com o custo em verde.</div>
+                </div>
+              </sc-if>
+
+              <div style="flex:1 1 330px;min-width:290px;display:flex;flex-direction:column;gap:12px">
+
+                <div style="background:#fff;border:1px solid #e7e5f0;border-radius:12px;padding:13px 14px">
+                  <div style="display:flex;align-items:baseline;justify-content:space-between;gap:8px">
+                    <span style="font:700 11px/1 'Plus Jakarta Sans',sans-serif;letter-spacing:.09em;text-transform:uppercase;color:#8a86a0">Margem deste item</span>
+                    <span style="font:700 12px/1 'JetBrains Mono',monospace;color:#4f46b8">{{ r.minMPct }} → {{ r.maxMPct }}</span>
+                  </div>
+                  <div style="margin-top:12px;display:flex;flex-direction:column;gap:3px">
+                    <div style="display:flex;justify-content:space-between;align-items:baseline">
+                      <span style="font:700 9px/1 'Plus Jakarta Sans',sans-serif;letter-spacing:.09em;text-transform:uppercase;color:#8a6414">Margem mínima</span>
+                      <span style="font:600 12px/1 'JetBrains Mono',monospace;color:#8a6414">{{ r.minMPct }}</span>
+                    </div>
+                    <input type="range" min="0" max="100" step="0.5" value="{{ r.mMin }}" onChange="{{ r.onMin }}" style="width:100%;accent-color:#c08a1c">
+                  </div>
+                  <div style="margin-top:10px;display:flex;flex-direction:column;gap:3px">
+                    <div style="display:flex;justify-content:space-between;align-items:baseline">
+                      <span style="font:700 9px/1 'Plus Jakarta Sans',sans-serif;letter-spacing:.09em;text-transform:uppercase;color:#4f46b8">Margem máxima (alvo)</span>
+                      <span style="font:600 12px/1 'JetBrains Mono',monospace;color:#4f46b8">{{ r.maxMPct }}</span>
+                    </div>
+                    <input type="range" min="0" max="100" step="0.5" value="{{ r.mMax }}" onChange="{{ r.onMax }}" style="width:100%">
+                  </div>
+                  <div style="margin-top:12px;border-top:1px solid #f1eff8;padding-top:11px;display:flex;flex-wrap:wrap;gap:12px;justify-content:space-between;align-items:flex-start">
+                    <div style="display:flex;flex-direction:column;gap:4px">
+                      <span style="font:700 9px/1 'Plus Jakarta Sans',sans-serif;letter-spacing:.09em;text-transform:uppercase;color:#8a6414">Preço de reserva un.</span>
+                      <span style="font:700 14px/1 'JetBrains Mono',monospace;font-variant-numeric:tabular-nums;color:#8a6414">{{ r.precoMin }}</span>
+                      <span style="font:500 11px/1.4 'Plus Jakarta Sans',sans-serif;color:#a9a5bd">mínimo que compensa · {{ r.reservaTotal }} no lote</span>
+                    </div>
+                    <div style="display:flex;flex-direction:column;gap:4px;text-align:right">
+                      <span style="font:700 9px/1 'Plus Jakarta Sans',sans-serif;letter-spacing:.09em;text-transform:uppercase;color:#a9a5bd">Folga p/ negociar</span>
+                      <span style="font:700 14px/1 'JetBrains Mono',monospace;font-variant-numeric:tabular-nums;color:#0b6d52">{{ r.folga }}</span>
+                      <sc-if value="{{ r.noLimite }}" hint-placeholder-val="{{ false }}">
+                        <span style="font:600 11px/1.4 'Plus Jakarta Sans',sans-serif;color:#a52d2d">no piso — não desça mais</span>
+                      </sc-if>
+                    </div>
+                  </div>
+                </div>
+
+                <sc-if value="{{ memoria }}" hint-placeholder-val="{{ true }}">
+                  <div style="background:#fff;border:1px solid #e7e5f0;border-radius:12px;padding:13px 14px">
+                    <div style="font:700 11px/1 'Plus Jakarta Sans',sans-serif;letter-spacing:.09em;text-transform:uppercase;color:#8a86a0;margin-bottom:9px">Como chegamos no preço</div>
+                    <div style="display:flex;flex-direction:column;gap:1px">
+                      <sc-for list="{{ r.ladder }}" as="l" hint-placeholder-count="6">
+                        <div style="display:flex;align-items:baseline;gap:10px;padding:6px 0;border-top:1px solid {{ l.line }}">
+                          <span style="flex:none;width:14px;font:600 12px/1.3 'JetBrains Mono',monospace;color:#c2bfd4">{{ l.sign }}</span>
+                          <span style="flex:1 1 auto;font:{{ l.font }};color:{{ l.color }}">{{ l.label }}</span>
+                          <span style="flex:none;font:600 13px/1.3 'JetBrains Mono',monospace;font-variant-numeric:tabular-nums;color:{{ l.color }}">{{ l.val }}</span>
+                        </div>
+                      </sc-for>
+                    </div>
+                    <div style="margin-top:9px;font:500 11.5px/1.5 'Plus Jakarta Sans',sans-serif;color:#8a86a0">Transporte, garantia e lucro incidem sobre o custo. Os tributos incidem sobre a venda, por isso o preço é dividido por (1 − {{ r.taxTotalPct }}) em vez de somado.</div>
+                  </div>
+                </sc-if>
+
+                <div style="background:#fff;border:1px solid #e7e5f0;border-radius:12px;padding:13px 14px">
+                  <div style="display:flex;align-items:center;justify-content:space-between;gap:10px">
+                    <span style="font:700 11px/1 'Plus Jakarta Sans',sans-serif;letter-spacing:.09em;text-transform:uppercase;color:#8a86a0">Imposto deste item</span>
+                    <button onClick="{{ r.toggleTax }}" style="border:1px solid #dedbeb;background:#fff;color:#403c55;border-radius:8px;padding:6px 10px;cursor:pointer;font:600 11.5px/1 'Plus Jakarta Sans',sans-serif" style-hover="border-color:#4f46b8;color:#4f46b8">{{ r.taxBtn }}</button>
+                  </div>
+                  <sc-if value="{{ r.taxOverride }}" hint-placeholder-val="{{ false }}">
+                    <div style="display:flex;align-items:flex-end;gap:10px;margin-top:11px">
+                      <div style="width:120px;flex:none;display:flex;flex-direction:column;gap:4px">
+                        <span style="font:700 9px/1 'Plus Jakarta Sans',sans-serif;letter-spacing:.09em;text-transform:uppercase;color:#a9a5bd">Soma dos impostos</span>
+                        <div style="display:flex;align-items:center;gap:5px">
+                          <input type="number" value="{{ r.taxValue }}" onChange="{{ r.onTaxValue }}" style="flex:1 1 auto;min-width:0;border:1px solid #e4e1ef;background:#fbfbfe;border-radius:8px;padding:8px 9px;font:600 13px/1.2 'JetBrains Mono',monospace;font-variant-numeric:tabular-nums;text-align:right;color:#191823;outline:none" style-focus="border-color:#4f46b8;background:#fff;box-shadow:0 0 0 3px rgba(79,70,184,.13)">
+                          <span style="font:500 11px/1 'Plus Jakarta Sans',sans-serif;color:#a9a5bd">%</span>
+                        </div>
+                      </div>
+                      <span style="font:500 12px/1.5 'Plus Jakarta Sans',sans-serif;color:#8a86a0;padding-bottom:9px">% da venda — ICMS/Simples, PIS, COFINS, IPI, ISS somados</span>
+                    </div>
+                  </sc-if>
+                  <sc-if value="{{ r.taxDefault }}" hint-placeholder-val="{{ true }}">
+                    <div style="margin-top:9px;font:500 12px/1.5 'Plus Jakarta Sans',sans-serif;color:#8a86a0">Usando o padrão da cotação: {{ r.taxResumo }}</div>
+                  </sc-if>
+                </div>
+
+              </div>
+            </div>
+          </sc-if>
+
+        </div>
+      </sc-for>
+    </div>
+
+    <button onClick="{{ addItem }}" style="width:100%;margin-top:10px;border:1px dashed #cfcbe4;background:#fbfbfe;color:#4f46b8;border-radius:12px;padding:14px;cursor:pointer;font:700 13px/1 'Plus Jakarta Sans',sans-serif" style-hover="background:#f1effc;border-color:#4f46b8">+ Adicionar item &nbsp;<span style="font:500 11px/1 'JetBrains Mono',monospace;color:#a9a5bd">ou pressione ↵ no último item</span></button>
+
+    <div style="margin-top:22px;background:#fff;border:1px solid #e7e5f0;border-radius:14px;overflow:hidden">
+      <button onClick="{{ togglePadroes }}" style="width:100%;display:flex;align-items:center;justify-content:space-between;gap:12px;background:transparent;border:none;padding:15px 16px;cursor:pointer;text-align:left">
+        <span style="display:flex;align-items:baseline;gap:10px;flex-wrap:wrap">
+          <span style="font:700 15px/1.2 'Plus Jakarta Sans',sans-serif;color:#191823">Padrões da cotação</span>
+          <span style="font:500 12.5px/1.2 'Plus Jakarta Sans',sans-serif;color:#8a86a0">valem para todos os itens que não têm regra própria</span>
+        </span>
+        <span style="font:500 12px/1.2 'JetBrains Mono',monospace;color:#6f6c7d">{{ resumoPadroes }}</span>
+      </button>
+      <sc-if value="{{ padroes }}" hint-placeholder-val="{{ false }}">
+        <div style="border-top:1px solid #eeecf6;padding:16px;display:flex;flex-wrap:wrap;gap:16px">
+          <div style="flex:1 1 300px;min-width:280px">
+            <div style="font:700 11px/1 'Plus Jakarta Sans',sans-serif;letter-spacing:.09em;text-transform:uppercase;color:#8a86a0;margin-bottom:10px">Sobre o custo</div>
+            <div style="display:flex;flex-wrap:wrap;gap:9px">
+              <sc-for list="{{ custoFields }}" as="f" hint-placeholder-count="4">
+                <div style="flex:1 1 220px;min-width:180px;display:flex;flex-direction:column;gap:4px">
+                  <div style="display:flex;justify-content:space-between;align-items:baseline;gap:8px">
+                    <span style="font:700 9px/1.2 'Plus Jakarta Sans',sans-serif;letter-spacing:.09em;text-transform:uppercase;color:#a9a5bd">{{ f.label }}</span>
+                    <span style="font:600 12.5px/1 'JetBrains Mono',monospace;font-variant-numeric:tabular-nums;color:#4f46b8">{{ f.pct }}</span>
+                  </div>
+                  <input type="range" min="0" max="{{ f.max }}" step="0.5" value="{{ f.value }}" onChange="{{ f.onChange }}" style="width:100%;accent-color:#4f46b8">
+                </div>
+              </sc-for>
+            </div>
+          </div>
+          <div style="flex:1 1 340px;min-width:300px">
+            <div style="font:700 11px/1 'Plus Jakarta Sans',sans-serif;letter-spacing:.09em;text-transform:uppercase;color:#8a86a0;margin-bottom:10px">Sobre a venda (tributos)</div>
+            <div style="display:flex;flex-wrap:wrap;gap:9px">
+              <sc-for list="{{ vendaFields }}" as="f" hint-placeholder-count="1">
+                <div style="flex:1 1 260px;min-width:180px;display:flex;flex-direction:column;gap:4px">
+                  <div style="display:flex;justify-content:space-between;align-items:baseline;gap:8px">
+                    <span style="font:700 9px/1.2 'Plus Jakarta Sans',sans-serif;letter-spacing:.09em;text-transform:uppercase;color:#a9a5bd">{{ f.label }}</span>
+                    <span style="font:600 12.5px/1 'JetBrains Mono',monospace;font-variant-numeric:tabular-nums;color:#4f46b8">{{ f.pct }}</span>
+                  </div>
+                  <input type="range" min="0" max="{{ f.max }}" step="0.5" value="{{ f.value }}" onChange="{{ f.onChange }}" style="width:100%;accent-color:#4f46b8">
+                </div>
+              </sc-for>
+            </div>
+            <div style="margin-top:11px;font:500 12px/1.55 'Plus Jakarta Sans',sans-serif;color:#8a86a0;max-width:520px">Carga tributária somada: <strong style="color:#403c55">{{ cargaPct }}</strong>. Como ela incide sobre a venda, o preço é <strong style="color:#403c55">custo majorado ÷ (1 − carga)</strong>.</div>
+          </div>
+        </div>
+      </sc-if>
+    </div>
+
+  </div>
+
+  <div style="position:fixed;left:0;right:0;bottom:0;z-index:40;background:rgba(255,255,255,.97);backdrop-filter:blur(8px);border-top:1px solid #e4e1ef;box-shadow:0 -4px 18px rgba(25,24,35,.06);padding:12px 22px">
+    <div style="max-width:1240px;margin:0 auto;display:flex;flex-wrap:wrap;gap:16px;align-items:center;justify-content:space-between">
+      <div style="display:flex;flex-wrap:wrap;gap:22px;align-items:baseline">
+        <div style="display:flex;flex-direction:column;gap:3px">
+          <span style="font:700 9.5px/1 'Plus Jakarta Sans',sans-serif;letter-spacing:.1em;text-transform:uppercase;color:#4f46b8">Valor cotado</span>
+          <span style="font:700 19px/1 'JetBrains Mono',monospace;font-variant-numeric:tabular-nums;color:#3a3390">{{ tot.venda }}</span>
+        </div>
+        <div style="display:flex;flex-direction:column;gap:3px">
+          <span style="font:700 9.5px/1 'Plus Jakarta Sans',sans-serif;letter-spacing:.1em;text-transform:uppercase;color:#8a86a0">Lucro</span>
+          <span style="font:700 19px/1 'JetBrains Mono',monospace;font-variant-numeric:tabular-nums;color:#0b6d52">{{ tot.lucro }} <span style="font-size:13px;color:#8fb3a7">{{ tot.lucroPct }}</span></span>
+        </div>
+        <div style="display:flex;flex-direction:column;gap:3px">
+          <span style="font:700 9.5px/1 'Plus Jakarta Sans',sans-serif;letter-spacing:.1em;text-transform:uppercase;color:#8a6414">Preço de reserva</span>
+          <span style="font:700 15px/1.25 'JetBrains Mono',monospace;font-variant-numeric:tabular-nums;color:#8a6414">{{ tot.reserva }}</span>
+        </div>
+        <div style="display:flex;flex-direction:column;gap:3px">
+          <span style="font:700 9.5px/1 'Plus Jakarta Sans',sans-serif;letter-spacing:.1em;text-transform:uppercase;color:#8a86a0">Folga p/ negociar</span>
+          <span style="font:600 15px/1.25 'JetBrains Mono',monospace;font-variant-numeric:tabular-nums;color:#6f6c7d">{{ tot.folga }}</span>
+        </div>
+        <sc-if value="{{ pendencias }}" hint-placeholder-val="{{ false }}">
+          <div style="display:flex;align-items:center;gap:8px;background:#fdefef;border:1px solid #f5cfcf;border-radius:9px;padding:8px 11px">
+            <span style="font:600 12.5px/1.2 'Plus Jakarta Sans',sans-serif;color:#a52d2d">{{ pendenciasTxt }}</span>
+          </div>
+        </sc-if>
+      </div>
+      <div style="display:flex;gap:8px;flex-wrap:wrap">
+        <button style="border:1px solid #dedbeb;background:#fff;color:#403c55;font:600 13px/1 'Plus Jakarta Sans',sans-serif;padding:11px 15px;border-radius:10px;cursor:pointer" style-hover="border-color:#4f46b8;color:#4f46b8">Exportar</button>
+        <button style="border:none;background:#4f46b8;color:#fff;font:700 13px/1 'Plus Jakarta Sans',sans-serif;padding:11px 18px;border-radius:10px;cursor:pointer;box-shadow:0 2px 8px rgba(79,70,184,.28)" style-hover="background:#413a9e">Salvar Cotação</button>
+      </div>
+    </div>
+  </div>
+
+  <sc-if value="{{ atalhos }}" hint-placeholder-val="{{ false }}">
+    <div style="position:fixed;inset:0;z-index:60;background:rgba(20,19,39,.45);display:flex;align-items:center;justify-content:center;padding:24px">
+      <div style="width:100%;max-width:560px;max-height:86vh;background:#fff;border-radius:16px;overflow:hidden;box-shadow:0 24px 60px rgba(20,19,39,.3);animation:popIn .18s ease;display:flex;flex-direction:column">
+      <div style="flex:none;display:flex;align-items:center;justify-content:space-between;gap:12px;padding:18px 22px;border-bottom:1px solid #eeecf6;background:#fff">
+        <h3 style="margin:0;font:700 17px/1.2 'Plus Jakarta Sans',sans-serif;color:#191823">Como usar o cotador</h3>
+        <button onClick="{{ toggleAtalhos }}" style="flex:none;width:30px;height:30px;padding:0;display:flex;align-items:center;justify-content:center;border:1px solid #e4e1ef;background:#fff;border-radius:9px;font:400 20px/1 'JetBrains Mono',monospace;color:#8a86a0;cursor:pointer" style-hover="border-color:#4f46b8;color:#4f46b8">×</button>
+      </div>
+      <div class="om-scroll" style="flex:1 1 auto;min-height:0;overflow-y:auto;overscroll-behavior:contain;padding:4px 22px 22px;scrollbar-width:thin;scrollbar-color:#d9d5e8 transparent">
+        <div style="margin-top:16px;font:700 10.5px/1 'Plus Jakarta Sans',sans-serif;letter-spacing:.09em;text-transform:uppercase;color:#8a86a0">Atalhos de teclado</div>
+        <div style="margin-top:9px;display:flex;flex-direction:column;gap:1px">
+          <sc-for list="{{ atalhosLista }}" as="a" hint-placeholder-count="5">
+            <div style="display:flex;align-items:center;gap:12px;padding:8px 0;border-top:1px solid #f1eff8">
+              <span style="flex:none;min-width:54px;text-align:center;font:600 11.5px/1 'JetBrains Mono',monospace;color:#3a3390;background:#f1effc;border:1px solid #dcd8f4;border-radius:6px;padding:6px 8px">{{ a.k }}</span>
+              <span style="font:500 13px/1.4 'Plus Jakarta Sans',sans-serif;color:#403c55">{{ a.d }}</span>
+            </div>
+          </sc-for>
+        </div>
+
+        <div style="margin-top:18px;font:700 10.5px/1 'Plus Jakarta Sans',sans-serif;letter-spacing:.09em;text-transform:uppercase;color:#8a86a0">Fluxo rápido</div>
+        <div style="margin-top:9px;display:flex;flex-direction:column;gap:1px">
+          <sc-for list="{{ ajudaFluxo }}" as="h" hint-placeholder-count="4">
+            <div style="display:flex;gap:12px;padding:9px 0;border-top:1px solid #f1eff8">
+              <span style="flex:none;width:20px;height:20px;border-radius:6px;background:#4f46b8;color:#fff;font:700 11px/20px 'Plus Jakarta Sans',sans-serif;text-align:center">{{ h.n }}</span>
+              <span style="font:500 13px/1.5 'Plus Jakarta Sans',sans-serif;color:#403c55">{{ h.t }}</span>
+            </div>
+          </sc-for>
+        </div>
+
+        <div style="margin-top:18px;background:#faf9fd;border:1px solid #eeecf6;border-radius:12px;padding:13px 14px">
+          <div style="font:700 10.5px/1 'Plus Jakarta Sans',sans-serif;letter-spacing:.09em;text-transform:uppercase;color:#8a86a0">A conta do preço</div>
+          <div style="margin-top:8px;font:600 12.5px/1.6 'JetBrains Mono',monospace;color:#3a3390">preço = custo un. × (1 + transporte + garantia + lucro) ÷ (1 − impostos)</div>
+          <div style="margin-top:8px;font:500 12.5px/1.6 'Plus Jakarta Sans',sans-serif;color:#6f6c7d">Transporte, garantia e lucro incidem sobre o custo. O imposto incide sobre a venda — por isso é divisão, não soma: o preço já embute o tributo que vai cair sobre ele mesmo.</div>
+        </div>
+
+      </div>
+      <div style="flex:none;display:flex;justify-content:flex-end;padding:14px 22px;border-top:1px solid #eeecf6;background:#fff">
+        <button onClick="{{ toggleAtalhos }}" style="border:none;background:#4f46b8;color:#fff;font:700 13px/1 'Plus Jakarta Sans',sans-serif;padding:11px 18px;border-radius:10px;cursor:pointer" style-hover="background:#413a9e">Entendi</button>
+      </div>
+      </div>
+    </div>
+  </sc-if>
+
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props="{&quot;mostrarComparativo&quot;:{&quot;editor&quot;:&quot;boolean&quot;,&quot;default&quot;:true,&quot;tsType&quot;:&quot;boolean&quot;,&quot;section&quot;:&quot;Comportamento&quot;},&quot;mostrarMemoria&quot;:{&quot;editor&quot;:&quot;boolean&quot;,&quot;default&quot;:true,&quot;tsType&quot;:&quot;boolean&quot;,&quot;section&quot;:&quot;Comportamento&quot;}}">
+class Component extends DCLogic {
+  constructor(p) {
+    super(p);
+    let uid = 0;
+    this.uid = () => 'x' + (++uid);
+    const it = (desc, qty, sups, taxes) => ({
+      id: this.uid(), desc, qty, margin: null, taxes: taxes || null,
+      suppliers: sups.map(s => ({ id: this.uid(), name: s[0], cost: s[1], freight: s[2] || 0, other: s[3] || 0 })),
+      chosen: null
+    });
+    const items = [
+      it('Papel A4 75g — resma 500fl', 120, [['Distribuidora Sul', 24.9, 1.2, 0], ['Papelaria Central', 23.4, 2.9, 0.5], ['Atacado Norte', 26.1, 0, 0]]),
+      it('Toner HP 26A original', 12, [['InfoParts', 389, 12, 0], ['SupriMax', 402, 0, 0]], 21.25),
+      it('Cadeira operacional giratória', 8, [['MoveOffice', 612, 45, 18], ['Ergo Brasil', 588, 96, 0]])
+    ];
+    items.forEach(i => { i.chosen = i.suppliers[0].id; });
+    this.state = {
+      titulo: 'Cotação #2026-014 · Prefeitura de Marília',
+      items,
+      defaults: { transporte: 8, garantia: 0, lucroMin: 10, lucroMax: 35, impostos: 10 },
+      expanded: items[0].id,
+      padroes: false, atalhos: false
+    };
+    this._focus = null;
+  }
+
+  componentDidMount() {
+    this._key = e => {
+      if ((e.metaKey || e.ctrlKey) && e.key === 'Enter') { e.preventDefault(); this.addItem(); }
+      else if (e.key === 'Escape') this.setState({ atalhos: false });
+      else if (e.key === '?' && e.shiftKey && !/input|textarea/i.test((e.target.tagName || ''))) this.setState(s => ({ atalhos: !s.atalhos }));
+    };
+    window.addEventListener('keydown', this._key);
+  }
+  componentWillUnmount() { window.removeEventListener('keydown', this._key); }
+  componentDidUpdate() {
+    if (this._focus) {
+      const el = document.querySelector('[data-desc="' + this._focus + '"]');
+      this._focus = null;
+      if (el) el.focus();
+    }
+  }
+
+  n(v) { const x = parseFloat(String(v).replace(',', '.')); return isFinite(x) ? x : 0; }
+  brl(v) { return 'R$ ' + (v || 0).toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 }); }
+  pct(v) { return (Math.round(v * 10) / 10).toLocaleString('pt-BR') + '%'; }
+
+  taxesOf(item) { return item.taxes == null ? this.state.defaults.impostos : item.taxes; }
+  taxRate(item) { return this.n(this.taxesOf(item)) / 100; }
+  supCost(s) { return this.n(s.cost) + this.n(s.freight) + this.n(s.other); }
+  chosenSup(item) { return item.suppliers.find(s => s.id === item.chosen) || item.suppliers[0] || null; }
+  bestSup(item) {
+    const priced = item.suppliers.filter(s => this.n(s.cost) > 0);
+    if (!priced.length) return null;
+    return priced.reduce((a, b) => this.supCost(b) < this.supCost(a) ? b : a);
+  }
+  minOf(item) { const d = this.state.defaults; return this.n(item.mMin == null ? d.lucroMin : item.mMin); }
+  marginOf(item) { const d = this.state.defaults; return Math.max(this.n(item.mMax == null ? d.lucroMax : item.mMax), this.minOf(item)); }
+  calc(item, marginOverride) {
+    const d = this.state.defaults, s = this.chosenSup(item);
+    const custoUn = s ? this.supCost(s) : 0;
+    const over = (this.n(d.transporte) + this.n(d.garantia)) / 100;
+    const m = (marginOverride == null ? this.marginOf(item) : marginOverride) / 100;
+    const tax = Math.min(this.taxRate(item), 0.9);
+    const preco = custoUn * (1 + over + m) / (1 - tax);
+    const qty = Math.max(this.n(item.qty), 0);
+    return { custoUn, over, m, tax, preco, qty, lucroUn: custoUn * m, produtoUn: s ? this.n(s.cost) : 0, freteUn: s ? this.n(s.freight) : 0, outrosUn: s ? this.n(s.other) : 0, impostoUn: preco * tax };
+  }
+
+  up(fn) { this.setState(s => { const items = s.items.map(i => ({ ...i, suppliers: i.suppliers.map(x => ({ ...x })) })); fn(items); return { items }; }); }
+  addItem(afterId) {
+    const id = this.uid(), sid = this.uid();
+    this._focus = id;
+    this.setState(s => {
+      const it = { id, desc: '', qty: 1, margin: null, taxes: null, suppliers: [{ id: sid, name: '', cost: 0, freight: 0, other: 0 }], chosen: sid };
+      const items = s.items.slice();
+      const at = afterId ? items.findIndex(i => i.id === afterId) : -1;
+      if (at >= 0) items.splice(at + 1, 0, it); else items.push(it);
+      return { items, expanded: s.expanded };
+    });
+  }
+
+  renderVals() {
+    const S = this.state, d = S.defaults;
+    const comparativo = this.props.mostrarComparativo !== false;
+    const memoria = this.props.mostrarMemoria !== false;
+
+    let tCusto = 0, tCapital = 0, tVenda = 0, tLucro = 0, tImp = 0, tQty = 0, pend = 0, economia = 0, tReserva = 0, tTransp = 0, tGar = 0;
+
+    const rows = S.items.map((item, idx) => {
+      const c = this.calc(item), best = this.bestSup(item), sup = this.chosenSup(item);
+      const bestCost = best ? this.supCost(best) : 0;
+      tCusto += c.produtoUn * c.qty; tCapital += c.custoUn * c.qty; tVenda += c.preco * c.qty;
+      tLucro += c.lucroUn * c.qty; tImp += c.impostoUn * c.qty; tQty += c.qty;
+      const incompleto = !sup || this.n(sup.cost) <= 0 || !item.desc.trim();
+      if (incompleto) pend++;
+      const naoMelhor = !!(best && sup && best.id !== sup.id && bestCost < c.custoUn - 0.005);
+      if (naoMelhor) economia += (c.custoUn - bestCost) * c.qty;
+
+      const cMin = this.calc(item, this.minOf(item)), cMax = this.calc(item, this.marginOf(item));
+      tReserva += cMin.preco * c.qty;
+      tTransp += c.custoUn * this.n(d.transporte) / 100 * c.qty;
+      tGar += c.custoUn * this.n(d.garantia) / 100 * c.qty;
+      const taxT = c.tax * 100;
+      const line = '#f1eff8';
+      const L = (sign, label, val, strong) => ({
+        sign, label, val,
+        font: (strong ? '700 13px/1.3 ' : '500 12.5px/1.4 ') + "'Plus Jakarta Sans',sans-serif",
+        color: strong ? '#191823' : '#6f6c7d', line
+      });
+      const ladder = [
+        L('', 'Custo do produto', this.brl(c.produtoUn)),
+        L('+', 'Frete fixo', this.brl(c.freteUn)),
+        L('+', 'Outros custos', this.brl(c.outrosUn)),
+        L('=', 'Custo unitário', this.brl(c.custoUn), true),
+        L('+', 'Transporte ' + this.pct(this.n(d.transporte)) + ' do custo', this.brl(c.custoUn * this.n(d.transporte) / 100)),
+        L('+', 'Garantia extra ' + this.pct(this.n(d.garantia)) + ' do custo', this.brl(c.custoUn * this.n(d.garantia) / 100)),
+        L('+', 'Lucro ' + this.pct(c.m * 100) + ' do custo', this.brl(c.lucroUn)),
+        L('+', 'Tributos ' + this.pct(taxT) + ' da venda', this.brl(c.impostoUn)),
+        L('=', 'Preço final unitário', this.brl(c.preco), true)
+      ];
+
+      const tv = this.taxesOf(item);
+
+      return {
+        id: item.id, n: String(idx + 1).padStart(2, '0'), desc: item.desc, qty: item.qty,
+        expanded: S.expanded === item.id, chev: S.expanded === item.id ? '▲' : '▼',
+        supplierName: sup && sup.name ? sup.name : 'escolher fornecedor',
+        naoMelhor, bestDelta: this.brl(c.custoUn - bestCost), bestName: best && best.name ? best.name : 'outro fornecedor',
+        incompleto, taxOverride: item.taxes != null, taxDefault: item.taxes == null,
+        taxBtn: item.taxes != null ? 'voltar ao padrão' : 'usar imposto próprio',
+        taxResumo: this.pct(this.n(this.state.defaults.impostos)) + ' da venda',
+        taxTotalPct: this.pct(taxT), taxValue: tv,
+        onTaxValue: e => { const v = e.target.value; this.up(items => { items.find(x => x.id === item.id).taxes = v; }); },
+        custoUn: this.brl(c.custoUn), precoUn: this.brl(c.preco),
+        lucroTotal: this.brl(c.lucroUn * c.qty), totalStr: this.brl(c.preco * c.qty),
+        marginPct: this.pct(c.m * 100),
+        mMin: this.minOf(item), mMax: this.marginOf(item),
+        minMPct: this.pct(this.minOf(item)), maxMPct: this.pct(this.marginOf(item)),
+        onMin: e => { const v = this.n(e.target.value); this.up(items => { const i = items.find(x => x.id === item.id); i.mMin = v; if (this.n(i.mMax == null ? d.lucroMax : i.mMax) < v) i.mMax = v; }); },
+        onMax: e => { const v = this.n(e.target.value); this.up(items => { const i = items.find(x => x.id === item.id); i.mMax = v; if (this.n(i.mMin == null ? d.lucroMin : i.mMin) > v) i.mMin = v; }); },
+        precoMin: this.brl(cMin.preco), precoMax: this.brl(cMax.preco),
+        reservaTotal: this.brl(cMin.preco * c.qty),
+        folga: this.brl(c.preco - cMin.preco),
+        noLimite: c.preco <= cMin.preco + 0.005,
+        ladder,
+        suppliers: item.suppliers.map(s => {
+          const cost = this.supCost(s), isBest = !!(best && best.id === s.id), chosen = s.id === item.chosen;
+          return {
+            id: s.id, name: s.name, cost: s.cost, freight: s.freight, other: s.other,
+            custoStr: this.n(s.cost) > 0 ? this.brl(cost) : '—',
+            custoColor: isBest ? '#0b6d52' : '#403c55',
+            bg: chosen ? '#f1effc' : '#fff', border: chosen ? '#c2bde4' : '#e7e5f0',
+            dot: chosen ? '#4f46b8' : '#cfcbe4', dotFill: chosen ? '#4f46b8' : '#fff',
+            choose: () => this.up(items => { items.find(x => x.id === item.id).chosen = s.id; }),
+            onName: e => { const v = e.target.value; this.up(items => { items.find(x => x.id === item.id).suppliers.find(y => y.id === s.id).name = v; }); },
+            onCost: e => { const v = e.target.value; this.up(items => { items.find(x => x.id === item.id).suppliers.find(y => y.id === s.id).cost = v; }); },
+            onFreight: e => { const v = e.target.value; this.up(items => { items.find(x => x.id === item.id).suppliers.find(y => y.id === s.id).freight = v; }); },
+            onOther: e => { const v = e.target.value; this.up(items => { items.find(x => x.id === item.id).suppliers.find(y => y.id === s.id).other = v; }); },
+            remove: () => this.up(items => { const i = items.find(x => x.id === item.id); if (i.suppliers.length > 1) { i.suppliers = i.suppliers.filter(y => y.id !== s.id); if (i.chosen === s.id) i.chosen = i.suppliers[0].id; } })
+          };
+        }),
+        addSupplier: () => { const sid = this.uid(); this.up(items => { items.find(x => x.id === item.id).suppliers.push({ id: sid, name: '', cost: 0, freight: 0, other: 0 }); }); },
+        useBest: () => this.up(items => { if (best) items.find(x => x.id === item.id).chosen = best.id; }),
+        toggle: () => this.setState(s => ({ expanded: s.expanded === item.id ? null : item.id })),
+        toggleTax: () => this.up(items => { const i = items.find(x => x.id === item.id); i.taxes = i.taxes != null ? null : this.taxesOf(item); }),
+        onDesc: e => { const v = e.target.value; this.up(items => { items.find(x => x.id === item.id).desc = v; }); },
+        onDescKey: e => { if (e.key === 'Enter') { e.preventDefault(); this.addItem(item.id); } },
+        onQty: e => { const v = e.target.value; this.up(items => { items.find(x => x.id === item.id).qty = v; }); },
+        dup: () => { const copy = { ...item, id: this.uid(), suppliers: item.suppliers.map(s => ({ ...s, id: this.uid() })) }; copy.chosen = copy.suppliers[Math.max(0, item.suppliers.findIndex(s => s.id === item.chosen))].id; this.setState(s => { const items = s.items.slice(); items.splice(s.items.findIndex(i => i.id === item.id) + 1, 0, copy); return { items }; }); },
+        remove: () => this.setState(s => ({ items: s.items.filter(i => i.id !== item.id) }))
+      };
+    });
+
+    const carga = this.n(d.impostos);
+    const fld = (key, label, max) => ({
+      label, value: this.n(d[key]), max: max || 100, pct: this.pct(this.n(d[key])),
+      onChange: e => { const v = this.n(e.target.value); this.setState(s => ({ defaults: { ...s.defaults, [key]: v } })); }
+    });
+
+    return {
+      tituloCot: S.titulo, onTitulo: e => this.setState({ titulo: e.target.value }),
+      rows, comparativo, memoria,
+      tot: {
+        itensCount: String(S.items.length),
+        itensUn: tQty.toLocaleString('pt-BR') + ' unidades',
+        reservaSub: 'piso: menor preço que compensa',
+        itens: S.items.length + ' · ' + tQty.toLocaleString('pt-BR') + ' un.',
+        custo: this.brl(tCusto), capital: this.brl(tCapital), venda: this.brl(tVenda),
+        lucro: this.brl(tLucro), impostos: this.brl(tImp), reserva: this.brl(tReserva),
+        folga: this.brl(tVenda - tReserva),
+        transporte: this.brl(tTransp), transporteSub: this.pct(this.n(d.transporte)) + ' do custo' + (tGar > 0 ? ' · garantia ' + this.brl(tGar) : ''),
+        impostosSub: this.pct(tVenda > 0 ? tImp / tVenda * 100 : 0) + ' da venda',
+        margemMedia: this.pct(tCapital > 0 ? tLucro / tCapital * 100 : 0),
+        reservaFolga: this.brl(tVenda - tReserva),
+        lucroPct: tVenda > 0 ? this.pct(tLucro / tVenda * 100) + ' da venda' : '—'
+      },
+      pendencias: pend > 0, pendenciasTxt: pend === 1 ? '1 item incompleto' : pend + ' itens incompletos',
+      temEconomia: economia > 0.01, economia: this.brl(economia),
+      aplicarMelhores: () => this.up(items => items.forEach(i => { const b = this.bestSup(i); if (b) i.chosen = b.id; })),
+      addItem: () => this.addItem(),
+      padroes: S.padroes, togglePadroes: () => this.setState(s => ({ padroes: !s.padroes })),
+      atalhos: S.atalhos, toggleAtalhos: () => this.setState(s => ({ atalhos: !s.atalhos })),
+      atalhosLista: [
+        { k: '↵', d: 'novo item abaixo' }, { k: '⌘ ↵', d: 'novo item no fim' },
+        { k: 'Tab', d: 'próximo campo' }, { k: 'Esc', d: 'fechar painéis e modais' }, { k: '?', d: 'abrir esta ajuda' }
+      ],
+      ajudaFluxo: [
+        { n: '1', t: 'Digite o produto e a quantidade. Pressione ↵ para já criar o item seguinte.' },
+        { n: '2', t: 'Os itens vêm preenchidos a partir da oportunidade consultada — ajuste o que precisar.' },
+        { n: '3', t: 'Abra o item e cadastre os fornecedores. O mais barato aparece em verde; marque o escolhido no círculo.' },
+        { n: '4', t: 'Cada item tem dois sliders de margem: a mínima define o preço de reserva (piso) e a máxima é o preço que você propõe.' },
+        { n: '5', t: 'Impostos diferentes num item? Clique em "usar imposto próprio" — os demais seguem o padrão da cotação.' }
+      ],
+      resumoPadroes: 'Transporte ' + this.pct(this.n(d.transporte)) + ' · Lucro ' + this.pct(this.n(d.lucroMin)) + '–' + this.pct(this.n(d.lucroMax)) + ' · Tributos ' + this.pct(carga),
+      cargaPct: this.pct(carga),
+      custoFields: [fld('transporte', 'Transporte', 50), fld('garantia', 'Garantia extra', 50), fld('lucroMin', 'Lucro mínimo', 100), fld('lucroMax', 'Lucro máximo', 100)],
+      vendaFields: [fld('impostos', 'Impostos (soma)', 60)]
+    };
+  }
+}
+</script>
+</body>
+</html>

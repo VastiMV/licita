@@ -1,0 +1,275 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet data-dc-atomics><link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin><link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700&display=swap" rel="stylesheet"><style>*{box-sizing:border-box}body{margin:0;background:#dfe5ef;font-family:Poppins,system-ui,sans-serif;-webkit-font-smoothing:antialiased}a{color:#1b3b6f;text-decoration:none}a:hover{color:#b0692f}input,select,textarea{font-family:inherit}input::placeholder,textarea::placeholder{color:#a7b3c9}</style></helmet>
+<div style="min-height:100vh;background:#dfe5ef;padding:48px 40px 80px">
+<div style="max-width:1180px;margin:0 auto">
+
+<div style="display:flex;align-items:flex-start;justify-content:space-between;gap:32px;margin-bottom:8px">
+<div style="max-width:620px">
+<h1 style="margin:0 0 18px;font-size:34px;font-weight:700;letter-spacing:-.6px;color:#16264a;line-height:1.1">Cadastro de fornecedores</h1>
+<p style="margin:0;font-size:14.5px;line-height:1.65;color:#5b7099;text-wrap:pretty">Fornecedores habilitados para cotação e compra — a lista é compartilhada por todos os usuários. As linhas destacadas em <span style="color:#c0563a">vermelho</span> têm documentação vencida e não podem ser usadas em novos processos.</p>
+</div>
+<button onClick="{{ openNew }}" style="flex:none;margin-top:10px;display:flex;align-items:center;gap:9px;height:46px;padding:0 22px;background:#16264a;color:#fff;border:none;border-radius:9px;font-size:14px;font-weight:600;font-family:Poppins,sans-serif;cursor:pointer;box-shadow:0 6px 16px rgba(22,38,74,.22)" style-hover="background:#1f3565;box-shadow:0 8px 20px rgba(22,38,74,.3)"><span style="font-size:19px;line-height:1;font-weight:400;margin-top:-2px">+</span>Adicionar fornecedor</button>
+</div>
+
+<div style="margin-top:30px;background:#fff;border-radius:12px;box-shadow:0 2px 10px rgba(22,38,74,.07);overflow:hidden">
+
+<div style="padding:22px 24px 18px;display:flex;align-items:flex-end;justify-content:space-between;gap:24px;flex-wrap:wrap">
+<div style="flex:1;min-width:280px;max-width:430px">
+<div style="font-size:10.5px;font-weight:600;letter-spacing:1.1px;color:#7d8ca8;margin-bottom:8px">BUSCAR</div>
+<input value="{{ query }}" onChange="{{ onQuery }}" placeholder="Busca por razão social, CNPJ ou categoria..." style="width:100%;height:44px;padding:0 15px;border:1px solid #dbe2ee;border-radius:8px;font-size:14px;color:#16264a;outline:none" style-focus="border-color:#8fa6cf;box-shadow:0 0 0 3px rgba(143,166,207,.18)">
+</div>
+<div style="display:flex;align-items:center;gap:14px">
+<span style="font-size:10.5px;font-weight:600;letter-spacing:1.1px;color:#7d8ca8">LINHAS</span>
+<div style="display:flex;border:1px solid #dbe2ee;border-radius:7px;overflow:hidden">
+<sc-for list="{{ pageSizes }}" as="opt" hint-placeholder-count="3">
+<button onClick="{{ opt.pick }}" style="{{ opt.style }}">{{ opt.label }}</button>
+</sc-for>
+</div>
+</div>
+</div>
+
+<div style="display:grid;grid-template-columns:2.4fr 1.3fr 1.25fr 1.5fr 1fr .9fr;align-items:center;gap:16px;padding:13px 24px;border-top:1px solid #eef1f7;border-bottom:1px solid #eef1f7;background:#fcfdff">
+<div style="font-size:11.5px;font-weight:600;letter-spacing:.7px;color:#5b7099">RAZÃO SOCIAL <span style="color:#a7b3c9">⌄</span></div>
+<div style="font-size:11.5px;font-weight:600;letter-spacing:.7px;color:#5b7099">CNPJ <span style="color:#a7b3c9">⌄</span></div>
+<div style="font-size:11.5px;font-weight:600;letter-spacing:.7px;color:#5b7099">CIDADE <span style="color:#a7b3c9">⌄</span></div>
+<div style="font-size:11.5px;font-weight:600;letter-spacing:.7px;color:#5b7099">CATEGORIA <span style="color:#a7b3c9">⌄</span></div>
+<div style="font-size:11.5px;font-weight:600;letter-spacing:.7px;color:#5b7099">SITUAÇÃO</div>
+<div style="font-size:11.5px;font-weight:600;letter-spacing:.7px;color:#5b7099;text-align:right">AÇÕES</div>
+</div>
+
+<sc-for list="{{ rows }}" as="row" hint-placeholder-count="5">
+<div style="{{ row.rowStyle }}">
+<div>
+<div style="font-size:14px;font-weight:500;color:#16264a;line-height:1.35">{{ row.nome }}</div>
+<div style="font-size:12px;color:#8a99b5;margin-top:3px">{{ row.fantasia }}</div>
+</div>
+<div style="font-size:13.5px;color:#3d5480;font-variant-numeric:tabular-nums">{{ row.cnpj }}</div>
+<div style="font-size:13.5px;color:#3d5480">{{ row.cidade }}</div>
+<div style="font-size:13.5px;color:#1b3b6f">{{ row.categoria }}</div>
+<div><span style="{{ row.badgeStyle }}">{{ row.situacao }}</span></div>
+<div data-row-menu style="display:flex;justify-content:flex-end;position:relative">
+<button onClick="{{ row.toggleMenu }}" style="{{ row.menuBtnStyle }}">Ações <span style="color:#a7b3c9;font-size:11px">⌄</span></button>
+<sc-if value="{{ row.menuOpen }}" hint-placeholder-val="{{ false }}">
+<div style="position:absolute;top:42px;right:0;width:172px;background:#fff;border:1px solid #e6ebf5;border-radius:9px;box-shadow:0 12px 28px rgba(11,20,40,.16);padding:6px;z-index:20;display:flex;flex-direction:column">
+<button onClick="{{ row.edit }}" style="display:flex;align-items:center;gap:10px;width:100%;padding:9px 11px;background:none;border:none;border-radius:6px;font-size:13.5px;font-family:Poppins,sans-serif;color:#16264a;text-align:left;cursor:pointer" style-hover="background:#f4f7fc">Editar</button>
+<button onClick="{{ row.remove }}" style="display:flex;align-items:center;gap:10px;width:100%;padding:9px 11px;background:none;border:none;border-radius:6px;font-size:13.5px;font-family:Poppins,sans-serif;color:#b8402c;text-align:left;cursor:pointer" style-hover="background:#fdeceb">Excluir</button>
+</div>
+</sc-if>
+</div>
+</div>
+</sc-for>
+
+<sc-if value="{{ isEmpty }}" hint-placeholder-val="{{ false }}">
+<div style="padding:56px 24px;text-align:center;font-size:14px;color:#8a99b5">Nenhum fornecedor encontrado para essa busca.</div>
+</sc-if>
+
+<div style="padding:20px 24px;display:flex;align-items:center;justify-content:space-between;gap:16px">
+<div style="font-size:13.5px;color:#b0692f">Mostrando {{ shownFrom }}–{{ shownTo }} de {{ total }}</div>
+<div style="display:flex;align-items:center;gap:14px">
+<button onClick="{{ prev }}" style="width:36px;height:36px;display:flex;align-items:center;justify-content:center;background:#fff;border:1px solid #dbe2ee;border-radius:7px;color:#5b7099;font-size:14px;cursor:pointer" style-hover="border-color:#8fa6cf;color:#16264a">‹</button>
+<span style="font-size:13.5px;color:#5b7099">Página {{ page }} de {{ pageCount }}</span>
+<button onClick="{{ next }}" style="width:36px;height:36px;display:flex;align-items:center;justify-content:center;background:#fff;border:1px solid #dbe2ee;border-radius:7px;color:#5b7099;font-size:14px;cursor:pointer" style-hover="border-color:#8fa6cf;color:#16264a">›</button>
+</div>
+</div>
+</div>
+</div>
+
+<sc-if value="{{ modalOpen }}" hint-placeholder-val="{{ false }}">
+<div style="position:fixed;inset:0;background:rgba(15,26,50,.5);backdrop-filter:blur(2px);display:flex;align-items:flex-start;justify-content:center;padding:44px 24px;overflow:auto;z-index:50">
+<div style="width:100%;max-width:1040px;background:#fff;border-radius:14px;box-shadow:0 24px 60px rgba(11,20,40,.35);overflow:hidden">
+
+<div style="padding:24px 32px 20px;border-bottom:1px solid #eef1f7;display:flex;align-items:flex-start;justify-content:space-between;gap:24px">
+<div>
+<div style="font-size:10.5px;font-weight:600;letter-spacing:1.1px;color:#a08050">{{ modalKicker }}</div>
+<h2 style="margin:7px 0 0;font-size:23px;font-weight:600;letter-spacing:-.3px;color:#16264a">{{ modalTitle }}</h2>
+</div>
+<button onClick="{{ closeModal }}" style="flex:none;width:36px;height:36px;background:#f4f7fc;border:1px solid #e6ebf5;border-radius:8px;color:#5b7099;font-size:16px;cursor:pointer" style-hover="background:#e9eff9;color:#16264a">✕</button>
+</div>
+
+<div style="padding:28px 32px 8px;max-height:min(62vh,620px);overflow:auto">
+
+<div style="font-size:11px;font-weight:600;letter-spacing:1.1px;color:#7d8ca8;margin-bottom:16px">DADOS DA EMPRESA</div>
+<div style="display:grid;grid-template-columns:1.4fr 1fr .8fr;gap:18px 20px">
+<label style="display:flex;flex-direction:column;gap:7px"><span style="font-size:12.5px;font-weight:500;color:#3d5480">Razão social <span style="color:#c0563a">*</span></span><input value="{{ f.nome }}" onChange="{{ set.nome }}" placeholder="Ex.: Marucci Distribuidora Ltda" style="height:44px;padding:0 14px;border:1px solid #dbe2ee;border-radius:8px;font-size:14px;color:#16264a;outline:none" style-focus="border-color:#8fa6cf;box-shadow:0 0 0 3px rgba(143,166,207,.18)"></label>
+<label style="display:flex;flex-direction:column;gap:7px"><span style="font-size:12.5px;font-weight:500;color:#3d5480">Nome fantasia</span><input value="{{ f.fantasia }}" onChange="{{ set.fantasia }}" placeholder="Como é conhecido" style="height:44px;padding:0 14px;border:1px solid #dbe2ee;border-radius:8px;font-size:14px;color:#16264a;outline:none" style-focus="border-color:#8fa6cf;box-shadow:0 0 0 3px rgba(143,166,207,.18)"></label>
+<label style="display:flex;flex-direction:column;gap:7px"><span style="font-size:12.5px;font-weight:500;color:#3d5480">Tipo</span><select value="{{ f.tipo }}" onChange="{{ set.tipo }}" style="height:44px;padding:0 12px;border:1px solid #dbe2ee;border-radius:8px;font-size:14px;color:#16264a;background:#fff;outline:none" style-focus="border-color:#8fa6cf"><option>Pessoa jurídica</option><option>Pessoa física</option><option>MEI</option></select></label>
+
+<label style="display:flex;flex-direction:column;gap:7px"><span style="font-size:12.5px;font-weight:500;color:#3d5480">CNPJ / CPF <span style="color:#c0563a">*</span></span><input value="{{ f.cnpj }}" onChange="{{ set.cnpj }}" placeholder="00.000.000/0000-00" style="height:44px;padding:0 14px;border:1px solid #dbe2ee;border-radius:8px;font-size:14px;color:#16264a;outline:none;font-variant-numeric:tabular-nums" style-focus="border-color:#8fa6cf;box-shadow:0 0 0 3px rgba(143,166,207,.18)"></label>
+<label style="display:flex;flex-direction:column;gap:7px"><span style="font-size:12.5px;font-weight:500;color:#3d5480">Inscrição estadual</span><input value="{{ f.ie }}" onChange="{{ set.ie }}" placeholder="Isento ou número" style="height:44px;padding:0 14px;border:1px solid #dbe2ee;border-radius:8px;font-size:14px;color:#16264a;outline:none" style-focus="border-color:#8fa6cf;box-shadow:0 0 0 3px rgba(143,166,207,.18)"></label>
+<label style="display:flex;flex-direction:column;gap:7px"><span style="font-size:12.5px;font-weight:500;color:#3d5480">Categoria <span style="color:#c0563a">*</span></span><select value="{{ f.categoria }}" onChange="{{ set.categoria }}" style="height:44px;padding:0 12px;border:1px solid #dbe2ee;border-radius:8px;font-size:14px;color:#16264a;background:#fff;outline:none" style-focus="border-color:#8fa6cf"><option>Materiais</option><option>Equipamentos</option><option>Serviços</option><option>Logística</option><option>Tecnologia</option></select></label>
+</div>
+
+<div style="height:1px;background:#eef1f7;margin:28px 0 22px"></div>
+<div style="font-size:11px;font-weight:600;letter-spacing:1.1px;color:#7d8ca8;margin-bottom:16px">ENDEREÇO</div>
+<div style="display:grid;grid-template-columns:.7fr 2fr .6fr 1.2fr;gap:18px 20px">
+<label style="display:flex;flex-direction:column;gap:7px"><span style="font-size:12.5px;font-weight:500;color:#3d5480">CEP</span><input value="{{ f.cep }}" onChange="{{ set.cep }}" placeholder="00000-000" style="height:44px;padding:0 14px;border:1px solid #dbe2ee;border-radius:8px;font-size:14px;color:#16264a;outline:none" style-focus="border-color:#8fa6cf;box-shadow:0 0 0 3px rgba(143,166,207,.18)"></label>
+<label style="display:flex;flex-direction:column;gap:7px"><span style="font-size:12.5px;font-weight:500;color:#3d5480">Logradouro</span><input value="{{ f.rua }}" onChange="{{ set.rua }}" placeholder="Rua, avenida" style="height:44px;padding:0 14px;border:1px solid #dbe2ee;border-radius:8px;font-size:14px;color:#16264a;outline:none" style-focus="border-color:#8fa6cf;box-shadow:0 0 0 3px rgba(143,166,207,.18)"></label>
+<label style="display:flex;flex-direction:column;gap:7px"><span style="font-size:12.5px;font-weight:500;color:#3d5480">Número</span><input value="{{ f.numero }}" onChange="{{ set.numero }}" placeholder="000" style="height:44px;padding:0 14px;border:1px solid #dbe2ee;border-radius:8px;font-size:14px;color:#16264a;outline:none" style-focus="border-color:#8fa6cf;box-shadow:0 0 0 3px rgba(143,166,207,.18)"></label>
+<label style="display:flex;flex-direction:column;gap:7px"><span style="font-size:12.5px;font-weight:500;color:#3d5480">Complemento</span><input value="{{ f.compl }}" onChange="{{ set.compl }}" placeholder="Sala, galpão" style="height:44px;padding:0 14px;border:1px solid #dbe2ee;border-radius:8px;font-size:14px;color:#16264a;outline:none" style-focus="border-color:#8fa6cf;box-shadow:0 0 0 3px rgba(143,166,207,.18)"></label>
+
+<label style="display:flex;flex-direction:column;gap:7px;grid-column:span 2"><span style="font-size:12.5px;font-weight:500;color:#3d5480">Bairro</span><input value="{{ f.bairro }}" onChange="{{ set.bairro }}" placeholder="Bairro" style="height:44px;padding:0 14px;border:1px solid #dbe2ee;border-radius:8px;font-size:14px;color:#16264a;outline:none" style-focus="border-color:#8fa6cf;box-shadow:0 0 0 3px rgba(143,166,207,.18)"></label>
+<label style="display:flex;flex-direction:column;gap:7px"><span style="font-size:12.5px;font-weight:500;color:#3d5480">UF</span><select value="{{ f.uf }}" onChange="{{ set.uf }}" style="height:44px;padding:0 12px;border:1px solid #dbe2ee;border-radius:8px;font-size:14px;color:#16264a;background:#fff;outline:none" style-focus="border-color:#8fa6cf"><option>SP</option><option>RJ</option><option>MG</option><option>PR</option><option>RS</option><option>SC</option><option>BA</option><option>GO</option></select></label>
+<label style="display:flex;flex-direction:column;gap:7px"><span style="font-size:12.5px;font-weight:500;color:#3d5480">Cidade</span><input value="{{ f.cidade }}" onChange="{{ set.cidade }}" placeholder="Cidade" style="height:44px;padding:0 14px;border:1px solid #dbe2ee;border-radius:8px;font-size:14px;color:#16264a;outline:none" style-focus="border-color:#8fa6cf;box-shadow:0 0 0 3px rgba(143,166,207,.18)"></label>
+</div>
+
+<div style="height:1px;background:#eef1f7;margin:28px 0 22px"></div>
+<div style="font-size:11px;font-weight:600;letter-spacing:1.1px;color:#7d8ca8;margin-bottom:16px">CONTATO</div>
+<div style="display:grid;grid-template-columns:1fr 1fr 1fr 1fr;gap:18px 20px">
+<label style="display:flex;flex-direction:column;gap:7px"><span style="font-size:12.5px;font-weight:500;color:#3d5480">Responsável</span><input value="{{ f.contato }}" onChange="{{ set.contato }}" placeholder="Nome do contato" style="height:44px;padding:0 14px;border:1px solid #dbe2ee;border-radius:8px;font-size:14px;color:#16264a;outline:none" style-focus="border-color:#8fa6cf;box-shadow:0 0 0 3px rgba(143,166,207,.18)"></label>
+<label style="display:flex;flex-direction:column;gap:7px"><span style="font-size:12.5px;font-weight:500;color:#3d5480">E-mail <span style="color:#c0563a">*</span></span><input value="{{ f.email }}" onChange="{{ set.email }}" placeholder="compras@empresa.com.br" style="height:44px;padding:0 14px;border:1px solid #dbe2ee;border-radius:8px;font-size:14px;color:#16264a;outline:none" style-focus="border-color:#8fa6cf;box-shadow:0 0 0 3px rgba(143,166,207,.18)"></label>
+<label style="display:flex;flex-direction:column;gap:7px"><span style="font-size:12.5px;font-weight:500;color:#3d5480">Telefone</span><input value="{{ f.telefone }}" onChange="{{ set.telefone }}" placeholder="(00) 0000-0000" style="height:44px;padding:0 14px;border:1px solid #dbe2ee;border-radius:8px;font-size:14px;color:#16264a;outline:none" style-focus="border-color:#8fa6cf;box-shadow:0 0 0 3px rgba(143,166,207,.18)"></label>
+<label style="display:flex;flex-direction:column;gap:7px"><span style="font-size:12.5px;font-weight:500;color:#3d5480">Celular / WhatsApp</span><input value="{{ f.celular }}" onChange="{{ set.celular }}" placeholder="(00) 00000-0000" style="height:44px;padding:0 14px;border:1px solid #dbe2ee;border-radius:8px;font-size:14px;color:#16264a;outline:none" style-focus="border-color:#8fa6cf;box-shadow:0 0 0 3px rgba(143,166,207,.18)"></label>
+</div>
+
+<div style="height:1px;background:#eef1f7;margin:28px 0 22px"></div>
+<div style="font-size:11px;font-weight:600;letter-spacing:1.1px;color:#7d8ca8;margin-bottom:16px">COMERCIAL E BANCÁRIO</div>
+<div style="display:grid;grid-template-columns:1fr 1fr 1fr 1fr;gap:18px 20px">
+<label style="display:flex;flex-direction:column;gap:7px"><span style="font-size:12.5px;font-weight:500;color:#3d5480">Condição de pagamento</span><select value="{{ f.pagamento }}" onChange="{{ set.pagamento }}" style="height:44px;padding:0 12px;border:1px solid #dbe2ee;border-radius:8px;font-size:14px;color:#16264a;background:#fff;outline:none" style-focus="border-color:#8fa6cf"><option>À vista</option><option>7 dias</option><option>14/28 dias</option><option>30 dias</option><option>30/60/90 dias</option></select></label>
+<label style="display:flex;flex-direction:column;gap:7px"><span style="font-size:12.5px;font-weight:500;color:#3d5480">Prazo de entrega (dias)</span><input value="{{ f.prazo }}" onChange="{{ set.prazo }}" placeholder="Ex.: 10" style="height:44px;padding:0 14px;border:1px solid #dbe2ee;border-radius:8px;font-size:14px;color:#16264a;outline:none" style-focus="border-color:#8fa6cf;box-shadow:0 0 0 3px rgba(143,166,207,.18)"></label>
+<label style="display:flex;flex-direction:column;gap:7px"><span style="font-size:12.5px;font-weight:500;color:#3d5480">Banco / agência / conta</span><input value="{{ f.banco }}" onChange="{{ set.banco }}" placeholder="000 / 0000 / 00000-0" style="height:44px;padding:0 14px;border:1px solid #dbe2ee;border-radius:8px;font-size:14px;color:#16264a;outline:none" style-focus="border-color:#8fa6cf;box-shadow:0 0 0 3px rgba(143,166,207,.18)"></label>
+<label style="display:flex;flex-direction:column;gap:7px"><span style="font-size:12.5px;font-weight:500;color:#3d5480">Chave PIX</span><input value="{{ f.pix }}" onChange="{{ set.pix }}" placeholder="CNPJ, e-mail ou aleatória" style="height:44px;padding:0 14px;border:1px solid #dbe2ee;border-radius:8px;font-size:14px;color:#16264a;outline:none" style-focus="border-color:#8fa6cf;box-shadow:0 0 0 3px rgba(143,166,207,.18)"></label>
+</div>
+
+<div style="margin-top:22px;display:grid;grid-template-columns:1.6fr 1fr;gap:20px;align-items:start">
+<label style="display:flex;flex-direction:column;gap:7px"><span style="font-size:12.5px;font-weight:500;color:#3d5480">Observações</span><textarea value="{{ f.obs }}" onChange="{{ set.obs }}" placeholder="Restrições de entrega, histórico, contatos alternativos..." style="min-height:96px;padding:12px 14px;border:1px solid #dbe2ee;border-radius:8px;font-size:14px;line-height:1.55;color:#16264a;outline:none;resize:vertical" style-focus="border-color:#8fa6cf;box-shadow:0 0 0 3px rgba(143,166,207,.18)"></textarea></label>
+<div style="background:#f7f9fd;border:1px solid #e9eff9;border-radius:10px;padding:16px 18px">
+<div style="font-size:12.5px;font-weight:600;color:#3d5480;margin-bottom:12px">Situação do fornecedor</div>
+<div style="display:flex;flex-direction:column;gap:9px">
+<sc-for list="{{ situacaoOpts }}" as="opt" hint-placeholder-count="3">
+<button onClick="{{ opt.pick }}" style="{{ opt.style }}">{{ opt.label }}</button>
+</sc-for>
+</div>
+</div>
+</div>
+</div>
+
+<div style="padding:20px 32px;border-top:1px solid #eef1f7;background:#fcfdff;display:flex;align-items:center;justify-content:space-between;gap:20px">
+<div style="font-size:12.5px;color:#8a99b5">Campos com <span style="color:#c0563a">*</span> são obrigatórios</div>
+<div style="display:flex;gap:12px">
+<button onClick="{{ closeModal }}" style="height:44px;padding:0 20px;background:#fff;border:1px solid #dbe2ee;border-radius:9px;font-size:14px;font-weight:500;font-family:Poppins,sans-serif;color:#3d5480;cursor:pointer" style-hover="border-color:#8fa6cf;color:#16264a">Cancelar</button>
+<button onClick="{{ save }}" style="height:44px;padding:0 26px;background:#16264a;color:#fff;border:none;border-radius:9px;font-size:14px;font-weight:600;font-family:Poppins,sans-serif;cursor:pointer;box-shadow:0 6px 16px rgba(22,38,74,.22)" style-hover="background:#1f3565">{{ saveLabel }}</button>
+</div>
+</div>
+</div>
+</div>
+</sc-if>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props="{}">
+const SEED = [
+  {id:1,nome:"Marucci Distribuidora de Insumos Ltda",fantasia:"Marucci Insumos",cnpj:"12.345.678/0001-90",cidade:"São Paulo / SP",categoria:"Materiais",situacao:"Ativo",contato:"Renata Alves",email:"compras@marucci.com.br",telefone:"(11) 3555-2100",uf:"SP"},
+  {id:2,nome:"Ferragens Vale do Tietê S.A.",fantasia:"Vale Ferragens",cnpj:"98.765.432/0001-11",cidade:"Campinas / SP",categoria:"Equipamentos",situacao:"Ativo",contato:"Jorge Prado",email:"jorge@valeferragens.com",telefone:"(19) 3232-8800",uf:"SP"},
+  {id:3,nome:"Transporte Rota Sul Eireli",fantasia:"Rota Sul",cnpj:"45.112.908/0001-45",cidade:"Curitiba / PR",categoria:"Logística",situacao:"Documentação vencida",contato:"Ana Beatriz Lima",email:"operacao@rotasul.com.br",telefone:"(41) 3078-4410",uf:"PR"},
+  {id:4,nome:"NovaTec Soluções em TI Ltda",fantasia:"NovaTec",cnpj:"22.908.771/0001-03",cidade:"Belo Horizonte / MG",categoria:"Tecnologia",situacao:"Ativo",contato:"Diego Muniz",email:"contratos@novatec.io",telefone:"(31) 3444-1290",uf:"MG"},
+  {id:5,nome:"Serviços Prediais Aurora Ltda",fantasia:"Aurora Facilities",cnpj:"31.554.220/0001-77",cidade:"Santos / SP",categoria:"Serviços",situacao:"Em análise",contato:"Marcos Ferreira",email:"comercial@aurorafm.com.br",telefone:"(13) 3221-6070",uf:"SP"},
+  {id:6,nome:"Embalagens Litoral Norte Ltda",fantasia:"Litoral Embalagens",cnpj:"77.201.664/0001-28",cidade:"Rio de Janeiro / RJ",categoria:"Materiais",situacao:"Inativo",contato:"Paula Ribeiro",email:"vendas@litoralemb.com.br",telefone:"(21) 2555-3390",uf:"RJ"}
+];
+
+const BLANK = {nome:"",fantasia:"",tipo:"Pessoa jurídica",cnpj:"",ie:"",categoria:"Materiais",cep:"",rua:"",numero:"",compl:"",bairro:"",uf:"SP",cidade:"",contato:"",email:"",telefone:"",celular:"",pagamento:"30 dias",prazo:"",banco:"",pix:"",obs:"",situacao:"Ativo"};
+
+const FIELDS = Object.keys(BLANK);
+
+class Component extends DCLogic {
+  state = {items:SEED, query:"", size:10, page:1, modalOpen:false, editingId:null, form:{...BLANK}, menuId:null};
+
+  componentDidMount() {
+    this._close = e => { if (!e.target.closest("[data-row-menu]")) this.setState({menuId:null}); };
+    document.addEventListener("click", this._close);
+  }
+  componentWillUnmount() { document.removeEventListener("click", this._close); }
+
+  filtered() {
+    const q = this.state.query.trim().toLowerCase();
+    if (!q) return this.state.items;
+    return this.state.items.filter(i => (i.nome+i.fantasia+i.cnpj+i.categoria+i.cidade).toLowerCase().includes(q));
+  }
+
+  badge(s) {
+    const map = {
+      "Ativo": ["#e8f4ec","#1f6b40"],
+      "Em análise": ["#fdf3e3","#9a6a15"],
+      "Inativo": ["#eef1f7","#5b7099"],
+      "Documentação vencida": ["#fdeceb","#b8402c"]
+    };
+    const [bg,fg] = map[s] || map["Inativo"];
+    return `display:inline-block;padding:5px 11px;border-radius:20px;background:${bg};color:${fg};font-size:11.5px;font-weight:600;white-space:nowrap`;
+  }
+
+  renderVals() {
+    const list = this.filtered();
+    const {size, page} = this.state;
+    const pageCount = Math.max(1, Math.ceil(list.length / size));
+    const p = Math.min(page, pageCount);
+    const start = (p - 1) * size;
+    const slice = list.slice(start, start + size);
+
+    const set = {};
+    FIELDS.forEach(k => { set[k] = e => { const v = e.target.value; this.setState(s => ({form:{...s.form,[k]:v}})); }; });
+
+    const rows = slice.map((it, i) => ({
+      ...it,
+      rowStyle: `display:grid;grid-template-columns:2.4fr 1.3fr 1.25fr 1.5fr 1fr .9fr;align-items:center;gap:16px;padding:16px 24px;border-bottom:1px solid #f2f5fa;background:${it.situacao === "Documentação vencida" ? "#fdf6f5" : (i % 2 ? "#fcfdff" : "#fff")}`,
+      badgeStyle: this.badge(it.situacao),
+      menuOpen: this.state.menuId === it.id,
+      menuBtnStyle: `display:flex;align-items:center;gap:7px;height:36px;padding:0 14px;background:${this.state.menuId===it.id?"#f6f9ff":"#fff"};border:1px solid ${this.state.menuId===it.id?"#8fa6cf":"#dbe2ee"};border-radius:7px;font-size:13px;font-weight:500;font-family:Poppins,sans-serif;color:#16264a;cursor:pointer`,
+      toggleMenu: e => { e.stopPropagation(); this.setState(s => ({menuId: s.menuId === it.id ? null : it.id})); },
+      edit: e => { if (e) e.stopPropagation(); this.setState({menuId:null, modalOpen:true, editingId:it.id, form:{...BLANK, ...it}}); },
+      remove: e => { if (e) e.stopPropagation(); this.setState(s => ({menuId:null, items: s.items.filter(x => x.id !== it.id)})); }
+    }));
+
+    const pageSizes = [10,25,50].map(n => ({
+      label: String(n),
+      pick: () => this.setState({size:n, page:1}),
+      style: `width:42px;height:34px;border:none;border-left:${n===10?"none":"1px solid #dbe2ee"};background:${n===this.state.size?"#16264a":"#fff"};color:${n===this.state.size?"#fff":"#5b7099"};font-size:13px;font-weight:${n===this.state.size?600:500};font-family:Poppins,sans-serif;cursor:pointer`
+    }));
+
+    const situacaoOpts = ["Ativo","Em análise","Inativo","Documentação vencida"].map(s => {
+      const on = this.state.form.situacao === s;
+      return {
+        label: s,
+        pick: () => this.setState(st => ({form:{...st.form, situacao:s}})),
+        style: `text-align:left;padding:9px 12px;border:1px solid ${on?"#16264a":"#dbe2ee"};background:${on?"#16264a":"#fff"};color:${on?"#fff":"#3d5480"};border-radius:8px;font-size:13px;font-weight:500;font-family:Poppins,sans-serif;cursor:pointer`
+      };
+    });
+
+    return {
+      rows, pageSizes, situacaoOpts,
+      isEmpty: list.length === 0,
+      query: this.state.query,
+      onQuery: e => this.setState({query:e.target.value, page:1}),
+      total: list.length,
+      shownFrom: list.length ? start + 1 : 0,
+      shownTo: start + slice.length,
+      page: p, pageCount,
+      prev: () => this.setState(s => ({page: Math.max(1, s.page - 1)})),
+      next: () => this.setState(s => ({page: Math.min(pageCount, s.page + 1)})),
+      modalOpen: this.state.modalOpen,
+      modalKicker: this.state.editingId ? "EDITAR FORNECEDOR" : "NOVO FORNECEDOR",
+      modalTitle: this.state.editingId ? this.state.form.nome : "Cadastrar fornecedor",
+      saveLabel: this.state.editingId ? "Salvar alterações" : "Cadastrar fornecedor",
+      f: this.state.form,
+      set,
+      openNew: () => this.setState({modalOpen:true, editingId:null, form:{...BLANK}}),
+      closeModal: () => this.setState({modalOpen:false}),
+      save: () => this.setState(s => {
+        const form = s.form;
+        if (s.editingId) {
+          return {modalOpen:false, items: s.items.map(i => i.id === s.editingId ? {...i, ...form} : i)};
+        }
+        const cidade = form.cidade ? `${form.cidade} / ${form.uf}` : "—";
+        return {modalOpen:false, items:[{...form, id:Date.now(), cidade, nome: form.nome || "Fornecedor sem nome"}, ...s.items]};
+      })
+    };
+  }
+}
+</script>
+</body>
+</html>
