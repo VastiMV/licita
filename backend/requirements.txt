@@ -22,6 +22,12 @@ django-celery-beat==2.9.0
 # e validada no protótipo (branches claude/tenta-de-novo-xu2sxb).
 httpx==0.28.1
 
-# Leitura do XLSX de notas CAPAG do Tesouro Nacional — apps/capag/sync.py
-# (não tem API, só arquivo estático — ver docs/DOMINIO.md).
+# Leitura do XLSX de notas CAPAG do Tesouro Nacional (apps/capag/sync.py —
+# não tem API, só arquivo estático, ver docs/DOMINIO.md) e escrita da
+# planilha de proposta do Cotador (apps/cotador/planilha.py).
 openpyxl==3.1.5
+
+# Exigida pelo openpyxl para embutir imagem numa planilha — é o logo no
+# cabeçalho da proposta exportada pelo Cotador. Sem ela o openpyxl levanta
+# ImportError na hora de inserir a imagem (não é opcional nesse caminho).
+Pillow==11.3.0

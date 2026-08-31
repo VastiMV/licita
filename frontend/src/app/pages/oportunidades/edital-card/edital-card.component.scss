@@ -406,6 +406,76 @@
   flex: none;
 }
 
+// -- Botão "Cotar" --
+// Abre o Cotador com os itens deste edital. Vem antes de "Salvar
+// oportunidade" na coluna porque é a ação que a equipe faz mais: cotar já
+// salva a oportunidade se a cotação for salva (ver `CotadorModalComponent`).
+// Navy cheio, para se distinguir do dourado "Abrir na plataforma" (que sai
+// do app) e do branco "Salvar" (que é secundário).
+
+.btn-cotar {
+  display: flex;
+  align-items: center;
+  gap: 11px;
+  height: 54px;
+  padding: 0 13px;
+  font: inherit;
+  color: var(--ec-superficie);
+  background: var(--ec-navy-botao);
+  border: 1px solid var(--ec-navy-sombra);
+  border-radius: 10px;
+  box-shadow: 0 2px 0 var(--ec-navy-sombra);
+  cursor: pointer;
+
+  &:hover {
+    background: var(--ec-navy-botao-hover);
+  }
+}
+
+.btn-cotar-chip {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 30px;
+  height: 30px;
+  flex: none;
+  border-radius: 7px;
+  background: rgba(255, 255, 255, 0.14);
+
+  app-icon {
+    width: 17px;
+    height: 17px;
+  }
+}
+
+.btn-cotar-texto {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  text-align: left;
+}
+
+.btn-cotar-titulo {
+  font-weight: 800;
+  font-size: 12.5px;
+  line-height: 1.2;
+}
+
+.btn-cotar-meta {
+  font-weight: 600;
+  font-size: 10.5px;
+  line-height: 1.2;
+  color: var(--ec-texto-sobre-navy);
+  margin-top: 2px;
+}
+
+.btn-cotar-icone {
+  width: 16px;
+  height: 16px;
+  flex: none;
+}
+
 // -- Botão "Salvar oportunidade" --
 // Persistência ainda não existe — ver o comentário no componente e o módulo
 // "Minhas oportunidades" especificado em docs/DOMINIO.md.
@@ -462,7 +532,6 @@
     height: 16px;
   }
 }
-
 
 // -- Botão "Baixar edital" --
 
@@ -1052,6 +1121,7 @@
   }
 
   .btn-plataforma,
+  .btn-cotar,
   .btn-salvar,
   .btn-salva {
     height: 52px;
@@ -1063,6 +1133,7 @@
     padding: 0 14px;
   }
 
+  .btn-cotar,
   .btn-salvar,
   .btn-salva {
     margin-top: 9px;
@@ -1071,7 +1142,6 @@
   .btn-plataforma-titulo {
     font-size: 13.5px;
   }
-
 
   .btn-baixar {
     height: 52px;
@@ -1106,4 +1176,3 @@
     display: block;
   }
 }
-

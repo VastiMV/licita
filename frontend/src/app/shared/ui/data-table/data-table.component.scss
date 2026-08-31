@@ -388,3 +388,13 @@ tbody tr.destacada:hover td {
     justify-content: space-between;
   }
 }
+
+// Segunda linha de uma célula (`ColunaTabela.secundario`) — o nome fantasia
+// embaixo da razão social, por exemplo. Bloco próprio para cair abaixo do
+// valor sem depender de quebra de texto.
+.celula-secundaria {
+  display: block;
+  margin-top: 0.15rem;
+  font-size: var(--font-size-xs);
+  color: var(--color-muted);
+}

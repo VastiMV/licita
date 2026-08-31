@@ -42,11 +42,20 @@ export class EditalCardComponent {
    * oportunidade que, por definição, já está salva. */
   readonly podeSalvar = input(true);
 
+  /** Desliga o botão de cotar onde ele não faz sentido — dentro do modal de
+   * visualização de uma salva, que já tem "Abrir cotação" no menu da
+   * tabela. Abrir um modal por cima do outro não ajudaria ninguém. */
+  readonly podeCotar = input(true);
+
   /** A página é quem confirma e persiste — o card só avisa que pediram. */
   readonly salvar = output<void>();
 
   /** A página é quem sabe abrir arquivo (`window.open`) — o card só avisa. */
   readonly baixarEdital = output<void>();
+
+  /** Abrir o Cotador para este edital. A página é quem abre o modal — o
+   * card não conhece o Cotador, só avisa que pediram. */
+  readonly cotar = output<void>();
 
   protected readonly abaAtiva = signal<Aba>('itens');
 

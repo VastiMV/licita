@@ -1,0 +1,160 @@
+@use 'field' as *;
+@use 'mixins' as *;
+
+.kicker {
+  @include uppercase-label;
+  margin: 0 0 var(--space-4);
+  color: var(--color-blue);
+}
+
+section {
+  margin-bottom: var(--space-5);
+
+  + section {
+    padding-top: var(--space-5);
+    border-top: 1px solid var(--color-border);
+  }
+}
+
+h3 {
+  @include uppercase-label;
+  margin: 0 0 var(--space-3);
+}
+
+.grade {
+  display: grid;
+  gap: var(--space-3) var(--space-4);
+  align-items: start;
+}
+
+// As proporções vêm do handoff (docs/Mockups/fornecedores): a razão social
+// precisa de mais espaço que o tipo, o logradouro mais que o número.
+.grade-empresa {
+  grid-template-columns: 1.4fr 1fr 0.8fr;
+}
+
+.grade-endereco {
+  grid-template-columns: 0.7fr 2fr 0.6fr 1.2fr;
+}
+
+.grade-quatro {
+  grid-template-columns: repeat(4, 1fr);
+}
+
+.col-larga {
+  grid-column: span 2;
+}
+
+.rodape-formulario {
+  display: grid;
+  grid-template-columns: 1.6fr 1fr;
+  gap: var(--space-4);
+  align-items: start;
+  margin-top: var(--space-2);
+}
+
+.field {
+  @include field-wrapper;
+}
+
+.field-label {
+  @include field-label;
+}
+
+textarea {
+  @include field-control;
+  min-height: 96px;
+  line-height: var(--line-height-base);
+  resize: vertical;
+}
+
+.painel-situacao {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2);
+  margin: 0;
+  padding: var(--space-4);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-md);
+  background: var(--color-bg);
+
+  legend {
+    @include uppercase-label;
+    padding: 0;
+  }
+}
+
+.opcao-situacao {
+  appearance: none;
+  text-align: left;
+  padding: var(--space-2) var(--space-3);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-sm);
+  background: var(--color-surface);
+  color: var(--color-fg);
+  font: inherit;
+  font-size: var(--font-size-sm);
+  cursor: pointer;
+  transition:
+    border-color var(--transition-fast),
+    background var(--transition-fast);
+
+  &:hover {
+    border-color: var(--color-blue);
+  }
+
+  &.escolhida {
+    background: var(--color-navy);
+    border-color: var(--color-navy);
+    color: #fff;
+    font-weight: var(--font-weight-semibold);
+  }
+
+  &:focus-visible {
+    @include focus-ring;
+  }
+}
+
+.ajuda-situacao {
+  margin: var(--space-1) 0 0;
+  font-size: var(--font-size-xs);
+  color: var(--color-muted);
+}
+
+// Empurra a legenda dos obrigatórios para a esquerda do rodapé, que é
+// `justify-content: flex-end` por padrão (ver `modal-shell`).
+.obrigatorios {
+  margin-right: auto;
+  align-self: center;
+  font-size: var(--font-size-xs);
+  color: var(--color-muted);
+
+  em {
+    font-style: normal;
+    color: var(--color-danger);
+  }
+}
+
+@media (max-width: 900px) {
+  .grade-empresa,
+  .grade-endereco,
+  .grade-quatro {
+    grid-template-columns: repeat(2, 1fr);
+  }
+
+  .rodape-formulario {
+    grid-template-columns: 1fr;
+  }
+}
+
+@media (max-width: 560px) {
+  .grade-empresa,
+  .grade-endereco,
+  .grade-quatro {
+    grid-template-columns: 1fr;
+  }
+
+  .col-larga {
+    grid-column: auto;
+  }
+}

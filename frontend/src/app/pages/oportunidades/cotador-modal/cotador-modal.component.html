@@ -1,0 +1,548 @@
+<app-modal-shell titulo="Cotador" largura="cheia" (fechar)="fechar()">
+  <div class="cotador">
+    <!-- ---------- Cabeçalho: título da cotação + composição do custo ---------- -->
+    <header class="topo">
+      <div class="topo-identidade">
+        <input
+          class="campo-titulo"
+          [value]="titulo()"
+          (input)="titulo.set($any($event.target).value)"
+          placeholder="Título da cotação"
+          aria-label="Título da cotação"
+        />
+        <p class="topo-sub">
+          {{
+            cotacaoId() === null
+              ? 'Ainda não salva — salvar a cotação também salva a oportunidade.'
+              : 'Cotação salva. Salvar de novo substitui a versão anterior.'
+          }}
+        </p>
+      </div>
+      <button
+        type="button"
+        class="botao-ajuda"
+        [attr.aria-expanded]="mostrarAjuda()"
+        (click)="mostrarAjuda.set(!mostrarAjuda())"
+      >
+        ?
+      </button>
+    </header>
+
+    @if (mostrarAjuda()) {
+      <section class="ajuda">
+        <h3>Como usar o cotador</h3>
+        <ol>
+          <li>Os itens já vêm da oportunidade consultada — ajuste o que precisar.</li>
+          <li>
+            Abra um item e escolha o fornecedor do cadastro. O mais barato aparece em verde; o
+            marcado é o que entra no cálculo.
+          </li>
+          <li>
+            Cada item tem duas margens: a <strong>mínima</strong> define o preço de reserva (o piso
+            que ainda compensa) e a <strong>máxima</strong> é o preço que você propõe.
+          </li>
+          <li>Tributo diferente num item? Use "imposto próprio" — os demais seguem o padrão.</li>
+          <li>"Exportar" gera a proposta em Excel, com as fórmulas abertas para conferência.</li>
+        </ol>
+        <p class="ajuda-formula">
+          Preço = custo × (1 + transporte + garantia + margem) ÷ (1 − tributos)
+        </p>
+        <p class="ajuda-nota">
+          Transporte, garantia e lucro incidem sobre o <strong>custo</strong>; os tributos incidem
+          sobre a <strong>venda</strong>. Dividir por (1 − tributos) embute o imposto que vai cair
+          sobre o próprio preço.
+        </p>
+      </section>
+    }
+
+    <div class="painel-totais">
+      <div class="cartao-total">
+        <span class="cartao-rotulo">Itens</span>
+        <span class="cartao-valor">{{ totais().itens }}</span>
+        <span class="cartao-apoio">{{ quantidade(totais().unidades) }} unidades</span>
+      </div>
+      <div class="cartao-total">
+        <span class="cartao-rotulo">Custo dos produtos</span>
+        <span class="cartao-valor">{{ moeda(totais().custoProdutos) }}</span>
+        <span class="cartao-apoio">sem frete e extras</span>
+      </div>
+      <div class="cartao-total">
+        <span class="cartao-rotulo">Capital necessário</span>
+        <span class="cartao-valor">{{ moeda(totais().capital) }}</span>
+        <span class="cartao-apoio">com frete e extras</span>
+      </div>
+      <div class="cartao-total">
+        <span class="cartao-rotulo">Transporte</span>
+        <span class="cartao-valor">{{ moeda(totais().transporte) }}</span>
+        <span class="cartao-apoio">
+          {{ percentual(padroes().transporte) }} do custo
+          @if (totais().garantia > 0) {
+            · garantia {{ moeda(totais().garantia) }}
+          }
+        </span>
+      </div>
+      <div class="cartao-total">
+        <span class="cartao-rotulo">Impostos embutidos</span>
+        <span class="cartao-valor">{{ moeda(totais().impostos) }}</span>
+        <span class="cartao-apoio">{{ percentual(impostosPercentual()) }} da venda</span>
+      </div>
+      <div class="cartao-total">
+        <span class="cartao-rotulo sucesso">Margem média</span>
+        <span class="cartao-valor sucesso">{{ percentual(totais().margemMedia) }}</span>
+        <span class="cartao-apoio">lucro sobre o capital</span>
+      </div>
+    </div>
+
+    <!-- ---------- Lista de itens ---------- -->
+    @if (carregando()) {
+      <p class="estado">
+        <app-icon name="spinner" class="estado-spinner" />
+        Carregando a cotação…
+      </p>
+    } @else {
+      <div class="lista-cabecalho">
+        <div>
+          <h3>Itens da cotação</h3>
+          <span class="dica">clique num item para ver fornecedores, impostos e o cálculo</span>
+        </div>
+        @if (temEconomia()) {
+          <button type="button" class="botao-economia" (click)="aplicarMelhores()">
+            Usar o fornecedor mais barato em tudo · economiza {{ moeda(totais().economia) }}
+          </button>
+        }
+      </div>
+
+      <div class="lista">
+        @for (item of itens(); track item.id; let i = $index) {
+          <article class="item" [class.incompleto]="calculoDe(i).incompleto">
+            <div class="item-linha">
+              <span class="item-indice">{{ indice(i) }}</span>
+
+              <div class="item-descricao">
+                <input
+                  [value]="item.descricao"
+                  (input)="alterarDescricao(item, $any($event.target).value)"
+                  (keydown.enter)="adicionarItem(item.id)"
+                  placeholder="ex.: Papel A4 75g — resma"
+                  [attr.aria-label]="'Descrição do item ' + indice(i)"
+                />
+                <div class="chips">
+                  <button type="button" class="chip chip-fornecedor" (click)="alternar(item)">
+                    <span class="ponto"></span>{{ rotuloDoFornecedor(item) }}
+                  </button>
+                  @if (calculoDe(i).economiaUnitaria > 0) {
+                    <button type="button" class="chip chip-economia" (click)="usarMelhor(item)">
+                      {{ moeda(calculoDe(i).economiaUnitaria) }} mais barato em
+                      {{ nomeDaOferta(calculoDe(i).melhor!) || 'outro fornecedor' }}
+                    </button>
+                  }
+                  @if (temImpostoProprio(item)) {
+                    <span class="chip chip-imposto">impostos próprios</span>
+                  }
+                  @if (calculoDe(i).incompleto) {
+                    <span class="chip chip-pendencia">falta descrição ou preço</span>
+                  }
+                </div>
+              </div>
+
+              <div class="item-metricas">
+                <label class="metrica metrica-campo">
+                  <span class="metrica-rotulo">Qtd.</span>
+                  <input
+                    inputmode="decimal"
+                    [value]="quantidade(item.quantidade)"
+                    (input)="alterarQuantidade(item, $any($event.target).value)"
+                  />
+                </label>
+                <div class="metrica">
+                  <span class="metrica-rotulo">Custo un.</span>
+                  <span class="metrica-valor apagado">{{ moeda(calculoDe(i).custoUnitario) }}</span>
+                </div>
+                <div class="metrica">
+                  <span class="metrica-rotulo destaque">Preço un.</span>
+                  <span class="metrica-valor forte">
+                    {{ moeda(calculoDe(i).precoFinalUnitario) }}
+                  </span>
+                </div>
+                <div class="metrica">
+                  <span class="metrica-rotulo">Lucro</span>
+                  <span class="metrica-valor sucesso">
+                    {{ moeda(calculoDe(i).lucroTotal) }}
+                    <span class="metrica-nota">{{ percentual(calculoDe(i).margemMaxima) }}</span>
+                  </span>
+                </div>
+                <div class="metrica">
+                  <span class="metrica-rotulo">Total</span>
+                  <span class="metrica-valor">{{ moeda(calculoDe(i).precoFinalTotal) }}</span>
+                </div>
+
+                <div class="item-acoes">
+                  <button type="button" title="Duplicar item" (click)="duplicarItem(item)">
+                    <app-icon name="copiar" />
+                  </button>
+                  <button
+                    type="button"
+                    class="perigo"
+                    title="Remover item"
+                    (click)="removerItem(item)"
+                  >
+                    <app-icon name="trash" />
+                  </button>
+                  <button
+                    type="button"
+                    [title]="estaExpandido(item) ? 'Recolher' : 'Detalhes'"
+                    [attr.aria-expanded]="estaExpandido(item)"
+                    (click)="alternar(item)"
+                  >
+                    <app-icon [name]="estaExpandido(item) ? 'chevron-up' : 'chevron-down'" />
+                  </button>
+                </div>
+              </div>
+            </div>
+
+            @if (estaExpandido(item)) {
+              <div class="item-detalhe">
+                <!-- Coluna A: fornecedores -->
+                <section class="bloco-fornecedores">
+                  <div class="bloco-topo">
+                    <h4>Fornecedores</h4>
+                    <button type="button" class="botao-tracejado" (click)="adicionarOferta(item)">
+                      + fornecedor
+                    </button>
+                  </div>
+
+                  @for (oferta of item.ofertas; track oferta.id) {
+                    <div class="oferta" [class.escolhida]="item.escolhida === oferta.id">
+                      <div class="oferta-identidade">
+                        <input
+                          type="radio"
+                          [name]="'fornecedor-' + item.id"
+                          [checked]="item.escolhida === oferta.id"
+                          [attr.aria-label]="'Usar ' + (nomeDaOferta(oferta) || 'este fornecedor')"
+                          (change)="escolherOferta(item, oferta)"
+                        />
+                        <select
+                          [value]="oferta.fornecedorId ?? ''"
+                          (change)="vincularFornecedor(item, oferta, $any($event.target).value)"
+                          aria-label="Fornecedor do cadastro"
+                        >
+                          <option value="">Escolher fornecedor…</option>
+                          @for (fornecedor of fornecedores(); track fornecedor.id) {
+                            <option [value]="fornecedor.id">
+                              {{ fornecedor.nome }}
+                              @if (fornecedor.situacao !== 'ativo') {
+                                ({{ fornecedor.situacao_label }})
+                              }
+                            </option>
+                          }
+                        </select>
+                        <button
+                          type="button"
+                          class="icone"
+                          title="Cadastrar um fornecedor novo"
+                          (click)="cadastrarFornecedor(item, oferta)"
+                        >
+                          <app-icon name="plus" />
+                        </button>
+                        <button
+                          type="button"
+                          class="icone perigo"
+                          title="Remover fornecedor desta cotação"
+                          [disabled]="item.ofertas.length <= 1"
+                          (click)="removerOferta(item, oferta)"
+                        >
+                          <app-icon name="close" />
+                        </button>
+                      </div>
+
+                      <div class="oferta-custos">
+                        <label class="campo-numero">
+                          <span>Produto</span>
+                          <input
+                            inputmode="decimal"
+                            [value]="texto(oferta.custoProduto)"
+                            (input)="
+                              alterarCusto(item, oferta, 'custoProduto', $any($event.target).value)
+                            "
+                          />
+                        </label>
+                        <label class="campo-numero">
+                          <span>Frete</span>
+                          <input
+                            inputmode="decimal"
+                            [value]="texto(oferta.frete)"
+                            (input)="alterarCusto(item, oferta, 'frete', $any($event.target).value)"
+                          />
+                        </label>
+                        <label class="campo-numero">
+                          <span>Outros</span>
+                          <input
+                            inputmode="decimal"
+                            [value]="texto(oferta.outros)"
+                            (input)="
+                              alterarCusto(item, oferta, 'outros', $any($event.target).value)
+                            "
+                          />
+                        </label>
+                        <div class="campo-numero leitura">
+                          <span>Custo un.</span>
+                          <strong [class.sucesso]="eMelhor(item, oferta)">
+                            {{ custoDa(oferta) > 0 ? moeda(custoDa(oferta)) : '—' }}
+                          </strong>
+                        </div>
+                      </div>
+                    </div>
+                  }
+
+                  <p class="nota">
+                    O fornecedor marcado é o que entra no cálculo. O mais barato fica com o custo em
+                    verde.
+                  </p>
+                </section>
+
+                <!-- Coluna B: margem, memória de cálculo e imposto -->
+                <div class="bloco-lateral">
+                  <section class="cartao">
+                    <div class="cartao-topo">
+                      <h4>Margem deste item</h4>
+                      <span class="cartao-numero">
+                        {{ percentual(calculoDe(i).margemMinima) }} →
+                        {{ percentual(calculoDe(i).margemMaxima) }}
+                      </span>
+                    </div>
+
+                    <label class="slider">
+                      <span class="slider-rotulo alerta">Margem mínima</span>
+                      <input
+                        type="range"
+                        min="0"
+                        max="100"
+                        step="0.5"
+                        class="alerta"
+                        [value]="calculoDe(i).margemMinima"
+                        (input)="alterarMargemMinima(item, $any($event.target).value)"
+                      />
+                    </label>
+                    <label class="slider">
+                      <span class="slider-rotulo">Margem máxima (alvo)</span>
+                      <input
+                        type="range"
+                        min="0"
+                        max="100"
+                        step="0.5"
+                        [value]="calculoDe(i).margemMaxima"
+                        (input)="alterarMargemMaxima(item, $any($event.target).value)"
+                      />
+                    </label>
+
+                    <div class="reserva">
+                      <div>
+                        <span class="reserva-rotulo">Preço de reserva un.</span>
+                        <strong class="alerta">
+                          {{ moeda(calculoDe(i).precoReservaUnitario) }}
+                        </strong>
+                        <span class="reserva-nota">
+                          mínimo que compensa · {{ moeda(calculoDe(i).precoReservaTotal) }} no lote
+                        </span>
+                      </div>
+                      <div class="reserva-folga">
+                        <span class="reserva-rotulo">Folga p/ negociar</span>
+                        <strong class="sucesso">{{ moeda(calculoDe(i).folgaUnitaria) }}</strong>
+                        @if (calculoDe(i).noLimite) {
+                          <span class="reserva-alerta">no piso — não desça mais</span>
+                        }
+                      </div>
+                    </div>
+                  </section>
+
+                  <section class="cartao">
+                    <h4>Como chegamos no preço</h4>
+                    <div class="memoria">
+                      @for (degrau of calculoDe(i).memoria; track degrau.rotulo) {
+                        <div class="degrau" [class.forte]="degrau.forte">
+                          <span class="degrau-sinal">{{ degrau.sinal }}</span>
+                          <span class="degrau-rotulo">{{ degrau.rotulo }}</span>
+                          <span class="degrau-valor">{{ moeda(degrau.valor) }}</span>
+                        </div>
+                      }
+                    </div>
+                  </section>
+
+                  <section class="cartao">
+                    <div class="cartao-topo">
+                      <h4>Imposto deste item</h4>
+                      <button type="button" class="botao-texto" (click)="alternarImposto(item)">
+                        {{ temImpostoProprio(item) ? 'voltar ao padrão' : 'usar imposto próprio' }}
+                      </button>
+                    </div>
+                    @if (temImpostoProprio(item)) {
+                      <label class="campo-numero campo-imposto">
+                        <span>Tributos (%)</span>
+                        <input
+                          inputmode="decimal"
+                          [value]="texto(item.impostos)"
+                          (input)="alterarImposto(item, $any($event.target).value)"
+                        />
+                      </label>
+                      <p class="nota">% da venda — ICMS/Simples, PIS, COFINS, IPI e ISS somados.</p>
+                    } @else {
+                      <p class="nota">
+                        Usando o padrão da cotação: {{ percentual(padroes().impostos) }} da venda.
+                      </p>
+                    }
+                  </section>
+                </div>
+              </div>
+            }
+          </article>
+        }
+
+        <button type="button" class="botao-adicionar" (click)="adicionarItem()">
+          <app-icon name="plus" />
+          Adicionar item — ou pressione ↵ na descrição do último
+        </button>
+      </div>
+
+      <!-- ---------- Padrões da cotação ---------- -->
+      <section class="padroes">
+        <button
+          type="button"
+          class="padroes-topo"
+          [attr.aria-expanded]="mostrarPadroes()"
+          (click)="mostrarPadroes.set(!mostrarPadroes())"
+        >
+          <span>
+            <strong>Padrões da cotação</strong>
+            <span class="dica">valem para todos os itens que não têm regra própria</span>
+          </span>
+          <span class="padroes-resumo">{{ resumoPadroes() }}</span>
+          <app-icon [name]="mostrarPadroes() ? 'chevron-up' : 'chevron-down'" />
+        </button>
+
+        @if (mostrarPadroes()) {
+          <div class="padroes-corpo">
+            <div class="padroes-coluna">
+              <h4>Sobre o custo</h4>
+              <label class="slider">
+                <span class="slider-rotulo">
+                  Transporte <em>{{ percentual(padroes().transporte) }}</em>
+                </span>
+                <input
+                  type="range"
+                  min="0"
+                  max="50"
+                  step="0.5"
+                  [value]="padroes().transporte"
+                  (input)="alterarPadrao('transporte', $any($event.target).value)"
+                />
+              </label>
+              <label class="slider">
+                <span class="slider-rotulo">
+                  Garantia extra <em>{{ percentual(padroes().garantia) }}</em>
+                </span>
+                <input
+                  type="range"
+                  min="0"
+                  max="50"
+                  step="0.5"
+                  [value]="padroes().garantia"
+                  (input)="alterarPadrao('garantia', $any($event.target).value)"
+                />
+              </label>
+              <label class="slider">
+                <span class="slider-rotulo">
+                  Lucro mínimo <em>{{ percentual(padroes().lucroMinimo) }}</em>
+                </span>
+                <input
+                  type="range"
+                  min="0"
+                  max="100"
+                  step="0.5"
+                  class="alerta"
+                  [value]="padroes().lucroMinimo"
+                  (input)="alterarPadrao('lucroMinimo', $any($event.target).value)"
+                />
+              </label>
+              <label class="slider">
+                <span class="slider-rotulo">
+                  Lucro máximo <em>{{ percentual(padroes().lucroMaximo) }}</em>
+                </span>
+                <input
+                  type="range"
+                  min="0"
+                  max="100"
+                  step="0.5"
+                  [value]="padroes().lucroMaximo"
+                  (input)="alterarPadrao('lucroMaximo', $any($event.target).value)"
+                />
+              </label>
+            </div>
+
+            <div class="padroes-coluna">
+              <h4>Sobre a venda (tributos)</h4>
+              <label class="slider">
+                <span class="slider-rotulo">
+                  Impostos (soma) <em>{{ percentual(padroes().impostos) }}</em>
+                </span>
+                <input
+                  type="range"
+                  min="0"
+                  max="60"
+                  step="0.5"
+                  [value]="padroes().impostos"
+                  (input)="alterarPadrao('impostos', $any($event.target).value)"
+                />
+              </label>
+              <p class="nota">
+                Carga tributária somada: {{ percentual(padroes().impostos) }}. Como ela incide sobre
+                a venda, o preço é <strong>custo majorado ÷ (1 − carga)</strong>.
+              </p>
+            </div>
+          </div>
+        }
+      </section>
+    }
+  </div>
+
+  <!-- ---------- Rodapé: resultado da negociação ---------- -->
+  <div modalFooter class="resultado">
+    <div class="resultado-numero">
+      <span class="resultado-rotulo destaque">Valor cotado</span>
+      <strong class="resultado-valor">{{ moeda(totais().valorCotado) }}</strong>
+    </div>
+    <div class="resultado-numero">
+      <span class="resultado-rotulo">Lucro</span>
+      <strong class="resultado-valor sucesso">
+        {{ moeda(totais().lucroTotal) }}
+        <span class="resultado-nota">{{ percentual(totais().lucroPercentual) }} da venda</span>
+      </strong>
+    </div>
+    <div class="resultado-numero somente-largo">
+      <span class="resultado-rotulo">Preço de reserva</span>
+      <strong class="resultado-secundario alerta">{{ moeda(totais().precoReserva) }}</strong>
+    </div>
+    <div class="resultado-numero somente-largo">
+      <span class="resultado-rotulo">Folga p/ negociar</span>
+      <strong class="resultado-secundario">{{ moeda(totais().folga) }}</strong>
+    </div>
+    @if (totais().pendencias > 0) {
+      <span class="chip chip-pendencia">
+        {{ totais().pendencias }}
+        {{ totais().pendencias === 1 ? 'item incompleto' : 'itens incompletos' }}
+      </span>
+    }
+  </div>
+
+  <app-button
+    modalFooter
+    variant="ghost"
+    [disabled]="salvando() || exportando()"
+    (click)="exportar()"
+  >
+    <app-icon name="spreadsheet" />
+    {{ exportando() ? 'Gerando…' : 'Exportar' }}
+  </app-button>
+  <app-button modalFooter [disabled]="salvando() || carregando()" (click)="salvar()">
+    {{ salvando() ? 'Salvando…' : 'Salvar cotação' }}
+  </app-button>
+</app-modal-shell>

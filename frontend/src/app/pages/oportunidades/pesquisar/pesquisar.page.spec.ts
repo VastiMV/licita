@@ -9,6 +9,7 @@ import {
 import { LicitacoesService } from '../../../services/licitacoes/licitacoes.service';
 import { OportunidadesSalvasService } from '../../../services/licitacoes/oportunidades-salvas.service';
 import { ModalService } from '../../../shared/overlay/modal.service';
+import { CotadorModalComponent } from '../cotador-modal/cotador-modal.component';
 import { formatarBr, hojeIso, somarDias } from '../../../shared/ui/date-picker/date-picker.utils';
 import { ToastService } from '../../../shared/ui/toast/toast.service';
 import { PesquisarPage } from './pesquisar.page';
@@ -81,13 +82,13 @@ describe('PesquisarPage', () => {
     detalharCompra: ReturnType<typeof vi.fn>;
   };
   let salvas: { chaves: ReturnType<typeof vi.fn>; salvar: ReturnType<typeof vi.fn> };
-  let modal: { confirmar: ReturnType<typeof vi.fn> };
+  let modal: { confirmar: ReturnType<typeof vi.fn>; abrir: ReturnType<typeof vi.fn> };
   let toast: { sucesso: ReturnType<typeof vi.fn>; erro: ReturnType<typeof vi.fn> };
 
   beforeEach(() => {
     licitacoes = { buscarOportunidades: vi.fn(), detalharCompra: vi.fn(() => of(DETALHE)) };
     salvas = { chaves: vi.fn(() => of([])), salvar: vi.fn(() => of({})) };
-    modal = { confirmar: vi.fn(() => of(true)) };
+    modal = { confirmar: vi.fn(() => of(true)), abrir: vi.fn(() => of(undefined)) };
     toast = { sucesso: vi.fn(), erro: vi.fn() };
 
     TestBed.configureTestingModule({
@@ -286,7 +287,9 @@ describe('PesquisarPage', () => {
   });
 
   it('confirmado, salva o edital inteiro (itens + plataforma do detalhe) e avisa', () => {
-    licitacoes.buscarOportunidades.mockReturnValue(of([OPORTUNIDADE_ABERTA, OPORTUNIDADE_ABERTA_2]));
+    licitacoes.buscarOportunidades.mockReturnValue(
+      of([OPORTUNIDADE_ABERTA, OPORTUNIDADE_ABERTA_2]),
+    );
     buscar();
 
     fixture.debugElement.query(By.css('.btn-salvar')).nativeElement.click();
@@ -301,6 +304,53 @@ describe('PesquisarPage', () => {
     // Salvou: vira estado, não botão de desfazer (ver docs/DOMINIO.md).
     expect(fixture.debugElement.query(By.css('.btn-salvar'))).toBeNull();
     expect(fixture.debugElement.query(By.css('.btn-salva'))).not.toBeNull();
+  });
+
+  it('"Cotar" abre o Cotador com os itens do edital, sem salvar nada antes', () => {
+    licitacoes.buscarOportunidades.mockReturnValue(
+      of([OPORTUNIDADE_ABERTA, OPORTUNIDADE_ABERTA_2]),
+    );
+    buscar();
+
+    fixture.debugElement.query(By.css('.btn-cotar')).nativeElement.click();
+    fixture.detectChanges();
+
+    expect(modal.abrir).toHaveBeenCalledWith(
+      CotadorModalComponent,
+      expect.objectContaining({
+        oportunidadeId: null,
+        itens: [OPORTUNIDADE_ABERTA, OPORTUNIDADE_ABERTA_2],
+        oportunidade: {
+          itens: [OPORTUNIDADE_ABERTA, OPORTUNIDADE_ABERTA_2],
+          capag: DETALHE.capag,
+          plataforma: DETALHE.plataforma,
+        },
+      }),
+    );
+    // Abrir o Cotador não persiste: quem salva é o botão de dentro dele.
+    expect(salvas.salvar).not.toHaveBeenCalled();
+  });
+
+  it('salvar a cotação marca o card como salvo — a oportunidade foi junto', () => {
+    licitacoes.buscarOportunidades.mockReturnValue(of([OPORTUNIDADE_ABERTA]));
+    modal.abrir.mockReturnValue(of({ cotacaoId: 1, oportunidadeCriada: true }));
+    buscar();
+
+    fixture.debugElement.query(By.css('.btn-cotar')).nativeElement.click();
+    fixture.detectChanges();
+
+    expect(fixture.debugElement.query(By.css('.btn-salvar'))).toBeNull();
+    expect(fixture.debugElement.query(By.css('.btn-salva'))).not.toBeNull();
+  });
+
+  it('fechar o Cotador sem salvar deixa o card como estava', () => {
+    licitacoes.buscarOportunidades.mockReturnValue(of([OPORTUNIDADE_ABERTA]));
+    buscar();
+
+    fixture.debugElement.query(By.css('.btn-cotar')).nativeElement.click();
+    fixture.detectChanges();
+
+    expect(fixture.debugElement.query(By.css('.btn-salvar'))).not.toBeNull();
   });
 
   it('o que já está na lista de salvas abre marcado, sem botão de salvar', () => {

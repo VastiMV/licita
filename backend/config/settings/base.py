@@ -46,6 +46,8 @@ INSTALLED_APPS = [
     "apps.catalogo",
     "apps.capag",
     "apps.licitacoes",
+    "apps.fornecedores",
+    "apps.cotador",
 ]
 
 MIDDLEWARE = [

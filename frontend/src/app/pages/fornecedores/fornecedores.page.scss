@@ -1,0 +1,51 @@
+h1 {
+  font-size: var(--font-size-xl);
+  margin-bottom: var(--space-1);
+}
+
+// Título à esquerda, "Adicionar fornecedor" à direita — o botão primário da
+// tela não pode disputar espaço com o texto introdutório.
+.pagina-topo {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: var(--space-6);
+
+  p {
+    max-width: 62ch;
+  }
+
+  app-button {
+    flex: none;
+    margin-top: var(--space-1);
+  }
+}
+
+.aviso {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+  margin-top: var(--space-4);
+  padding: var(--space-3) var(--space-4);
+  border-radius: var(--radius-md);
+  background: var(--color-warn-bg);
+  color: var(--color-warn);
+  font-size: var(--font-size-sm);
+
+  app-icon {
+    flex: none;
+    width: 18px;
+    height: 18px;
+  }
+}
+
+app-data-table {
+  margin-top: var(--space-5);
+}
+
+@media (max-width: 640px) {
+  .pagina-topo {
+    flex-direction: column;
+    gap: var(--space-4);
+  }
+}

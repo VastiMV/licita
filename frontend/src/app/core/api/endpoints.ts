@@ -27,6 +27,23 @@ export const ENDPOINTS = {
      * docs/DOMINIO.md, "Histórico da oportunidade salva"). */
     salvaEventos: (id: number) => `licitacoes/salvas/${id}/eventos/`,
   },
+  fornecedores: {
+    lista: 'fornecedores/',
+    detalhe: (id: number) => `fornecedores/${id}/`,
+    /** Cadastro inteiro, enxuto — o seletor de fornecedor do Cotador. */
+    opcoes: 'fornecedores/opcoes/',
+  },
+  /** O Cotador novo (`apps/cotador`). Não confundir com
+   * `licitacoes.salvaCotacao`, que é o cotador antigo. */
+  cotador: {
+    cotacoes: 'cotador/cotacoes/',
+    cotacao: (id: number) => `cotador/cotacoes/${id}/`,
+    planilha: (id: number) => `cotador/cotacoes/${id}/planilha/`,
+    /** A cotação de uma oportunidade salva — 404 quando ainda não foi
+     * cotada, que é o sinal de abrir o modal em branco. */
+    cotacaoDaOportunidade: (oportunidadeId: number) =>
+      `cotador/oportunidades/${oportunidadeId}/cotacao/`,
+  },
   alertas: {
     lista: 'alertas/',
   },

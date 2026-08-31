@@ -25,7 +25,12 @@ export type IconName =
   | 'eye'
   | 'search'
   | 'trash'
-  | 'cotador';
+  | 'cotador'
+  | 'fornecedores'
+  | 'plus'
+  | 'calculadora'
+  | 'copiar'
+  | 'spreadsheet';
 
 /**
  * Catálogo de ícones inline (SVG) do projeto — único lugar que sabe

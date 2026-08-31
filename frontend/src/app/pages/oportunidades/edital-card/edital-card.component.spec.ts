@@ -67,7 +67,9 @@ const DETALHE_CARREGADO: DetalheEstado = {
     [salva]="salva()"
     [salvando]="salvando()"
     [podeSalvar]="podeSalvar()"
+    [podeCotar]="podeCotar()"
     (salvar)="salvarPedido.set(true)"
+    (cotar)="cotarPedido.set(true)"
     (baixarEdital)="baixarEdital.set(true)"
   />`,
 })
@@ -77,7 +79,9 @@ class HostComponent {
   readonly salva = signal(false);
   readonly salvando = signal(false);
   readonly podeSalvar = signal(true);
+  readonly podeCotar = signal(true);
   readonly salvarPedido = signal(false);
+  readonly cotarPedido = signal(false);
   readonly baixarEdital = signal(false);
 }
 
@@ -140,12 +144,24 @@ describe('EditalCardComponent', () => {
   });
 
   it('painel "Documentos" mostra carregando/erro/vazio conforme o detalhe', () => {
-    host.detalhe.set({ carregando: true, erro: false, capag: null, plataforma: null, documentos: [] });
+    host.detalhe.set({
+      carregando: true,
+      erro: false,
+      capag: null,
+      plataforma: null,
+      documentos: [],
+    });
     fixture.detectChanges();
     clicarBotao('.aba:nth-child(2)');
     expect(texto()).toContain('Buscando os documentos no PNCP');
 
-    host.detalhe.set({ carregando: false, erro: true, capag: null, plataforma: null, documentos: [] });
+    host.detalhe.set({
+      carregando: false,
+      erro: true,
+      capag: null,
+      plataforma: null,
+      documentos: [],
+    });
     fixture.detectChanges();
     expect(texto()).toContain('Não foi possível buscar os documentos agora');
 
@@ -170,7 +186,13 @@ describe('EditalCardComponent', () => {
   });
 
   it('selo CAPAG aparece com a cor certa quando carrega, e "CAPAG…" enquanto isso', () => {
-    host.detalhe.set({ carregando: true, erro: false, capag: null, plataforma: null, documentos: [] });
+    host.detalhe.set({
+      carregando: true,
+      erro: false,
+      capag: null,
+      plataforma: null,
+      documentos: [],
+    });
     fixture.detectChanges();
     expect(texto()).toContain('CAPAG…');
 
@@ -217,6 +239,19 @@ describe('EditalCardComponent', () => {
     const botao = fixture.debugElement.query(By.css('.btn-salvar'));
     expect(botao.nativeElement.disabled).toBe(true);
     expect(botao.nativeElement.textContent).toContain('Salvando');
+  });
+
+  it('"Cotar" só avisa o pai — quem abre o Cotador é a página', () => {
+    clicarBotao('.btn-cotar');
+
+    expect(host.cotarPedido()).toBe(true);
+  });
+
+  it('`podeCotar` desligado tira o botão (modal de visualização de uma salva)', () => {
+    host.podeCotar.set(false);
+    fixture.detectChanges();
+
+    expect(fixture.debugElement.query(By.css('.btn-cotar'))).toBeNull();
   });
 
   it('`podeSalvar` desligado tira o botão (modal do módulo de salvas)', () => {
@@ -272,6 +307,8 @@ describe('EditalCardComponent', () => {
     fixture.detectChanges();
 
     expect(fixture.debugElement.query(By.css('.btn-salvar'))).toBeNull();
+    // Cotar também sai: não há mais proposta a formar para este edital.
+    expect(fixture.debugElement.query(By.css('.btn-cotar'))).toBeNull();
     expect(texto()).toContain('Encerrada');
   });
 

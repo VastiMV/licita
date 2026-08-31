@@ -28,6 +28,10 @@ export interface ColunaTabela<T> {
    * sentido inteiro numa linha só (cidade, datas). Quem usa é responsável
    * por encurtar o texto, senão a coluna estica a tabela. */
   readonly umaLinha?: boolean;
+  /** Segunda linha da célula, menor e apagada — o dado que qualifica o
+   * principal sem virar coluna própria (o nome fantasia embaixo da razão
+   * social). `null` = célula de uma linha só. */
+  readonly secundario?: (linha: T) => string | null;
   /** Texto completo em `title` (tooltip do navegador) — é o par natural de
    * uma coluna que mostra o valor encurtado. */
   readonly dica?: (linha: T) => string | null;
