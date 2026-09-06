@@ -1,0 +1,41 @@
+@use 'field' as *;
+@use 'mixins' as *;
+
+// `fieldset` zerado: o navegador o desenha com borda e margens próprias, que
+// destoariam dos outros campos do formulário.
+.radio-group {
+  @include field-wrapper;
+  border: none;
+  margin: 0;
+  padding: 0;
+  min-width: 0;
+}
+
+.field-label {
+  @include field-label;
+  padding: 0;
+}
+
+.radio {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+  font-size: var(--font-size-base);
+  color: var(--color-fg);
+  cursor: pointer;
+}
+
+input[type='radio'] {
+  width: 1rem;
+  height: 1rem;
+  accent-color: var(--color-blue);
+  cursor: pointer;
+
+  &:focus-visible {
+    @include focus-ring;
+  }
+
+  &:disabled {
+    cursor: not-allowed;
+  }
+}

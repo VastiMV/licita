@@ -16,6 +16,7 @@ import httpx
 from django.core.cache import cache
 from django.test import SimpleTestCase
 
+from apps.integracoes.clients.compras_gov import ComprasGovClientError
 from apps.integracoes.test_compras_gov import RESPOSTA_CONTRATACOES, RESPOSTA_ITENS
 from apps.integracoes.test_compras_gov import _client_falso as client_falso
 from apps.integracoes.test_pncp import (
@@ -94,8 +95,26 @@ def _pncp(ligado: bool):
 
 
 def _buscar(handler=None, **kwargs):
+    """Busca com o client do compras.gov.br mockado.
+
+    Um PNCP falso entra sozinho quando o teste não passa o dele: o modo
+    navegação também consulta o PNCP (é de lá que vêm os itens — ver
+    `services._itens_da_compra`), e sem isso o teste sairia na rede.
+    """
+
     with client_falso(handler or _montar_handler()) as client:
-        return buscar_oportunidades(client, data_inicial="2026-07-01", data_final="2026-09-30", **kwargs)
+        if "pncp_client" in kwargs:
+            return buscar_oportunidades(
+                client, data_inicial="2026-07-01", data_final="2026-09-30", **kwargs
+            )
+        with pncp_falso(_montar_handler_pncp()) as pncp:
+            return buscar_oportunidades(
+                client,
+                data_inicial="2026-07-01",
+                data_final="2026-09-30",
+                pncp_client=pncp,
+                **kwargs,
+            )
 
 
 def _buscar_com_pncp(handler_pncp, handler_compras=None, **kwargs):
@@ -358,3 +377,174 @@ class BuscaTextualPncpTests(SimpleTestCase):
                 _montar_handler_pncp(resposta_busca=sem_data), palavra_chave="café", codigos_pdm=[]
             )
         self.assertEqual(len(resultados), 1)
+
+
+class BuscaPorUasgTests(SimpleTestCase):
+    """Busca por UASG — o outro modo do rádio da tela de pesquisa (ver
+    `pesquisar.page.ts`). Não passa nem pelo PNCP nem pelo catálogo: a
+    unidade é filtro nativo do compras.gov.br."""
+
+    def _handler_que_captura(self, modalidades_que_falham=()):
+        """Handler que anota os parâmetros de cada listagem de contratações."""
+
+        chamadas = []
+
+        def handler(request: httpx.Request) -> httpx.Response:
+            caminho = request.url.path
+            if "1_consultarContratacoes" in caminho:
+                params = dict(request.url.params)
+                chamadas.append(params)
+                if params.get("codigoModalidade") in modalidades_que_falham:
+                    return httpx.Response(500, text="indisponível")
+                return httpx.Response(200, json=RESPOSTA_CONTRATACOES)
+            if "2.1_consultarItens" in caminho:
+                return httpx.Response(200, json=RESPOSTA_ITENS)
+            return httpx.Response(200, json=RESPOSTA_CONTRATACOES)
+
+        return handler, chamadas
+
+    def test_uasg_vai_como_filtro_da_api_e_devolve_os_itens_da_unidade(self):
+        handler, chamadas = self._handler_que_captura()
+        with _pncp(True):  # ligado de propósito: a busca por UASG não usa o PNCP
+            resultados = _buscar(handler, codigo_unidade="925874")
+
+        self.assertTrue(resultados)
+        self.assertEqual(resultados[0]["contratacao_uasg"], "925874")
+        for params in chamadas:
+            self.assertEqual(params["unidadeOrgaoCodigoUnidade"], "925874")
+
+    def test_uasg_sem_modalidade_varre_as_quatro_que_a_api_devolve(self):
+        """Regressão: "Todas" caía no default de Pregão Eletrônico e escondia
+        dispensa/inexigibilidade da unidade sem avisar — era o "a busca por
+        UASG não funciona" relatado pelo cliente."""
+
+        handler, chamadas = self._handler_que_captura()
+        with _pncp(True):
+            _buscar(handler, codigo_unidade="925874")
+
+        self.assertEqual(
+            sorted(p["codigoModalidade"] for p in chamadas), ["3", "5", "6", "7"]
+        )
+
+    def test_modalidade_escolhida_no_dropdown_e_a_unica_consultada(self):
+        handler, chamadas = self._handler_que_captura()
+        with _pncp(True):
+            _buscar(handler, codigo_unidade="925874", codigo_modalidade="6")
+
+        self.assertEqual([p["codigoModalidade"] for p in chamadas], ["6"])
+
+    def test_navegacao_sem_uasg_continua_so_no_pregao_eletronico(self):
+        """Sem unidade, o modo navegação varre o período inteiro — cada
+        modalidade a mais multiplica as chamadas de itens. O default segue
+        sendo Pregão Eletrônico."""
+
+        handler, chamadas = self._handler_que_captura()
+        with _pncp(True):
+            _buscar(handler)
+
+        self.assertEqual([p["codigoModalidade"] for p in chamadas], ["5"])
+
+    def test_modalidade_que_falha_nao_zera_as_outras(self):
+        handler, _ = self._handler_que_captura(modalidades_que_falham=("6", "7"))
+        with _pncp(True):
+            resultados = _buscar(handler, codigo_unidade="925874")
+
+        self.assertTrue(resultados)
+
+    def test_erro_da_unica_modalidade_pedida_sobe(self):
+        """Com uma modalidade só não há o que salvar da busca — o erro sobe e
+        a view devolve 502, em vez de fingir "nenhum resultado"."""
+
+        handler, _ = self._handler_que_captura(modalidades_que_falham=("5",))
+        with _pncp(True):
+            with self.assertRaises(ComprasGovClientError):
+                _buscar(handler, codigo_unidade="925874", codigo_modalidade="5")
+
+    def test_erro_em_todas_as_modalidades_tambem_sobe(self):
+        """API fora do ar não pode virar "nenhum resultado" na tela."""
+
+        handler, _ = self._handler_que_captura(modalidades_que_falham=("3", "5", "6", "7"))
+        with _pncp(True):
+            with self.assertRaises(ComprasGovClientError):
+                _buscar(handler, codigo_unidade="925874")
+
+    def test_uasg_com_espaco_em_volta_nao_vira_filtro_vazio(self):
+        handler, chamadas = self._handler_que_captura()
+        with _pncp(True):
+            _buscar(handler, codigo_unidade="  925874  ")
+
+        for params in chamadas:
+            self.assertEqual(params["unidadeOrgaoCodigoUnidade"], "925874")
+
+
+class ItensDaNavegacaoTests(SimpleTestCase):
+    """De onde saem os itens no modo navegação/UASG.
+
+    Achado de 06/09/2026: o mirror de *itens* do compras.gov.br está semanas
+    atrás do de *contratações* — para edital recente ele responde lista vazia
+    (sem erro), e como só item vira oportunidade, a navegação e a busca por
+    UASG voltavam vazias. Ver `services._itens_da_compra`.
+    """
+
+    def _handler_compras(self, itens=None):
+        """Handler do compras.gov.br; `itens=[]` imita o mirror atrasado."""
+
+        def handler(request: httpx.Request) -> httpx.Response:
+            if "2.1_consultarItens" in request.url.path:
+                return httpx.Response(
+                    200, json={"resultado": [] if itens == [] else RESPOSTA_ITENS["resultado"]}
+                )
+            return httpx.Response(200, json=RESPOSTA_CONTRATACOES)
+
+        return handler
+
+    def test_itens_vem_do_pncp_mesmo_com_o_compras_gov_respondendo(self):
+        with _pncp(True):
+            resultados = _buscar(self._handler_compras(), codigo_modalidade="5")
+
+        self.assertEqual(len(resultados), len(RESPOSTA_ITENS_PNCP))
+        self.assertIn("CAFE TORRADO", resultados[0]["descricao_resumida"])
+
+    def test_mirror_de_itens_atrasado_nao_zera_mais_a_busca(self):
+        """Regressão do bug relatado: contratação existe, o compras.gov.br não
+        publicou os itens dela ainda, e mesmo assim a busca devolve resultado."""
+
+        with _pncp(True):
+            resultados = _buscar(self._handler_compras(itens=[]), codigo_unidade="925874")
+
+        self.assertTrue(resultados)
+        self.assertIn("CAFE TORRADO", resultados[0]["descricao_resumida"])
+
+    def test_pncp_fora_do_ar_cai_nos_itens_do_compras_gov(self):
+        with _pncp(True):
+            with pncp_falso(_montar_handler_pncp(status=503)) as pncp:
+                resultados = _buscar(
+                    self._handler_compras(), codigo_modalidade="5", pncp_client=pncp
+                )
+
+        self.assertEqual(len(resultados), 1)
+        self.assertEqual(resultados[0]["descricao_resumida"], "Notebook")
+
+    def test_contratacao_sem_item_em_lugar_nenhum_ainda_vira_card(self):
+        """Sem item não dá pra listar o que será disputado, mas o edital e o
+        link da plataforma continuam valendo — some-lo seria pior."""
+
+        with _pncp(True):
+            with pncp_falso(_montar_handler_pncp(resposta_itens=[])) as pncp:
+                resultados = _buscar(
+                    self._handler_compras(itens=[]), codigo_modalidade="5", pncp_client=pncp
+                )
+
+        self.assertEqual(len(resultados), 1)
+        self.assertIsNone(resultados[0]["numero_item"])
+        self.assertTrue(resultados[0]["link_plataforma"])
+
+    def test_pncp_desligado_usa_so_o_compras_gov(self):
+        """`USAR_BUSCA_PNCP=0` tira o PNCP do caminho inteiro, não só da busca
+        textual — é a chave de emergência para quando ele está fora do ar."""
+
+        with _pncp(False):
+            resultados = _buscar(self._handler_compras(), codigo_modalidade="5")
+
+        self.assertEqual(len(resultados), 1)
+        self.assertEqual(resultados[0]["descricao_resumida"], "Notebook")

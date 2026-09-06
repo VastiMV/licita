@@ -1,9 +1,13 @@
 import { Component, OnInit, computed, inject, signal } from '@angular/core';
+import { takeUntilDestroyed, toSignal } from '@angular/core/rxjs-interop';
 import { FormBuilder, ReactiveFormsModule } from '@angular/forms';
 import { Subscription } from 'rxjs';
 
 import { MODALIDADES } from '../../../contracts/licitacoes/modalidade';
-import { OportunidadeResponse } from '../../../contracts/licitacoes/oportunidade.contracts';
+import {
+  OportunidadeBuscaParams,
+  OportunidadeResponse,
+} from '../../../contracts/licitacoes/oportunidade.contracts';
 import { UFS } from '../../../contracts/localidades/uf';
 import { LicitacoesService } from '../../../services/licitacoes/licitacoes.service';
 import { OportunidadesSalvasService } from '../../../services/licitacoes/oportunidades-salvas.service';
@@ -13,6 +17,10 @@ import { DatePickerComponent } from '../../../shared/ui/date-picker/date-picker.
 import { hojeIso, somarDias } from '../../../shared/ui/date-picker/date-picker.utils';
 import { IconComponent } from '../../../shared/ui/icon/icon.component';
 import { InputTextComponent } from '../../../shared/ui/input-text/input-text.component';
+import {
+  RadioGroupComponent,
+  RadioOption,
+} from '../../../shared/ui/radio-group/radio-group.component';
 import { SelectComponent } from '../../../shared/ui/select/select.component';
 import { ToastService } from '../../../shared/ui/toast/toast.service';
 import { VoltarTopoComponent } from '../../../shared/ui/voltar-topo/voltar-topo.component';
@@ -21,26 +29,62 @@ import { EditalCardComponent } from '../edital-card/edital-card.component';
 import { DetalheEstado, EditalCard, agruparPorEdital } from '../edital-card/edital-card.model';
 import { normalizarTitulo } from '../edital-card/edital-card.utils';
 
-/** Janela de publicação que a tela já vem preenchida: a última semana. É
- * mais estreita que o default de 30 dias do backend (`JANELA_PADRAO_DIAS` em
- * `apps/licitacoes/views.py`) de propósito — a busca sem período é a mais
- * lenta que existe (ver docs/DOMINIO.md), e quem abre a tela quer ver o que
- * saiu agora. Ampliar continua a um clique de distância nos dois campos. */
-const JANELA_PADRAO_DIAS = 7;
+/** Os dois modos da busca: ou casa a palavra com o objeto do edital, ou
+ * lista o que uma unidade (UASG) publicou. São excludentes de propósito —
+ * misturar os dois num "e" só produzia resultado vazio, porque a busca
+ * textual filtra a UASG *depois*, sobre a página que o PNCP devolveu. */
+type Modo = 'palavra_chave' | 'uasg';
+
+const MODOS: readonly RadioOption[] = [
+  { value: 'palavra_chave', label: 'Palavra-chave' },
+  { value: 'uasg', label: 'UASG' },
+];
+
+/** Janela de publicação que a tela já vem preenchida, por modo.
+ *
+ * Palavra-chave: a última semana. É mais estreita que o default de 30 dias
+ * do backend (`JANELA_PADRAO_DIAS` em `apps/licitacoes/views.py`) de
+ * propósito — a busca sem período é a mais lenta que existe (ver
+ * docs/DOMINIO.md), e quem abre a tela quer ver o que saiu agora.
+ *
+ * UASG: 30 dias. Uma unidade publica poucos editais por mês, e o
+ * compras.gov.br leva alguns dias para publicar a contratação (medido em
+ * 06/09/2026: dados até 02/09) — em 7 dias a busca por unidade volta vazia
+ * quase sempre, que era exatamente a queixa de "a busca por UASG não
+ * funciona". Ampliar/estreitar continua a um clique nos dois campos. */
+const JANELA_PADRAO_DIAS: Record<Modo, number> = {
+  palavra_chave: 7,
+  uasg: 30,
+};
+
+function janelaPadrao(modo: Modo) {
+  const hoje = hojeIso();
+  return { data_inicial: somarDias(hoje, -JANELA_PADRAO_DIAS[modo]), data_final: hoje };
+}
+
+interface FormBusca {
+  modo: Modo;
+  termo: string;
+  modalidade: string;
+  uf: string;
+  data_inicial: string;
+  data_final: string;
+}
 
 /** Função, não constante: as datas dependem de quando a tela abriu (e de
  * quando "Limpar" foi clicado), então não dá pra congelar no módulo. */
-function formInicial() {
-  const hoje = hojeIso();
+function formInicial(): FormBusca {
   return {
-    palavra_chave: '',
+    modo: 'palavra_chave',
+    termo: '',
     modalidade: '',
     uf: '',
-    codigo_unidade: '',
-    data_inicial: somarDias(hoje, -JANELA_PADRAO_DIAS),
-    data_final: hoje,
+    ...janelaPadrao('palavra_chave'),
   };
 }
+
+/** UASG é o código numérico da unidade no compras.gov.br — até 6 dígitos. */
+const UASG_VALIDA = /^\d{1,6}$/;
 
 /** Busca de oportunidades — o módulo "Oportunidades / Pesquisar". Consulta
  * ao vivo, não persiste nada (ver docs/DOMINIO.md); o que persiste é o que
@@ -55,6 +99,7 @@ function formInicial() {
     ButtonComponent,
     IconComponent,
     EditalCardComponent,
+    RadioGroupComponent,
     VoltarTopoComponent,
   ],
   templateUrl: './pesquisar.page.html',
@@ -72,8 +117,30 @@ export class PesquisarPage implements OnInit {
 
   protected readonly modalidades = MODALIDADES;
   protected readonly ufs = UFS;
+  protected readonly modos = MODOS;
 
   protected readonly form = this.fb.nonNullable.group(formInicial());
+
+  /** O modo escolhido como signal — em zoneless, ler `.value` direto no
+   * template não re-renderiza quando ele muda. É o que troca o rótulo, o
+   * placeholder e a validação do campo de busca. */
+  private readonly modo = toSignal(this.form.controls.modo.valueChanges, {
+    initialValue: this.form.controls.modo.value,
+  });
+  private readonly termo = toSignal(this.form.controls.termo.valueChanges, {
+    initialValue: this.form.controls.termo.value,
+  });
+
+  protected readonly modoUasg = computed(() => this.modo() === 'uasg');
+
+  /** Erro do campo de busca — só o modo UASG valida (o código da unidade é
+   * numérico; letra ali é sempre engano, e a API responderia vazio sem
+   * explicar por quê). Palavra-chave aceita qualquer texto. */
+  protected readonly erroTermo = computed(() => {
+    const termo = this.termo().trim();
+    if (!this.modoUasg() || !termo || UASG_VALIDA.test(termo)) return null;
+    return 'A UASG é só números (até 6 dígitos).';
+  });
 
   protected readonly resultados = signal<OportunidadeResponse[]>([]);
   protected readonly buscando = signal(false);
@@ -93,17 +160,25 @@ export class PesquisarPage implements OnInit {
    * a própria resposta chegar). Nada fica atrás de um clique. */
   private readonly detalhes = signal<ReadonlyMap<string, DetalheEstado>>(new Map());
 
+  constructor() {
+    // No construtor, não no `ngOnInit`: `takeUntilDestroyed()` sem injector
+    // explícito só funciona em contexto de injeção.
+    this.acompanharTrocaDeModo();
+  }
+
   ngOnInit(): void {
     this.carregarSalvas();
   }
 
   protected buscar(): void {
+    if (this.erroTermo()) return;
+
     this.buscando.set(true);
     this.erro.set(null);
     this.buscou.set(true);
     this.detalhes.set(new Map());
 
-    this.buscaEmAndamento = this.licitacoes.buscarOportunidades(this.form.getRawValue()).subscribe({
+    this.buscaEmAndamento = this.licitacoes.buscarOportunidades(this.parametros()).subscribe({
       next: (resultados) => {
         this.resultados.set(resultados);
         this.buscando.set(false);
@@ -133,6 +208,50 @@ export class PesquisarPage implements OnInit {
     this.erro.set(null);
     this.buscou.set(false);
     this.detalhes.set(new Map());
+  }
+
+  /**
+   * O que a tela manda pro backend. O campo de busca é um só; o modo decide
+   * em qual parâmetro ele entra — o outro vai vazio, e é isso que torna os
+   * dois modos excludentes de ponta a ponta (ver `Modo` e
+   * `services._modalidades_da_navegacao` no backend).
+   */
+  private parametros(): OportunidadeBuscaParams {
+    const { modo, termo, modalidade, uf, data_inicial, data_final } = this.form.getRawValue();
+    const busca = termo.trim();
+    return {
+      palavra_chave: modo === 'uasg' ? '' : busca,
+      codigo_unidade: modo === 'uasg' ? busca : '',
+      modalidade,
+      uf,
+      data_inicial,
+      data_final,
+    };
+  }
+
+  /**
+   * Trocar de modo limpa o termo e repõe a janela padrão do novo modo.
+   *
+   * O termo sai porque o campo passou a significar outra coisa — palavra
+   * sobrando num campo de UASG só produz erro de validação, e um código de
+   * unidade sobrando num campo de palavra-chave produz busca sem resultado.
+   *
+   * A janela só é reposta enquanto as datas ainda são as que a tela pôs
+   * sozinha: quem digitou um período quis aquele período, e trocar o modo
+   * não é motivo pra jogá-lo fora.
+   */
+  private acompanharTrocaDeModo(): void {
+    let anterior = this.form.controls.modo.value;
+    this.form.controls.modo.valueChanges.pipe(takeUntilDestroyed()).subscribe((modo) => {
+      const intocadas = janelaPadrao(anterior);
+      anterior = modo;
+
+      this.form.controls.termo.setValue('');
+      const { data_inicial, data_final } = this.form.getRawValue();
+      if (data_inicial === intocadas.data_inicial && data_final === intocadas.data_final) {
+        this.form.patchValue(janelaPadrao(modo));
+      }
+    });
   }
 
   protected detalheDe(chave: string): DetalheEstado | undefined {

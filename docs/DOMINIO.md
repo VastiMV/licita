@@ -259,9 +259,19 @@ reabrir a investigação:
 
 ### Busca de oportunidades (fluxo, não persiste)
 
-1. Usuário informa palavra-chave (opcional), UF, modalidade, UASG, período.
-2. Sem palavra-chave: modo navegação — lista as contratações do período pela
-   modalidade escolhida, sem depender de PNCP nem de `Pdm`.
+A tela pede **um alvo de busca só**: um rádio escolhe entre *palavra-chave* e
+*UASG*, e o campo de texto vira um ou outro (decisão de produto, 06/09/2026).
+Não é preferência de layout: combinar os dois nunca funcionou, porque a busca
+textual do PNCP não aceita filtro de unidade — a UASG era aplicada *depois*,
+sobre a página de 50 editais que o PNCP devolveu, e quase sempre zerava o
+resultado sem explicar por quê.
+
+1. Usuário escolhe o modo e informa o termo (palavra-chave OU UASG), UF,
+   modalidade e período.
+2. Modo UASG (ou campo vazio): modo navegação — lista as contratações do
+   período pela unidade/modalidade, sem depender da busca textual nem de
+   `Pdm` (os *itens*, esses sim, vêm do PNCP — ver o achado de 06/09/2026
+   abaixo).
 3. Com palavra-chave: tenta casar no objeto do edital via busca textual do
    PNCP.
 4. Se o PNCP não responde ou não acha nada, cai para a busca em `Pdm` (ver
@@ -428,6 +438,46 @@ achados novos:
   reserva de catálogo (que já é 100% compras.gov.br). Custo: até ~50
   chamadas de detalhe extra por busca, em rodadas de 20 — é o preço de não
   mostrar oportunidade que o usuário não consegue abrir.
+- **Achado crítico, 06/09/2026: o mirror de _itens_ do compras.gov.br está
+  ~6 semanas atrás do mirror de _contratações_ — e era isso que fazia a busca
+  por UASG (e a navegação sem palavra-chave) voltar vazia.** Medido ao vivo:
+  `1_consultarContratacoes_PNCP_14133` já listava contratações publicadas até
+  02/09, mas `2.1_consultarItensContratacoes_PNCP_14133_Id` respondia
+  `{"resultado": [], "totalRegistros": 0}` — **sem erro, HTTP 200** — para
+  tudo publicado de 01/08 em diante; só de ~24/07 para trás vinham itens.
+  Como o modo navegação só produzia oportunidade a partir de item, qualquer
+  edital recente sumia. Corrigido em `services._itens_da_compra`: os itens
+  passam a vir do PNCP (`/api/pncp/v1/orgaos/{cnpj}/compras/{ano}/{seq}/itens`,
+  a mesma fonte que a busca textual já usava, sem defasagem), com o
+  compras.gov.br como reserva para o período antigo e para quando o PNCP está
+  fora do ar. A contratação normalizada do compras.gov.br já traz
+  `cnpj_orgao`/`ano_compra`/`sequencial_compra`, então não custa chamada
+  extra de descoberta. Contratação sem item em fonte nenhuma passou a virar
+  card mesmo assim (dá pra abrir o edital e a disputa) em vez de sumir.
+- **Achado, 06/09/2026: "Todas as modalidades" na busca por UASG escondia
+  dispensa e inexigibilidade.** O modo navegação caía no default de Pregão
+  Eletrônico quando o dropdown estava em "Todas" — e o `codigoModalidade` do
+  compras.gov.br é obrigatório e aceita um código por chamada. Com UASG
+  informada, "Todas" passou a varrer as quatro modalidades de
+  `MODALIDADES_CONTRATACOES` em paralelo, intercalando os resultados (o teto
+  de `MAX_CONTRATACOES` é global; concatenar deixaria a primeira modalidade
+  consumir a cota). Exemplo real (UASG 154050, 30 dias): 4 pregões + 3
+  dispensas — antes só os 4 pregões apareciam. Sem UASG o default continua
+  Pregão Eletrônico: ali a varredura é do período inteiro e cada modalidade a
+  mais multiplica as chamadas de itens.
+- **Medição da discrepância "PNCP mostra N, a tela mostra 11" (06/09/2026),
+  termo "cafe".** É pergunta recorrente do cliente; os números do funil:
+  o índice do PNCP tem **1.219** editais *recebendo proposta* (**74.986** sem
+  filtro de status — daí a ordem de grandeza de milhares que se vê no
+  portal); a tela lê **1 página de 50** (`MAX_EDITAIS_BRUTOS`); desses 50, só
+  **9 eram do Compras.gov.br** (22 vinham sem `linkSistemaOrigem` nenhum e o
+  resto se espalhava por 23 outras plataformas); o período da tela e o teto
+  de `MAX_EDITAIS_PNCP` (20) cortam o que sobrar. Ou seja: **não é bug de
+  busca — é o filtro de plataforma somado à leitura de uma página só**.
+  Buscar acento ou não dá o mesmo total (1.219 para "cafe" e para "café").
+  Aumentar a cobertura é decisão de produto com custo conhecido: cada página
+  extra do PNCP são +50 chamadas de detalhe (é o detalhe que revela a
+  plataforma), e o `/api/consulta/` tem rate limit por IP.
 - **Plataformas são plugáveis** (28/08/2026): o ponto de entrada é
   `apps/integracoes/plataformas.py` — plataforma nova = uma subclasse de
   `Plataforma` registrada em `PLATAFORMAS` (+ o client dela em `clients/`,
