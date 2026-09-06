@@ -1,0 +1,175 @@
+<app-modal-shell
+  [titulo]="editando ? fornecedor!.nome : 'Cadastrar fornecedor'"
+  largura="larga"
+  (fechar)="fechar()"
+>
+  <p class="kicker">{{ editando ? 'Editar fornecedor' : 'Novo fornecedor' }}</p>
+
+  <form [formGroup]="form" (ngSubmit)="salvar()" novalidate>
+    <section>
+      <h3>Dados da empresa</h3>
+      <div class="grade grade-empresa">
+        <app-input-text
+          class="col-larga"
+          label="Razão social *"
+          formControlName="nome"
+          placeholder="Ex.: Marucci Distribuidora Ltda"
+          [error]="erroDe('nome')"
+        />
+        <app-input-text
+          label="Nome fantasia"
+          formControlName="fantasia"
+          placeholder="Como é conhecido"
+          [error]="erroDe('fantasia')"
+        />
+        <app-select label="Tipo" [options]="tipos" formControlName="tipo" placeholder="Selecione" />
+        <app-input-text
+          label="CNPJ / CPF *"
+          formControlName="cnpj"
+          placeholder="00.000.000/0000-00"
+          [error]="erroDe('cnpj')"
+        />
+        <app-input-text
+          label="Inscrição estadual"
+          formControlName="inscricao_estadual"
+          placeholder="Isento ou número"
+          [error]="erroDe('inscricao_estadual')"
+        />
+        <app-select
+          label="Categoria *"
+          [options]="categorias"
+          formControlName="categoria"
+          placeholder="Selecione"
+        />
+      </div>
+    </section>
+
+    <section>
+      <h3>Endereço</h3>
+      <div class="grade grade-endereco">
+        <app-input-text
+          label="CEP"
+          formControlName="cep"
+          placeholder="00000-000"
+          [error]="erroDe('cep')"
+        />
+        <app-input-text
+          class="col-larga"
+          label="Logradouro"
+          formControlName="logradouro"
+          placeholder="Rua, avenida"
+          [error]="erroDe('logradouro')"
+        />
+        <app-input-text label="Número" formControlName="numero" placeholder="000" />
+        <app-input-text
+          label="Complemento"
+          formControlName="complemento"
+          placeholder="Sala, galpão"
+        />
+        <app-input-text class="col-larga" label="Bairro" formControlName="bairro" />
+        <app-select label="UF" [options]="ufs" formControlName="uf" placeholder="Selecione" />
+        <app-input-text label="Cidade" formControlName="cidade" [error]="erroDe('cidade')" />
+      </div>
+    </section>
+
+    <section>
+      <h3>Contato</h3>
+      <div class="grade grade-quatro">
+        <app-input-text
+          label="Responsável"
+          formControlName="responsavel"
+          placeholder="Nome do contato"
+        />
+        <app-input-text
+          label="E-mail *"
+          type="email"
+          formControlName="email"
+          placeholder="compras@empresa.com.br"
+          [error]="erroDe('email')"
+        />
+        <app-input-text
+          label="Telefone"
+          formControlName="telefone"
+          placeholder="(00) 0000-0000"
+          [error]="erroDe('telefone')"
+        />
+        <app-input-text
+          label="Celular / WhatsApp"
+          formControlName="celular"
+          placeholder="(00) 00000-0000"
+          [error]="erroDe('celular')"
+        />
+      </div>
+    </section>
+
+    <section>
+      <h3>Comercial e bancário</h3>
+      <div class="grade grade-quatro">
+        <app-select
+          label="Condição de pagamento"
+          [options]="condicoes"
+          formControlName="condicao_pagamento"
+          placeholder="Selecione"
+        />
+        <app-input-text
+          label="Prazo de entrega (dias)"
+          formControlName="prazo_entrega_dias"
+          placeholder="Ex.: 10"
+          [error]="erroDe('prazo_entrega_dias')"
+        />
+        <app-input-text
+          label="Banco / agência / conta"
+          formControlName="dados_bancarios"
+          placeholder="000 / 0000 / 00000-0"
+        />
+        <app-input-text
+          label="Chave PIX"
+          formControlName="chave_pix"
+          placeholder="CNPJ, e-mail ou aleatória"
+        />
+      </div>
+    </section>
+
+    <div class="rodape-formulario">
+      <label class="field observacoes">
+        <span class="field-label">Observações</span>
+        <textarea
+          formControlName="observacoes"
+          rows="4"
+          placeholder="Restrições de entrega, histórico, contatos alternativos…"
+        ></textarea>
+      </label>
+
+      <fieldset class="painel-situacao">
+        <legend>Situação do fornecedor</legend>
+        @for (opcao of situacoes; track opcao.value) {
+          <button
+            type="button"
+            class="opcao-situacao"
+            [class.escolhida]="situacao() === opcao.value"
+            [attr.aria-pressed]="situacao() === opcao.value"
+            (click)="escolherSituacao(opcao.value)"
+          >
+            {{ opcao.label }}
+          </button>
+        }
+        <p class="ajuda-situacao">
+          Inativo e documentação vencida continuam no cadastro, mas não são oferecidos em cotações
+          novas.
+        </p>
+      </fieldset>
+    </div>
+
+    @if (erroGeral(); as mensagem) {
+      <p class="erro">{{ mensagem }}</p>
+    }
+  </form>
+
+  <span modalFooter class="obrigatorios">Campos com <em>*</em> são obrigatórios</span>
+  <app-button modalFooter variant="ghost" [disabled]="salvando()" (click)="fechar()">
+    Cancelar
+  </app-button>
+  <app-button modalFooter [disabled]="salvando()" (click)="salvar()">
+    {{ salvando() ? 'Salvando…' : editando ? 'Salvar alterações' : 'Cadastrar fornecedor' }}
+  </app-button>
+</app-modal-shell>

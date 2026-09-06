@@ -28,18 +28,12 @@ from apps.integracoes.clients.compras_gov import ComprasGovClientError
 from apps.integracoes.clients.pncp import PncpClient, PncpClientError
 from apps.integracoes.plataformas import identificar_plataforma, plataforma_padrao
 
-from .models import (
-    Cotacao,
-    EventoOportunidadeSalva,
-    OportunidadeSalva,
-    nome_de_usuario,
-    registrar_prazos_vencidos,
-)
+from .models import Cotacao, OportunidadeSalva, registrar_prazos_vencidos
+from .salvas import garantir_salva
 from .serializers import (
     CompraDetalheSerializer,
     CotacaoSerializer,
     EventoOportunidadeSalvaSerializer,
-    OportunidadeSalvaCriacaoSerializer,
     OportunidadeSalvaSerializer,
     OportunidadeSerializer,
 )
@@ -252,34 +246,13 @@ class OportunidadesSalvasView(APIView):
         return resposta
 
     def post(self, request: Request) -> Response:
-        serializer = OportunidadeSalvaCriacaoSerializer(
-            data=request.data, context={"request": request}
+        # Idempotente (salvar de novo devolve o registro existente, sem
+        # evento novo) — a regra mora em `salvas.garantir_salva`, porque o
+        # Cotador também salva a oportunidade por esse mesmo caminho.
+        salva, criada = garantir_salva(request.data, request=request)
+        return Response(
+            OportunidadeSalvaSerializer(salva).data, status=201 if criada else 200
         )
-        serializer.is_valid(raise_exception=True)
-
-        contratacao = serializer.validated_data["itens"][0]
-        existente = (
-            OportunidadeSalva.objects.ativas()
-            .filter(
-                cnpj_orgao=contratacao["contratacao_cnpj_orgao"],
-                ano_compra=contratacao["contratacao_ano_compra"],
-                sequencial_compra=contratacao["contratacao_sequencial_compra"],
-            )
-            .first()
-        )
-        # Idempotente: salvar de novo o que já está na lista devolve o
-        # registro existente e **não** cria evento — o histórico não pode
-        # ganhar ruído por causa de um clique repetido.
-        if existente:
-            return Response(OportunidadeSalvaSerializer(existente).data, status=200)
-
-        salva = serializer.save()
-        salva.registrar(
-            EventoOportunidadeSalva.Tipo.SALVA,
-            autor=request.user,
-            descricao=f"Oportunidade salva por {nome_de_usuario(request.user)}.",
-        )
-        return Response(OportunidadeSalvaSerializer(salva).data, status=201)
 
 
 class OportunidadeSalvaView(APIView):

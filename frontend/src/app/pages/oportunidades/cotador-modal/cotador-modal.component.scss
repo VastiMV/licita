@@ -1,0 +1,927 @@
+@use 'mixins' as *;
+
+// O Cotador é uma tela dentro do modal. O layout segue o handoff
+// (docs/Mockups/cotador) — composição do custo no topo, itens no meio,
+// resultado da negociação no rodapé, sem repetir número entre as duas
+// pontas — mas a paleta é a do produto (navy/azul), não o roxo do
+// protótipo: o modal abre por cima da tela de oportunidades e não pode
+// parecer outro aplicativo.
+
+.cotador {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-4);
+}
+
+// ---------- Cabeçalho ----------
+
+.topo {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: var(--space-4);
+}
+
+.campo-titulo {
+  width: min(100%, 460px);
+  font: inherit;
+  font-size: var(--font-size-md);
+  font-weight: var(--font-weight-semibold);
+  color: var(--color-navy);
+  padding: var(--space-1) var(--space-2);
+  margin-left: calc(var(--space-2) * -1);
+  border: 1px solid transparent;
+  border-radius: var(--radius-sm);
+  background: transparent;
+
+  &:hover {
+    background: var(--color-blue-soft);
+  }
+
+  &:focus-visible {
+    @include focus-ring;
+    background: var(--color-surface);
+  }
+}
+
+.topo-sub {
+  margin: var(--space-1) 0 0;
+  font-size: var(--font-size-xs);
+  color: var(--color-muted);
+}
+
+.botao-ajuda {
+  flex: none;
+  width: 32px;
+  height: 32px;
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-md);
+  background: var(--color-surface);
+  color: var(--color-muted);
+  font-weight: var(--font-weight-semibold);
+  cursor: pointer;
+
+  &:hover {
+    border-color: var(--color-blue);
+    color: var(--color-blue);
+  }
+
+  &:focus-visible {
+    @include focus-ring;
+  }
+}
+
+.ajuda {
+  padding: var(--space-4);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-md);
+  background: var(--color-blue-soft);
+  font-size: var(--font-size-sm);
+
+  h3 {
+    margin: 0 0 var(--space-2);
+    font-size: var(--font-size-base);
+  }
+
+  ol {
+    margin: 0;
+    padding-left: 1.2rem;
+    display: flex;
+    flex-direction: column;
+    gap: var(--space-1);
+  }
+}
+
+.ajuda-formula {
+  margin: var(--space-3) 0 var(--space-1);
+  font-family: ui-monospace, 'SFMono-Regular', Menlo, monospace;
+  font-size: var(--font-size-xs);
+  color: var(--color-navy);
+}
+
+.ajuda-nota {
+  margin: 0;
+  font-size: var(--font-size-xs);
+  color: var(--color-muted);
+}
+
+// ---------- Painel de totais (composição do custo) ----------
+
+.painel-totais {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(134px, 1fr));
+  gap: var(--space-2);
+}
+
+.cartao-total {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-1);
+  padding: var(--space-3);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-md);
+  background: var(--color-bg);
+}
+
+.cartao-rotulo {
+  // Altura fixa mantém os seis cartões alinhados mesmo com rótulo de duas
+  // linhas ("Custo dos produtos") — sem isto a fileira fica serrilhada.
+  min-height: 2.1em;
+  @include uppercase-label;
+  font-size: 0.62rem;
+}
+
+.cartao-valor {
+  font-variant-numeric: tabular-nums;
+  white-space: nowrap;
+  font-size: var(--font-size-md);
+  font-weight: var(--font-weight-semibold);
+  color: var(--color-navy);
+}
+
+.cartao-apoio {
+  font-size: var(--font-size-xs);
+  color: var(--color-muted);
+}
+
+// ---------- Lista de itens ----------
+
+.lista-cabecalho {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: var(--space-3);
+  flex-wrap: wrap;
+
+  h3 {
+    display: inline;
+    font-size: var(--font-size-md);
+  }
+}
+
+.dica {
+  margin-left: var(--space-2);
+  font-size: var(--font-size-xs);
+  color: var(--color-muted);
+  font-weight: var(--font-weight-regular);
+}
+
+.botao-economia {
+  padding: var(--space-2) var(--space-3);
+  border: 1px solid var(--color-success);
+  border-radius: var(--radius-md);
+  background: var(--color-success-bg);
+  color: var(--color-success);
+  font: inherit;
+  font-size: var(--font-size-xs);
+  font-weight: var(--font-weight-semibold);
+  cursor: pointer;
+
+  &:focus-visible {
+    @include focus-ring;
+  }
+}
+
+.lista {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2);
+}
+
+.item {
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-md);
+  background: var(--color-surface);
+  overflow: hidden;
+
+  &.incompleto {
+    border-color: color-mix(in srgb, var(--color-danger) 35%, var(--color-border));
+  }
+}
+
+.item-linha {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--space-3);
+  padding: var(--space-3);
+}
+
+.item-indice {
+  flex: none;
+  width: 26px;
+  text-align: center;
+  font-variant-numeric: tabular-nums;
+  font-size: var(--font-size-xs);
+  color: var(--color-placeholder);
+}
+
+.item-descricao {
+  flex: 1 1 220px;
+  min-width: 180px;
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-1);
+
+  input {
+    width: 100%;
+    font: inherit;
+    font-weight: var(--font-weight-semibold);
+    color: var(--color-fg);
+    padding: 0.45rem 0.6rem;
+    border: 1px solid var(--color-border);
+    border-radius: var(--radius-sm);
+    background: var(--color-bg);
+
+    &:focus-visible {
+      @include focus-ring;
+      background: var(--color-surface);
+    }
+  }
+}
+
+.chips {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-1);
+}
+
+.chip {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-1);
+  padding: 0.2rem 0.55rem;
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-pill);
+  background: var(--color-surface);
+  color: var(--color-muted);
+  font: inherit;
+  font-size: var(--font-size-xs);
+  font-weight: var(--font-weight-medium);
+  line-height: 1.4;
+}
+
+button.chip {
+  cursor: pointer;
+
+  &:hover {
+    border-color: var(--color-blue);
+    color: var(--color-blue);
+  }
+
+  &:focus-visible {
+    @include focus-ring;
+  }
+}
+
+.ponto {
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background: var(--color-blue);
+}
+
+.chip-economia {
+  border-color: var(--color-warn);
+  background: var(--color-warn-bg);
+  color: var(--color-warn);
+}
+
+.chip-imposto {
+  border-color: var(--color-blue-light);
+  background: var(--color-blue-soft);
+  color: var(--color-blue);
+}
+
+.chip-pendencia {
+  border-color: var(--color-danger);
+  background: var(--color-danger-bg);
+  color: var(--color-danger);
+}
+
+.item-metricas {
+  flex: 1 1 460px;
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-3);
+  align-items: flex-end;
+  justify-content: flex-end;
+}
+
+.metrica {
+  display: flex;
+  flex-direction: column;
+  gap: 0.15rem;
+  text-align: right;
+  flex: none;
+}
+
+.metrica-rotulo {
+  @include uppercase-label;
+  font-size: 0.58rem;
+
+  &.destaque {
+    color: var(--color-blue);
+  }
+}
+
+.metrica-valor {
+  font-variant-numeric: tabular-nums;
+  white-space: nowrap;
+  font-size: var(--font-size-sm);
+  color: var(--color-fg);
+
+  &.forte {
+    font-size: var(--font-size-md);
+    font-weight: var(--font-weight-bold);
+  }
+
+  &.apagado {
+    color: var(--color-muted);
+  }
+}
+
+.metrica-nota {
+  font-size: var(--font-size-xs);
+  opacity: 0.75;
+}
+
+.metrica-campo input {
+  width: 72px;
+  font: inherit;
+  font-size: var(--font-size-sm);
+  font-variant-numeric: tabular-nums;
+  text-align: right;
+  padding: 0.35rem 0.4rem;
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-sm);
+  background: var(--color-bg);
+
+  &:focus-visible {
+    @include focus-ring;
+    background: var(--color-surface);
+  }
+}
+
+.item-acoes {
+  display: flex;
+  gap: var(--space-1);
+  flex: none;
+
+  button {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 30px;
+    height: 30px;
+    border: 1px solid var(--color-border);
+    border-radius: var(--radius-sm);
+    background: var(--color-surface);
+    color: var(--color-muted);
+    cursor: pointer;
+
+    app-icon {
+      width: 15px;
+      height: 15px;
+    }
+
+    &:hover {
+      border-color: var(--color-blue);
+      color: var(--color-blue);
+    }
+
+    &.perigo:hover {
+      border-color: var(--color-danger);
+      background: var(--color-danger-bg);
+      color: var(--color-danger);
+    }
+
+    &:disabled {
+      opacity: 0.4;
+      cursor: not-allowed;
+    }
+
+    &:focus-visible {
+      @include focus-ring;
+    }
+  }
+}
+
+// ---------- Painel expandido ----------
+
+.item-detalhe {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-4);
+  padding: var(--space-4);
+  border-top: 1px solid var(--color-border);
+  background: var(--color-bg);
+}
+
+.bloco-fornecedores {
+  flex: 1 1 420px;
+  min-width: 320px;
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2);
+}
+
+.bloco-topo {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: var(--space-2);
+}
+
+h4 {
+  margin: 0;
+  @include uppercase-label;
+}
+
+.botao-tracejado,
+.botao-texto {
+  border: 1px dashed var(--color-blue-light);
+  border-radius: var(--radius-sm);
+  background: var(--color-surface);
+  color: var(--color-blue);
+  font: inherit;
+  font-size: var(--font-size-xs);
+  font-weight: var(--font-weight-semibold);
+  padding: 0.3rem 0.6rem;
+  cursor: pointer;
+
+  &:hover {
+    background: var(--color-blue-soft);
+  }
+
+  &:focus-visible {
+    @include focus-ring;
+  }
+}
+
+.botao-texto {
+  border-style: solid;
+  border-color: var(--color-border);
+}
+
+.oferta {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-2);
+  align-items: flex-end;
+  padding: var(--space-2);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-sm);
+  background: var(--color-surface);
+
+  &.escolhida {
+    border-color: var(--color-blue);
+    background: var(--color-blue-soft);
+  }
+}
+
+.oferta-identidade {
+  flex: 1 1 190px;
+  min-width: 160px;
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+
+  select {
+    flex: 1 1 auto;
+    min-width: 0;
+    font: inherit;
+    font-size: var(--font-size-sm);
+    padding: 0.3rem 0.4rem;
+    border: 1px solid var(--color-border);
+    border-radius: var(--radius-sm);
+    background: var(--color-surface);
+    color: var(--color-fg);
+
+    &:focus-visible {
+      @include focus-ring;
+    }
+  }
+
+  input[type='radio'] {
+    flex: none;
+    accent-color: var(--color-blue);
+    width: 16px;
+    height: 16px;
+  }
+}
+
+.icone {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  flex: none;
+  width: 26px;
+  height: 26px;
+  border: none;
+  border-radius: var(--radius-sm);
+  background: transparent;
+  color: var(--color-muted);
+  cursor: pointer;
+
+  app-icon {
+    width: 14px;
+    height: 14px;
+  }
+
+  &:hover {
+    background: var(--color-blue-soft);
+    color: var(--color-blue);
+  }
+
+  &.perigo:hover {
+    background: var(--color-danger-bg);
+    color: var(--color-danger);
+  }
+
+  &:disabled {
+    opacity: 0.35;
+    cursor: not-allowed;
+  }
+
+  &:focus-visible {
+    @include focus-ring;
+  }
+}
+
+.oferta-custos {
+  flex: 1 1 300px;
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-2);
+  align-items: flex-end;
+  justify-content: flex-end;
+}
+
+.campo-numero {
+  display: flex;
+  flex-direction: column;
+  gap: 0.15rem;
+  flex: none;
+  width: 78px;
+
+  span {
+    @include uppercase-label;
+    font-size: 0.58rem;
+  }
+
+  input {
+    width: 100%;
+    font: inherit;
+    font-size: var(--font-size-sm);
+    font-variant-numeric: tabular-nums;
+    text-align: right;
+    padding: 0.3rem 0.4rem;
+    border: 1px solid var(--color-border);
+    border-radius: var(--radius-sm);
+    background: var(--color-surface);
+
+    &:focus-visible {
+      @include focus-ring;
+    }
+  }
+
+  &.leitura {
+    width: 92px;
+    text-align: right;
+
+    strong {
+      font-size: var(--font-size-sm);
+      font-variant-numeric: tabular-nums;
+      white-space: nowrap;
+      padding: 0.3rem 0;
+    }
+  }
+
+  &.campo-imposto {
+    width: 120px;
+  }
+}
+
+.nota {
+  margin: 0;
+  font-size: var(--font-size-xs);
+  color: var(--color-muted);
+  line-height: 1.5;
+}
+
+.bloco-lateral {
+  flex: 1 1 330px;
+  min-width: 280px;
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-3);
+}
+
+.cartao {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2);
+  padding: var(--space-3);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-md);
+  background: var(--color-surface);
+}
+
+.cartao-topo {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: var(--space-2);
+}
+
+.cartao-numero {
+  font-size: var(--font-size-sm);
+  font-variant-numeric: tabular-nums;
+  font-weight: var(--font-weight-semibold);
+  color: var(--color-blue);
+}
+
+.slider {
+  display: flex;
+  flex-direction: column;
+  gap: 0.2rem;
+
+  input[type='range'] {
+    accent-color: var(--color-blue);
+
+    &.alerta {
+      accent-color: var(--color-warn);
+    }
+
+    &:focus-visible {
+      @include focus-ring;
+    }
+  }
+}
+
+.slider-rotulo {
+  display: flex;
+  justify-content: space-between;
+  gap: var(--space-2);
+  font-size: var(--font-size-xs);
+  color: var(--color-muted);
+
+  &.alerta {
+    color: var(--color-warn);
+  }
+
+  em {
+    font-style: normal;
+    font-variant-numeric: tabular-nums;
+    font-weight: var(--font-weight-semibold);
+    color: var(--color-blue);
+  }
+}
+
+.reserva {
+  display: flex;
+  justify-content: space-between;
+  gap: var(--space-3);
+  padding-top: var(--space-2);
+  border-top: 1px solid var(--color-border);
+
+  strong {
+    display: block;
+    font-size: var(--font-size-base);
+    font-variant-numeric: tabular-nums;
+  }
+}
+
+.reserva-rotulo {
+  @include uppercase-label;
+  font-size: 0.58rem;
+  display: block;
+}
+
+.reserva-nota {
+  font-size: var(--font-size-xs);
+  color: var(--color-muted);
+}
+
+.reserva-folga {
+  text-align: right;
+}
+
+.reserva-alerta {
+  display: block;
+  font-size: var(--font-size-xs);
+  color: var(--color-danger);
+}
+
+// A escada que mostra como se chegou no preço.
+.memoria {
+  display: flex;
+  flex-direction: column;
+}
+
+.degrau {
+  display: grid;
+  grid-template-columns: 14px 1fr auto;
+  gap: var(--space-2);
+  padding: 0.28rem 0;
+  border-bottom: 1px solid var(--color-border);
+  font-size: var(--font-size-xs);
+  color: var(--color-muted);
+
+  &:last-child {
+    border-bottom: none;
+  }
+
+  &.forte {
+    font-size: var(--font-size-sm);
+    font-weight: var(--font-weight-semibold);
+    color: var(--color-fg);
+  }
+}
+
+.degrau-sinal {
+  color: var(--color-placeholder);
+}
+
+.degrau-valor {
+  font-variant-numeric: tabular-nums;
+  white-space: nowrap;
+}
+
+// ---------- Padrões da cotação ----------
+
+.padroes {
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-md);
+  background: var(--color-surface);
+  overflow: hidden;
+}
+
+.padroes-topo {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-3);
+  width: 100%;
+  padding: var(--space-3);
+  border: none;
+  background: transparent;
+  font: inherit;
+  text-align: left;
+  color: var(--color-fg);
+  cursor: pointer;
+
+  &:hover {
+    background: var(--color-blue-soft);
+  }
+
+  &:focus-visible {
+    @include focus-ring;
+  }
+
+  app-icon {
+    flex: none;
+    width: 16px;
+    height: 16px;
+    color: var(--color-muted);
+  }
+}
+
+.padroes-resumo {
+  font-size: var(--font-size-xs);
+  font-variant-numeric: tabular-nums;
+  color: var(--color-muted);
+  text-align: right;
+}
+
+.padroes-corpo {
+  display: grid;
+  grid-template-columns: 2fr 1fr;
+  gap: var(--space-5);
+  padding: 0 var(--space-3) var(--space-4);
+  border-top: 1px solid var(--color-border);
+  padding-top: var(--space-4);
+}
+
+.padroes-coluna {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-3);
+}
+
+.botao-adicionar {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: var(--space-2);
+  width: 100%;
+  padding: var(--space-3);
+  border: 1px dashed var(--color-blue-light);
+  border-radius: var(--radius-md);
+  background: var(--color-surface);
+  color: var(--color-blue);
+  font: inherit;
+  font-size: var(--font-size-sm);
+  font-weight: var(--font-weight-semibold);
+  cursor: pointer;
+
+  app-icon {
+    width: 16px;
+    height: 16px;
+  }
+
+  &:hover {
+    background: var(--color-blue-soft);
+  }
+
+  &:focus-visible {
+    @include focus-ring;
+  }
+}
+
+.estado {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: var(--space-2);
+  padding: var(--space-8);
+  color: var(--color-muted);
+}
+
+.estado-spinner {
+  width: 18px;
+  height: 18px;
+}
+
+// ---------- Rodapé (resultado da negociação) ----------
+
+.resultado {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--space-5);
+  margin-right: auto;
+}
+
+.resultado-numero {
+  display: flex;
+  flex-direction: column;
+  gap: 0.1rem;
+}
+
+.resultado-rotulo {
+  @include uppercase-label;
+  font-size: 0.58rem;
+
+  &.destaque {
+    color: var(--color-blue);
+  }
+}
+
+.resultado-valor {
+  font-size: var(--font-size-lg);
+  font-variant-numeric: tabular-nums;
+  white-space: nowrap;
+  color: var(--color-navy);
+}
+
+.resultado-secundario {
+  font-size: var(--font-size-base);
+  font-variant-numeric: tabular-nums;
+  white-space: nowrap;
+  color: var(--color-muted);
+}
+
+.resultado-nota {
+  font-size: var(--font-size-xs);
+  font-weight: var(--font-weight-regular);
+  opacity: 0.8;
+}
+
+// ---------- Tons compartilhados ----------
+
+.sucesso {
+  color: var(--color-success);
+}
+
+.alerta {
+  color: var(--color-warn);
+}
+
+@media (max-width: 900px) {
+  .padroes-corpo {
+    grid-template-columns: 1fr;
+    gap: var(--space-4);
+  }
+
+  .padroes-resumo {
+    display: none;
+  }
+
+  // O rodapé em tela estreita mostra só o que decide o lance; reserva e
+  // folga continuam visíveis dentro de cada item.
+  .somente-largo {
+    display: none;
+  }
+}

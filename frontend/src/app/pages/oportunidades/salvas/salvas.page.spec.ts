@@ -7,6 +7,7 @@ import { OportunidadesSalvasService } from '../../../services/licitacoes/oportun
 import { ModalService } from '../../../shared/overlay/modal.service';
 import { MenuComponent } from '../../../shared/ui/menu/menu.component';
 import { ToastService } from '../../../shared/ui/toast/toast.service';
+import { CotadorModalComponent } from '../cotador-modal/cotador-modal.component';
 import { OportunidadeModalComponent } from './oportunidade-modal/oportunidade-modal.component';
 import { SalvasPage } from './salvas.page';
 
@@ -157,13 +158,29 @@ describe('SalvasPage', () => {
     expect(fixture.debugElement.queryAll(By.directive(MenuComponent))).toHaveLength(2);
 
     const opcoes = abrirMenuDaLinha(0).map((botao) => botao.textContent?.trim());
-    expect(opcoes).toEqual(['Visualizar', 'Excluir']);
+    expect(opcoes).toEqual(['Visualizar', 'Abrir cotação', 'Excluir']);
   });
 
   it('visualizar abre o modal com a oportunidade salva', () => {
     clicarAcao(0, 'Visualizar');
 
     expect(modal.abrir).toHaveBeenCalledWith(OportunidadeModalComponent, SALVA);
+  });
+
+  it('"Abrir cotação" abre o Cotador pelo id da oportunidade, não pelo da cotação', () => {
+    clicarAcao(0, 'Abrir cotação');
+
+    expect(modal.abrir).toHaveBeenCalledWith(
+      CotadorModalComponent,
+      expect.objectContaining({ oportunidadeId: SALVA.id, oportunidade: null }),
+    );
+  });
+
+  it('o Cotador de uma salva recebe os itens do snapshot, para abrir sem rede', () => {
+    clicarAcao(0, 'Abrir cotação');
+
+    const dados = modal.abrir.mock.calls.at(-1)![1] as { itens: unknown };
+    expect(dados.itens).toBe(SALVA.itens);
   });
 
   it('excluir avisa que a ação não pode ser desfeita e só exclui se confirmado', () => {

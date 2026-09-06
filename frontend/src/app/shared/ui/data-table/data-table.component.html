@@ -76,6 +76,9 @@
                   [class]="classeCelula(coluna, linha)"
                 >
                   <span class="celula-conteudo">{{ coluna.valor(linha) }}</span>
+                  @if (secundarioDe(coluna, linha); as secundario) {
+                    <span class="celula-secundaria">{{ secundario }}</span>
+                  }
                 </td>
               }
               @if (acoes(); as acoesTemplate) {

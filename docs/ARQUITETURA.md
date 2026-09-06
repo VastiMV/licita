@@ -45,6 +45,8 @@ manifests já usam esse nome; o valor `licita` que aparecia aqui antes nunca foi
 | `accounts` | usuários, autenticação (JWT), perfil |
 | `catalogo` | model `Pdm`, sincronização do catálogo de materiais |
 | `licitacoes` | busca de oportunidades (live, cruza PNCP + catálogo) e os models `OportunidadeSalva`/`EventoOportunidadeSalva` (lista salva + histórico) |
+| `fornecedores` | model `Fornecedor` — o cadastro compartilhado de quem a empresa compra para revender; é a base que o Cotador amarra a cada item |
+| `cotador` | formação de preço de uma oportunidade (`Cotacao`/`ItemCotacao`/`OfertaFornecedor`), a conta em `formulas.py` e a proposta em .xlsx (`planilha.py`). App próprio, e não um campo novo no cotador antigo de `licitacoes`: os dois respondem perguntas diferentes e os nomes de campo colidiriam — ver a docstring de `apps/cotador/models.py` |
 | `filtros` | model `Filtro` (dono = usuário autenticado) |
 | `alertas` | model `Alerta`, geração e disparo de notificação |
 | `integracoes` | clients HTTP para PNCP e compras.gov.br, isolados do resto (mockáveis nos testes) |

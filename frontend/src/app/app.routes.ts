@@ -38,6 +38,11 @@ export const routes: Routes = [
         ],
       },
       {
+        path: 'fornecedores',
+        loadComponent: () =>
+          import('./pages/fornecedores/fornecedores.page').then((m) => m.FornecedoresPage),
+      },
+      {
         path: 'cotador',
         loadComponent: () => import('./pages/cotador/cotador.page').then((m) => m.CotadorPage),
       },

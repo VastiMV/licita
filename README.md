@@ -30,11 +30,14 @@ dados e manifests de infraestrutura.
 ## Status
 
 - **`frontend/`** — Angular: design system, autenticação e as telas de
-  oportunidades (pesquisar + salvas), filtros, alertas e login. Ver
-  [`frontend/README.md`](frontend/README.md).
+  oportunidades (pesquisar + salvas), fornecedores, filtros, alertas e
+  login. O Cotador é um modal aberto do card da busca ou da lista de salvas.
+  Ver [`frontend/README.md`](frontend/README.md).
 - **`backend/`** — Django/DRF: autenticação por e-mail (`apps/accounts`),
   integrações (`apps/integracoes`), catálogo de materiais (`apps/catalogo`),
-  CAPAG (`apps/capag`) e licitações (`apps/licitacoes` — busca ao vivo,
-  oportunidades salvas e histórico). `filtros` e `alertas` ainda não
-  existem. Ver [`backend/README.md`](backend/README.md).
+  CAPAG (`apps/capag`), licitações (`apps/licitacoes` — busca ao vivo,
+  oportunidades salvas e histórico), cadastro de fornecedores
+  (`apps/fornecedores`) e formação de preço (`apps/cotador`, com exportação
+  da proposta em .xlsx). `filtros` e `alertas` ainda não existem. Ver
+  [`backend/README.md`](backend/README.md).
 - Manifests Kubernetes ainda não existem.

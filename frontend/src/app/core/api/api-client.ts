@@ -1,4 +1,4 @@
-import { HttpClient, HttpParams } from '@angular/common/http';
+import { HttpClient, HttpParams, HttpResponse } from '@angular/common/http';
 import { Injectable, inject } from '@angular/core';
 import { Observable } from 'rxjs';
 
@@ -39,6 +39,18 @@ export class ApiClient {
 
   delete<TResponse = void>(path: string): Observable<TResponse> {
     return this.http.delete<TResponse>(this.url(path));
+  }
+
+  /**
+   * GET de arquivo (a planilha de proposta do Cotador). Passa pelo mesmo
+   * `HttpClient` — e portanto pelo interceptor que injeta o token — porque
+   * um `<a href>` ou `window.open` iria sem `Authorization` e levaria 401.
+   *
+   * `observe: 'response'` porque o nome do arquivo vem no
+   * `Content-Disposition`, não no corpo.
+   */
+  getArquivo(path: string): Observable<HttpResponse<Blob>> {
+    return this.http.get(this.url(path), { observe: 'response', responseType: 'blob' });
   }
 
   private url(path: string): string {

@@ -107,14 +107,23 @@
         </a>
       }
 
+      @if (podeCotar() && !encerrada()) {
+        <!-- Cotar não salva nada: abre o Cotador com os itens deste edital.
+             Quem salva (a cotação e, com ela, a oportunidade) é o botão de
+             dentro do modal. -->
+        <button type="button" class="btn-cotar" (click)="cotar.emit()">
+          <span class="btn-cotar-chip"><app-icon name="calculadora" /></span>
+          <span class="btn-cotar-texto">
+            <span class="btn-cotar-titulo">Cotar</span>
+            <span class="btn-cotar-meta">formar preço dos itens</span>
+          </span>
+          <app-icon name="arrow-right" class="btn-cotar-icone" />
+        </button>
+      }
+
       @if (podeSalvar() && !encerrada()) {
         @if (!salva()) {
-          <button
-            type="button"
-            class="btn-salvar"
-            [disabled]="salvando()"
-            (click)="salvar.emit()"
-          >
+          <button type="button" class="btn-salvar" [disabled]="salvando()" (click)="salvar.emit()">
             <app-icon name="bookmark" />
             {{ salvando() ? 'Salvando…' : 'Salvar oportunidade' }}
           </button>

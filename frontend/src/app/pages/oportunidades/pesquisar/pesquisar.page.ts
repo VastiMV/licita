@@ -16,12 +16,10 @@ import { InputTextComponent } from '../../../shared/ui/input-text/input-text.com
 import { SelectComponent } from '../../../shared/ui/select/select.component';
 import { ToastService } from '../../../shared/ui/toast/toast.service';
 import { VoltarTopoComponent } from '../../../shared/ui/voltar-topo/voltar-topo.component';
+import { CotadorModalComponent, CotadorModalData } from '../cotador-modal/cotador-modal.component';
 import { EditalCardComponent } from '../edital-card/edital-card.component';
-import {
-  DetalheEstado,
-  EditalCard,
-  agruparPorEdital,
-} from '../edital-card/edital-card.model';
+import { DetalheEstado, EditalCard, agruparPorEdital } from '../edital-card/edital-card.model';
+import { normalizarTitulo } from '../edital-card/edital-card.utils';
 
 /** Janela de publicação que a tela já vem preenchida: a última semana. É
  * mais estreita que o default de 30 dias do backend (`JANELA_PADRAO_DIAS` em
@@ -188,6 +186,37 @@ export class PesquisarPage implements OnInit {
               this.toast.erro('Não foi possível salvar a oportunidade agora.');
             },
           });
+      });
+  }
+
+  /**
+   * Abre o Cotador com os itens deste edital.
+   *
+   * **Não salva nada aqui.** O modal trabalha em memória; se o operador
+   * salvar a cotação, é o backend que põe a oportunidade na lista de
+   * salvas junto (ver `CotadorModalComponent` e `apps/cotador/views.py`) —
+   * e aí o card passa a aparecer como salvo, sem uma segunda chamada.
+   */
+  protected cotar(card: EditalCard): void {
+    const detalhe = this.detalheDe(card.chave);
+    const dados: CotadorModalData = {
+      titulo: normalizarTitulo(card.contratacao.contratacao_objeto),
+      itens: card.itens,
+      // Mesmo já estando salva, o payload vai junto: o backend é
+      // idempotente e devolve o registro existente sem criar evento novo.
+      oportunidadeId: null,
+      oportunidade: {
+        itens: card.itens,
+        capag: card.contratacao.capag ?? detalhe?.capag ?? null,
+        plataforma: detalhe?.plataforma ?? null,
+      },
+    };
+
+    this.modal
+      .abrir<{ oportunidadeCriada: boolean }, CotadorModalData>(CotadorModalComponent, dados)
+      .subscribe((resultado) => {
+        if (!resultado) return;
+        this.salvas.update((atual) => new Set(atual).add(card.chave));
       });
   }
 

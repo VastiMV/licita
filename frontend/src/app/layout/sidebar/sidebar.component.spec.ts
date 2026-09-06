@@ -34,7 +34,14 @@ describe('SidebarComponent', () => {
     // vem antes de "Salvas" (a busca é a tela inicial do app).
     const items = fixture.debugElement.queryAll(By.directive(NavItemComponent));
     const labels = items.map((item) => (item.componentInstance as NavItemComponent).label());
-    expect(labels).toEqual(['Pesquisar', 'Salvas', 'Alertas', 'Filtros', 'Cotador']);
+    expect(labels).toEqual([
+      'Pesquisar',
+      'Salvas',
+      'Fornecedores',
+      'Alertas',
+      'Filtros',
+      'Cotador',
+    ]);
   });
 
   it('os filhos de Oportunidades apontam para as rotas do submenu', () => {

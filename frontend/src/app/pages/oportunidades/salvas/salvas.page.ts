@@ -13,7 +13,8 @@ import {
 import { TabelaAcoesDirective } from '../../../shared/ui/data-table/tabela-acoes.directive';
 import { ItemMenu, MenuComponent } from '../../../shared/ui/menu/menu.component';
 import { ToastService } from '../../../shared/ui/toast/toast.service';
-import { formatarData, formatarMoeda } from '../edital-card/edital-card.utils';
+import { CotadorModalComponent, CotadorModalData } from '../cotador-modal/cotador-modal.component';
+import { formatarData, formatarMoeda, normalizarTitulo } from '../edital-card/edital-card.utils';
 import { OportunidadeModalComponent } from './oportunidade-modal/oportunidade-modal.component';
 
 /** Quantos caracteres do município cabem sem esticar a coluna. O nome é
@@ -127,12 +128,34 @@ export class SalvasPage implements OnInit {
   protected acoesDe(salva: OportunidadeSalvaResponse): readonly ItemMenu[] {
     return [
       { rotulo: 'Visualizar', icone: 'eye', executar: () => this.visualizar(salva) },
+      { rotulo: 'Abrir cotação', icone: 'calculadora', executar: () => this.cotar(salva) },
       { rotulo: 'Excluir', icone: 'trash', tom: 'perigo', executar: () => this.excluir(salva) },
     ];
   }
 
   protected visualizar(salva: OportunidadeSalvaResponse): void {
     this.modal.abrir(OportunidadeModalComponent, salva).subscribe();
+  }
+
+  /**
+   * Abre o Cotador desta oportunidade — a cotação gravada, se existir, ou
+   * uma nova já preenchida com os itens do snapshot do edital.
+   *
+   * Quem sabe qual dos dois é o caso é o próprio modal: ele pede a cotação
+   * pelo id da oportunidade e trata 404 como "ainda não cotada" (ver
+   * `CotadorModalComponent`), o que evita uma chamada a mais só pra
+   * descobrir isso antes de abrir.
+   */
+  protected cotar(salva: OportunidadeSalvaResponse): void {
+    const dados: CotadorModalData = {
+      titulo: normalizarTitulo(salva.objeto),
+      itens: salva.itens,
+      oportunidadeId: salva.id,
+      // Já está salva: não há payload de oportunidade a mandar.
+      oportunidade: null,
+    };
+
+    this.modal.abrir<unknown, CotadorModalData>(CotadorModalComponent, dados).subscribe();
   }
 
   protected excluir(salva: OportunidadeSalvaResponse): void {

@@ -130,6 +130,10 @@ export class DataTableComponent<T> {
     return coluna.dica?.(linha) ?? null;
   }
 
+  protected secundarioDe(coluna: ColunaTabela<T>, linha: T): string | null {
+    return coluna.secundario?.(linha) || null;
+  }
+
   protected classeCelula(coluna: ColunaTabela<T>, linha: T): string {
     const tom = coluna.tom?.(linha);
     return tom ? `celula-${tom}` : '';
