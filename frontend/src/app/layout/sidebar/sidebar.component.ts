@@ -55,6 +55,8 @@ export class SidebarComponent {
         { path: '/oportunidades/salvas', label: 'Salvas', icon: 'bookmark' },
       ],
     },
+    // O par natural: com quem eu disputo, de quem eu compro.
+    { path: '/empresas', label: 'Empresas', icon: 'empresas' },
     { path: '/fornecedores', label: 'Fornecedores', icon: 'fornecedores' },
     { path: '/alertas', label: 'Alertas', icon: 'alertas' },
     { path: '/filtros', label: 'Filtros', icon: 'filtros' },

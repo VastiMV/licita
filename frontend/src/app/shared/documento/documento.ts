@@ -1,8 +1,13 @@
 /**
- * Máscara e validação de CPF/CNPJ, CEP e telefone — as regras que o
- * formulário de fornecedor aplica enquanto se digita.
+ * Máscara e validação de CPF/CNPJ, CEP e telefone — as regras que os
+ * formulários de cadastro aplicam enquanto se digita (fornecedor, empresa e
+ * quem vier depois).
  *
- * Espelha `apps/fornecedores/documentos.py`, que é quem decide de verdade:
+ * Mora em `shared/` e não dentro de uma página pelo mesmo motivo do
+ * `apps/fornecedores/documentos.py` no backend: a regra é do documento, não
+ * do cadastro que por acaso a usou primeiro.
+ *
+ * E espelha esse módulo do backend, que é quem decide de verdade:
  * o backend revalida tudo, porque validação de tela é conveniência (dizer
  * "confira o dígito" antes de a pessoa clicar em salvar), nunca garantia.
  *

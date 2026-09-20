@@ -37,6 +37,7 @@ describe('SidebarComponent', () => {
     expect(labels).toEqual([
       'Pesquisar',
       'Salvas',
+      'Empresas',
       'Fornecedores',
       'Alertas',
       'Filtros',

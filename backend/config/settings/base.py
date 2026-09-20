@@ -42,10 +42,12 @@ INSTALLED_APPS = [
     "channels",
     "django_celery_beat",
     "apps.accounts",
+    "apps.tenants",
     "apps.integracoes",
     "apps.catalogo",
     "apps.capag",
     "apps.licitacoes",
+    "apps.empresas",
     "apps.fornecedores",
     "apps.cotador",
 ]

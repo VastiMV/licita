@@ -27,6 +27,7 @@ export type IconName =
   | 'trash'
   | 'cotador'
   | 'fornecedores'
+  | 'empresas'
   | 'plus'
   | 'calculadora'
   | 'copiar'

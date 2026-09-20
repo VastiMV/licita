@@ -54,6 +54,52 @@ A busca de **oportunidades item a item** (tela principal do protótipo) não
 persiste — é consulta ao vivo em `ComprasGovClient`/`PncpClient`, cruzada com
 `Pdm` quando há palavra-chave. Ver "Busca de oportunidades" abaixo.
 
+### `Tenant` e `Empresa`
+
+**`Tenant`** é a operação de licitação dona dos registros. Hoje existe uma
+linha só — Inside Solutions, criada pela migração inicial de `apps/tenants` —
+e não há tela para cadastrar outra: o produto se comporta como se fosse de um
+cliente só, porque é. O model existe porque a coluna que falta é cara de
+acrescentar depois: uma FK que nasce nula em milhares de linhas já gravadas
+não tem como ser preenchida. Quem nasce daqui para frente já nasce com ela;
+`Fornecedor`, `OportunidadeSalva` e `Cotacao` ganham a sua no dia do segundo
+cliente, e aí a migração é trivial porque só há um tenant para apontar.
+
+`apps/tenants/atual.py` é **o único lugar** que responde "de quem é esta
+requisição". Todo o resto chama `tenant_atual(request)` — é o que torna a
+virada multiempresa uma mudança de uma função, e não uma varredura por todo
+filtro de queryset já escrito.
+
+**`Empresa`** são os CNPJs com que a equipe **disputa** — não confundir com
+`Fornecedor`, que é de quem a equipe compra para revender. São perguntas
+diferentes: do fornecedor importam preço, prazo e condição de pagamento; da
+empresa importa habilitação. Implementado em `apps/empresas/models.py`.
+
+- **Mais de um CNPJ é comum em licitação.** Matriz e filial disputam lotes
+  diferentes, e uma segunda empresa cobre CNAE que a primeira não tem. Quem
+  monta a proposta escolhe qual usar; com um CNPJ só, o seletor não aparece.
+- **Uma empresa é a padrão**, por tenant — garantido por índice parcial no
+  banco, além do `save()` que desmarca a anterior. A primeira empresa
+  cadastrada nasce padrão: cadastro com uma empresa só e nenhuma escolhida
+  abriria proposta sem CNPJ.
+- **`porte` não é papelada.** ME e EPP têm empate ficto e prazo para
+  regularizar certidão fiscal depois de vencer a disputa (LC 123) — é o campo
+  que mais muda o que acontece no pregão. É ele que substitui a "categoria"
+  do fornecedor, que aqui não faz sentido.
+- **Não existe excluir**, ao contrário do fornecedor: a empresa está amarrada
+  a propostas e processos, então o que existe é inativar (`ativa = False`) —
+  some do seletor de CNPJ, continua no histórico. Mesma disciplina da remoção
+  lógica da oportunidade salva. A empresa padrão não pode ser inativada sem
+  que outra assuma o lugar.
+- **Unicidade de CNPJ é por tenant**, e não global como no fornecedor: dois
+  clientes do produto podem cadastrar o mesmo CNPJ de uma sociedade que
+  compartilham, e um não pode impedir o outro.
+
+Os documentos da empresa (certidões, contrato social, balanço) e o
+armazenamento deles ainda não existem — ver
+[`Tarefas/feat-cadastro-empresa.md`](Tarefas/feat-cadastro-empresa.md) e
+[`Tarefas/feat-armazenamento.md`](Tarefas/feat-armazenamento.md).
+
 ### `OportunidadeSalva`
 
 Uma compra (edital) que alguém escolheu guardar para trabalhar depois — o

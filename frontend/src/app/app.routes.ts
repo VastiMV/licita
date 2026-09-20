@@ -38,6 +38,10 @@ export const routes: Routes = [
         ],
       },
       {
+        path: 'empresas',
+        loadComponent: () => import('./pages/empresas/empresas.page').then((m) => m.EmpresasPage),
+      },
+      {
         path: 'fornecedores',
         loadComponent: () =>
           import('./pages/fornecedores/fornecedores.page').then((m) => m.FornecedoresPage),

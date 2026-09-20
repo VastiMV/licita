@@ -1,0 +1,143 @@
+<app-modal-shell
+  [titulo]="editando ? empresa!.nome : 'Cadastrar empresa'"
+  largura="larga"
+  (fechar)="fechar()"
+>
+  <p class="kicker">{{ editando ? 'Editar empresa' : 'Nova empresa' }}</p>
+
+  @if (ehPadrao) {
+    <p class="aviso-padrao">
+      Esta é a <strong>empresa padrão</strong> — a que já vem escolhida ao montar uma proposta.
+    </p>
+  }
+
+  <form [formGroup]="form" (ngSubmit)="salvar()" novalidate>
+    <section>
+      <h3>Identificação</h3>
+      <div class="grade grade-identificacao">
+        <app-input-text
+          class="col-larga"
+          label="Razão social *"
+          formControlName="nome"
+          placeholder="Ex.: Inside Solutions Ltda"
+          [error]="erroDe('nome')"
+        />
+        <app-input-text
+          label="Nome fantasia"
+          formControlName="fantasia"
+          placeholder="Como é conhecida"
+          [error]="erroDe('fantasia')"
+        />
+        <app-input-text
+          label="CNPJ *"
+          formControlName="cnpj"
+          placeholder="00.000.000/0000-00"
+          [error]="erroDe('cnpj')"
+        />
+        <app-select
+          label="Porte *"
+          [options]="portes"
+          formControlName="porte"
+          placeholder="Selecione"
+        />
+        <app-input-text
+          label="CNAE principal"
+          formControlName="cnae_principal"
+          placeholder="0000-0/00"
+          [error]="erroDe('cnae_principal')"
+        />
+        <app-input-text
+          label="Inscrição estadual"
+          formControlName="inscricao_estadual"
+          placeholder="Isento ou número"
+          [error]="erroDe('inscricao_estadual')"
+        />
+        <app-input-text
+          label="Inscrição municipal"
+          formControlName="inscricao_municipal"
+          placeholder="Isento ou número"
+          [error]="erroDe('inscricao_municipal')"
+        />
+      </div>
+      <p class="ajuda">
+        O porte não é papelada: ME e EPP têm empate ficto e prazo para regularizar certidão fiscal
+        depois de vencer a disputa. O CNAE decide se esta empresa pode disputar um objeto.
+      </p>
+    </section>
+
+    <section>
+      <h3>Endereço</h3>
+      <div class="grade grade-endereco">
+        <app-input-text
+          label="CEP"
+          formControlName="cep"
+          placeholder="00000-000"
+          [error]="erroDe('cep')"
+        />
+        <app-input-text
+          class="col-larga"
+          label="Logradouro"
+          formControlName="logradouro"
+          placeholder="Rua, avenida"
+          [error]="erroDe('logradouro')"
+        />
+        <app-input-text label="Número" formControlName="numero" [error]="erroDe('numero')" />
+        <app-input-text
+          label="Complemento"
+          formControlName="complemento"
+          placeholder="Sala, andar"
+          [error]="erroDe('complemento')"
+        />
+        <app-input-text label="Bairro" formControlName="bairro" [error]="erroDe('bairro')" />
+        <app-input-text label="Cidade" formControlName="cidade" [error]="erroDe('cidade')" />
+        <app-select label="UF" [options]="ufs" formControlName="uf" placeholder="UF" />
+      </div>
+    </section>
+
+    <section>
+      <h3>Contato</h3>
+      <div class="grade grade-contato">
+        <app-input-text
+          class="col-larga"
+          label="Responsável legal"
+          formControlName="responsavel_legal"
+          placeholder="Quem assina proposta e contrato"
+          [error]="erroDe('responsavel_legal')"
+        />
+        <app-input-text
+          label="E-mail"
+          formControlName="email"
+          placeholder="licitacoes@empresa.com.br"
+          [error]="erroDe('email')"
+        />
+        <app-input-text
+          label="Telefone"
+          formControlName="telefone"
+          placeholder="(00) 0000-0000"
+          [error]="erroDe('telefone')"
+        />
+      </div>
+
+      <label class="field">
+        <span class="field-label">Observações</span>
+        <textarea
+          formControlName="observacoes"
+          rows="4"
+          placeholder="Certificações, restrições de atuação, notas internas…"
+        ></textarea>
+      </label>
+    </section>
+
+    @if (erroGeral(); as mensagem) {
+      <p class="erro">{{ mensagem }}</p>
+    }
+  </form>
+
+  <span modalFooter class="obrigatorios">Campos com <em>*</em> são obrigatórios</span>
+  <app-button modalFooter variant="ghost" [disabled]="salvando()" (click)="fechar()">
+    Cancelar
+  </app-button>
+  <app-button modalFooter [disabled]="salvando()" (click)="salvar()">
+    {{ salvando() ? 'Salvando…' : editando ? 'Salvar alterações' : 'Cadastrar empresa' }}
+  </app-button>
+</app-modal-shell>

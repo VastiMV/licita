@@ -1,0 +1,112 @@
+@use 'field' as *;
+@use 'mixins' as *;
+
+.kicker {
+  @include uppercase-label;
+  margin: 0 0 var(--space-4);
+  color: var(--color-blue);
+}
+
+.aviso-padrao {
+  margin: 0 0 var(--space-4);
+  padding: var(--space-2) var(--space-3);
+  border-radius: var(--radius-md);
+  background: var(--color-blue-soft);
+  color: var(--color-navy);
+  font-size: var(--font-size-sm);
+}
+
+section {
+  margin-bottom: var(--space-5);
+
+  + section {
+    padding-top: var(--space-5);
+    border-top: 1px solid var(--color-border);
+  }
+}
+
+h3 {
+  @include uppercase-label;
+  margin: 0 0 var(--space-3);
+}
+
+.grade {
+  display: grid;
+  gap: var(--space-3) var(--space-4);
+  align-items: start;
+}
+
+// A razão social precisa de mais espaço que o CNPJ, e o logradouro mais que
+// o número — mesma lógica de proporção do modal de fornecedor.
+.grade-identificacao {
+  grid-template-columns: 1.4fr 1fr 0.9fr;
+}
+
+.grade-endereco {
+  grid-template-columns: 0.7fr 2fr 0.6fr 1.2fr;
+}
+
+.grade-contato {
+  grid-template-columns: 1.4fr 1fr 0.9fr;
+}
+
+.col-larga {
+  grid-column: span 2;
+}
+
+.ajuda {
+  margin: var(--space-3) 0 0;
+  font-size: var(--font-size-xs);
+  color: var(--color-muted);
+  max-width: 70ch;
+}
+
+.field {
+  @include field-wrapper;
+  margin-top: var(--space-3);
+}
+
+.field-label {
+  @include field-label;
+}
+
+textarea {
+  @include field-control;
+  min-height: 96px;
+  line-height: var(--line-height-base);
+  resize: vertical;
+}
+
+// Empurra a legenda dos obrigatórios para a esquerda do rodapé, que é
+// `justify-content: flex-end` por padrão (ver `modal-shell`).
+.obrigatorios {
+  margin-right: auto;
+  align-self: center;
+  font-size: var(--font-size-xs);
+  color: var(--color-muted);
+
+  em {
+    font-style: normal;
+    color: var(--color-danger);
+  }
+}
+
+@media (max-width: 900px) {
+  .grade-identificacao,
+  .grade-endereco,
+  .grade-contato {
+    grid-template-columns: repeat(2, 1fr);
+  }
+}
+
+@media (max-width: 560px) {
+  .grade-identificacao,
+  .grade-endereco,
+  .grade-contato {
+    grid-template-columns: 1fr;
+  }
+
+  .col-larga {
+    grid-column: auto;
+  }
+}

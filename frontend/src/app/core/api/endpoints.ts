@@ -27,6 +27,14 @@ export const ENDPOINTS = {
      * docs/DOMINIO.md, "Histórico da oportunidade salva"). */
     salvaEventos: (id: number) => `licitacoes/salvas/${id}/eventos/`,
   },
+  /** Os CNPJs com que a equipe disputa (`apps/empresas`) — não confundir
+   * com `fornecedores`, que é de quem a equipe compra. */
+  empresas: {
+    lista: 'empresas/',
+    detalhe: (id: number) => `empresas/${id}/`,
+    /** Cadastro enxuto — o seletor de "com qual CNPJ eu disputo". */
+    opcoes: 'empresas/opcoes/',
+  },
   fornecedores: {
     lista: 'fornecedores/',
     detalhe: (id: number) => `fornecedores/${id}/`,
