@@ -11,6 +11,11 @@ sejam aquelas empresas, aqueles documentos, aquele bucket. Nascendo
 obrigatória com um tenant só, a resposta é sempre a mesma e a migração do dia
 seguinte é mecânica.
 
+**Tenant não é empresa.** Um cliente tem *várias* empresas — matriz,
+filial, a segunda que cobre outro CNAE —, e é com uma delas que ele disputa
+cada licitação. Daí `tenant.empresas` (ver `tenant_campo`): a relação é
+um-para-muitos e o caminho de volta faz parte do model, não só do banco.
+
 **Os models antigos ficam de fora de propósito.** `Fornecedor`,
 `OportunidadeSalva` e `Cotacao` continuam sem tenant: eles já existem, já têm
 dados, e acrescentar a FK neles é exatamente a migração trivial descrita
@@ -50,6 +55,16 @@ class Tenant(models.Model):
     def __str__(self) -> str:
         return self.nome
 
+    @property
+    def empresa_padrao(self):
+        """A empresa que já vem escolhida ao montar uma proposta.
+
+        `None` só antes de a primeira ser cadastrada: a primeira empresa de
+        um tenant nasce padrão (ver `apps.empresas.models.Empresa.save`).
+        """
+
+        return self.empresas.filter(padrao=True, ativa=True).first()
+
 
 class TenantQuerySet(models.QuerySet):
     """Base dos querysets de quem tem `tenant`. Uma chamada só — `do_tenant`
@@ -60,13 +75,19 @@ class TenantQuerySet(models.QuerySet):
         return self.filter(tenant=tenant)
 
 
-def tenant_campo() -> models.ForeignKey:
+def tenant_campo(related_name: str) -> models.ForeignKey:
     """A FK padronizada. Obrigatória (ver docstring do módulo) e `PROTECT`:
-    apagar um tenant com dados é sempre erro de operação, nunca intenção."""
+    apagar um tenant com dados é sempre erro de operação, nunca intenção.
+
+    `related_name` é obrigatório e nunca `"+"`: **o caminho de volta faz
+    parte do model**. Um cliente tem várias empresas, e `tenant.empresas` é
+    como se pergunta quais são — sem isso o vínculo existe só no banco, e no
+    Django ele não existe.
+    """
 
     return models.ForeignKey(
         Tenant,
         verbose_name="tenant",
-        related_name="+",
+        related_name=related_name,
         on_delete=models.PROTECT,
     )
