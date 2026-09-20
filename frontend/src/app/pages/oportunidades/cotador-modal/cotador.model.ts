@@ -114,6 +114,11 @@ export interface ItemCalculado {
   /** Quanto se economizaria por unidade trocando para o melhor fornecedor.
    * Zero quando o escolhido já é o melhor. */
   readonly economiaUnitaria: number;
+  /** Distância do preço proposto até o unitário estimado do edital, em %
+   * do estimado: negativo abaixo dele, positivo acima. Nulo quando não há
+   * o que comparar — edital sem referência, ou item ainda sem preço (aí o
+   * "100% abaixo" seria mentira de item vazio, não proposta agressiva). */
+  readonly desvioReferencia: number | null;
   /** `true` quando o preço proposto já está no piso — não dá para negociar
    * mais. */
   readonly noLimite: boolean;
@@ -163,6 +168,12 @@ export function temPreco(oferta: OfertaCotador): boolean {
   return oferta.custoProduto > 0;
 }
 
+/** O unitário estimado do edital, quando o edital publicou um. Zero conta
+ * como ausente: é compra sem valor divulgado, não teto de R$ 0,00. */
+export function referenciaDe(item: ItemCotador): number | null {
+  return item.valorReferencia !== null && item.valorReferencia > 0 ? item.valorReferencia : null;
+}
+
 /** A oferta que entra na conta. Sem marcação válida, a primeira — um item
  * recém-criado tem um fornecedor só e ainda não foi marcado. */
 export function ofertaEscolhida(item: ItemCotador): OfertaCotador | null {
@@ -207,6 +218,12 @@ export function calcularItem(item: ItemCotador, padroes: PadroesCotador): ItemCa
       ? Math.max(custoUnitario - custoUnitarioDa(melhor), 0)
       : 0;
 
+  const referencia = referenciaDe(item);
+  const desvioReferencia =
+    referencia === null || precoFinalUnitario <= 0
+      ? null
+      : ((precoFinalUnitario - referencia) / referencia) * 100;
+
   const transporteUnitario = (custoUnitario * padroes.transporte) / 100;
   const garantiaUnitario = (custoUnitario * padroes.garantia) / 100;
 
@@ -228,6 +245,7 @@ export function calcularItem(item: ItemCotador, padroes: PadroesCotador): ItemCa
     lucroTotal: lucroUnitario * quantidade,
     incompleto: !item.descricao.trim() || !escolhida || !temPreco(escolhida),
     economiaUnitaria: economiaUnitaria > TOLERANCIA ? economiaUnitaria : 0,
+    desvioReferencia,
     noLimite: precoFinalUnitario <= precoReservaUnitario + TOLERANCIA,
     memoria: [
       { sinal: '', rotulo: 'Custo do produto', valor: escolhida?.custoProduto ?? 0, forte: false },

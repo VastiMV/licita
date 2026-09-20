@@ -31,6 +31,7 @@ import {
   formatarQuantidade,
   melhorOferta,
   ofertaEscolhida,
+  referenciaDe,
   totalizar,
 } from './cotador.model';
 
@@ -295,6 +296,27 @@ export class CotadorModalComponent implements OnInit {
 
   protected custoDa(oferta: OfertaCotador): number {
     return custoUnitarioDa(oferta);
+  }
+
+  /** O unitário estimado do edital — a referência contra a qual se forma o
+   * preço. Nulo quando o edital não publicou valor ou o item foi criado à
+   * mão. */
+  protected readonly estimadoDe = referenciaDe;
+
+  /** O chip que compara o preço proposto com o estimado do edital. Diz o
+   * fato ("6,4% acima do estimado") e não a consequência: nem todo edital
+   * trata o estimado como preço máximo. Nulo = não há o que comparar. */
+  protected comparacaoDe(indice: number): { texto: string; acima: boolean } | null {
+    const desvio = this.calculoDe(indice).desvioReferencia;
+    if (desvio === null) return null;
+
+    // Abaixo da resolução da tela (uma casa), "0% abaixo" seria ruído.
+    if (Math.abs(desvio) < 0.05) return { texto: 'no valor estimado', acima: false };
+
+    return {
+      texto: `${formatarPercentual(Math.abs(desvio))} ${desvio > 0 ? 'acima' : 'abaixo'} do estimado`,
+      acima: desvio > 0,
+    };
   }
 
   /** O item usa tributo próprio (e não o padrão da cotação). */

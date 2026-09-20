@@ -130,6 +130,25 @@
                   <button type="button" class="chip chip-fornecedor" (click)="alternar(item)">
                     <span class="ponto"></span>{{ rotuloDoFornecedor(item) }}
                   </button>
+                  @if (estimadoDe(item); as estimado) {
+                    <span
+                      class="chip chip-estimado"
+                      [title]="'Total estimado do lote: ' + moeda(estimado * item.quantidade)"
+                    >
+                      Estimado {{ moeda(estimado) }}/un
+                    </span>
+                    @if (comparacaoDe(i); as comparacao) {
+                      <span
+                        class="chip"
+                        [class.chip-acima]="comparacao.acima"
+                        [class.chip-abaixo]="!comparacao.acima"
+                      >
+                        {{ comparacao.texto }}
+                      </span>
+                    }
+                  } @else {
+                    <span class="chip chip-sem-estimado">sem valor estimado</span>
+                  }
                   @if (calculoDe(i).economiaUnitaria > 0) {
                     <button type="button" class="chip chip-economia" (click)="usarMelhor(item)">
                       {{ moeda(calculoDe(i).economiaUnitaria) }} mais barato em

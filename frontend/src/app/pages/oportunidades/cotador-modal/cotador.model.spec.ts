@@ -9,6 +9,7 @@ import {
   formatarPercentual,
   melhorOferta,
   ofertaEscolhida,
+  referenciaDe,
   totalizar,
 } from './cotador.model';
 
@@ -114,6 +115,33 @@ describe('preço de um item', () => {
     expect(calculo.custoUnitario).toBe(0);
     expect(calculo.precoFinalUnitario).toBe(0);
     expect(calculo.incompleto).toBe(true);
+  });
+});
+
+describe('comparação com o estimado do edital', () => {
+  it('preço acima do estimado dá desvio positivo', () => {
+    // Preço 41,47 contra estimado de 30,00 → 38,2% acima.
+    expect(calcularItem(item(), PADROES).desvioReferencia).toBeCloseTo(38.233, 2);
+  });
+
+  it('preço abaixo do estimado dá desvio negativo', () => {
+    // 16,20 × 1,43 ÷ 0,9 = 25,74 contra 30,00 → 14,2% abaixo.
+    const alvo = item({ ofertas: [oferta({ custoProduto: 15, frete: 1.2 })] });
+    expect(calcularItem(alvo, PADROES).desvioReferencia).toBeCloseTo(-14.2, 2);
+  });
+
+  it('edital sem referência não tem o que comparar', () => {
+    expect(calcularItem(item({ valorReferencia: null }), PADROES).desvioReferencia).toBeNull();
+  });
+
+  it('referência zerada é edital sem valor publicado, não teto de R$ 0,00', () => {
+    expect(calcularItem(item({ valorReferencia: 0 }), PADROES).desvioReferencia).toBeNull();
+    expect(referenciaDe(item({ valorReferencia: 0 }))).toBeNull();
+  });
+
+  it('item ainda sem preço não vira "100% abaixo do estimado"', () => {
+    const alvo = item({ ofertas: [oferta({ custoProduto: 0, frete: 0, outros: 0 })] });
+    expect(calcularItem(alvo, PADROES).desvioReferencia).toBeNull();
   });
 });
 

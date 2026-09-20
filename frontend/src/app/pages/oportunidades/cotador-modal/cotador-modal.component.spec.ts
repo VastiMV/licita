@@ -249,6 +249,54 @@ describe('CotadorModalComponent', () => {
     });
   });
 
+  describe('o estimado do edital na linha do item', () => {
+    it('mostra o unitário estimado junto da descrição', () => {
+      const { fixture } = montar(DA_BUSCA);
+
+      expect(fixture.nativeElement.textContent).toContain('Estimado R$ 30,00/un');
+    });
+
+    it('item ainda sem preço não é comparado com o estimado', () => {
+      const { fixture } = montar(DA_BUSCA);
+
+      expect(fixture.nativeElement.textContent).not.toContain('do estimado');
+    });
+
+    it('proposta abaixo do estimado aparece como folga', () => {
+      const { fixture } = montar(DA_BUSCA);
+      precificar(fixture, '15,00');
+
+      const chip = fixture.debugElement.query(By.css('.chip-abaixo'));
+      expect(chip.nativeElement.textContent).toContain('14,2% abaixo do estimado');
+      expect(fixture.debugElement.query(By.css('.chip-acima'))).toBeNull();
+    });
+
+    it('proposta acima do estimado aparece como alerta', () => {
+      const { fixture } = montar(DA_BUSCA);
+      precificar(fixture);
+
+      const chip = fixture.debugElement.query(By.css('.chip-acima'));
+      expect(chip.nativeElement.textContent).toContain('38,2% acima do estimado');
+    });
+
+    it('item criado à mão não inventa estimado', () => {
+      const { fixture } = montar(DA_BUSCA);
+
+      interno(fixture).adicionarItem();
+      fixture.detectChanges();
+
+      const chips = fixture.debugElement.queryAll(By.css('.chip-sem-estimado'));
+      expect(chips).toHaveLength(1);
+      expect(chips[0].nativeElement.textContent).toContain('sem valor estimado');
+    });
+
+    it('a cotação gravada também mostra o estimado que veio do edital', () => {
+      const { fixture } = montar(DA_SALVA, of(COTACAO_SALVA));
+
+      expect(fixture.nativeElement.textContent).toContain('Estimado R$ 30,00/un');
+    });
+  });
+
   describe('abertura por uma oportunidade salva', () => {
     it('carrega a cotação gravada e aplica os padrões e itens dela', () => {
       const { fixture, cotador } = montar(DA_SALVA, of(COTACAO_SALVA));
