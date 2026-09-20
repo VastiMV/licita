@@ -197,8 +197,10 @@ morar no Postgres, então:
 
 - o segredo é **cifrado** (Fernet) e nunca volta pela API — a tela recebe
   "definido em tal data" e só envia valor novo se alguém digitar;
-- a chave da cifra continua vindo do ambiente (`ARMAZENAMENTO_CHAVE_CIFRA`) —
-  é a única coisa que não pode estar junto do dado que protege;
+- a chave da cifra — **e só ela** — vem do ambiente
+  (`ARMAZENAMENTO_CHAVE_CIFRA`, no `backend-secrets`): é a única coisa que não
+  pode estar junto do dado que protege. Driver, bucket, endpoint e credencial
+  ficam todos no banco, na configuração do plugin daquele tenant;
 - "Testar conexão" grava um byte, lê de volta e apaga, para credencial errada
   aparecer ali e não no primeiro upload.
 
