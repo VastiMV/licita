@@ -7,10 +7,15 @@
  * disputa), que continua no menu até ser extinto. Os dois convivem em
  * tabelas separadas.
  *
- * Três coisas do domínio aparecem no formato:
+ * Quatro coisas do domínio aparecem no formato:
  *
- * - **Percentual é percentual** (35 = 35%), não fração — é o número do
- *   slider. Quem divide por 100 são as fórmulas, num lugar só.
+ * - **Percentual é percentual** (45 = 45%), não fração — é o número do
+ *   campo. Quem divide por 100 são as fórmulas, num lugar só.
+ * - **`margem_minima`, `margem_maxima`, `lucro_minimo` e `lucro_maximo`
+ *   carregam markup** (% sobre o custo), e markup não tem teto: passar de
+ *   100% é rotina em item barato. Os nomes são anteriores ao vocabulário
+ *   atual da tela e ficam como estão — são colunas de banco. A *margem*
+ *   (% da venda) é sempre derivada, nunca viaja no corpo de escrita.
  * - **Nulo no item significa "usa o padrão da cotação"**, e não zero: zero
  *   é a decisão de vender no custo.
  * - **Dinheiro chega como string.** O DRF serializa `Decimal` como string
@@ -112,7 +117,10 @@ export interface TotaisResponse {
   readonly folga: string;
   readonly lucro_total: string;
   readonly lucro_percentual: string;
+  /** Margem real: lucro como % da venda. */
   readonly margem_media: string;
+  /** Lucro como % do capital — o markup médio da cotação. */
+  readonly markup_medio: string;
   readonly economia: string;
   readonly pendencias: number;
 }

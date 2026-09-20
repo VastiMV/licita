@@ -2,17 +2,17 @@
 
 **Não é um dump da tela — é uma planilha que continua funcionando.** Toda
 coluna calculada sai como *fórmula*, não como número congelado: quem receber
-o arquivo pode mexer no custo de um fornecedor, na margem ou na carga
+o arquivo pode mexer no custo de um fornecedor, no markup ou na carga
 tributária e ver preço, lucro e totais se refazerem sozinhos. Os percentuais
-da cotação viram *nomes definidos* (`Transporte`, `LucroMaximo`, ...) na aba
+da cotação viram *nomes definidos* (`Transporte`, `MarkupAlvo`, ...) na aba
 "Parâmetros", então trocar um único valor lá recalcula a proposta inteira.
 
 Isso também é o que torna a planilha conferível: a conta que o sistema fez
 está visível na barra de fórmulas, não escondida no servidor.
 
 **Item com regra própria vira literal; item sem regra vira referência.** Um
-item que usa a margem padrão da cotação recebe a fórmula `=LucroMaximo`, e
-acompanha a mudança do parâmetro. Um item com margem própria recebe o
+item que usa o markup padrão da cotação recebe a fórmula `=MarkupAlvo`, e
+acompanha a mudança do parâmetro. Um item com markup próprio recebe o
 número — porque foi uma decisão específica daquele item e não pode ser
 apagada por uma mudança global.
 
@@ -141,8 +141,18 @@ def nome_do_arquivo(cotacao: Cotacao) -> str:
 _PARAMETROS = [
     ("Transporte", "transporte", "Transporte", "% sobre o custo"),
     ("Garantia extra", "garantia", "Garantia", "% sobre o custo"),
-    ("Lucro mínimo", "lucro_minimo", "LucroMinimo", "% sobre o custo — define o preço de reserva"),
-    ("Lucro máximo (alvo)", "lucro_maximo", "LucroMaximo", "% sobre o custo — define o preço proposto"),
+    (
+        "Markup mínimo (reserva)",
+        "lucro_minimo",
+        "MarkupMinimo",
+        "% sobre o custo — define o preço de reserva",
+    ),
+    (
+        "Markup alvo (proposta)",
+        "lucro_maximo",
+        "MarkupAlvo",
+        "% sobre o custo — define o preço proposto",
+    ),
     ("Tributos", "impostos", "Tributos", "% sobre a venda — ICMS/Simples, PIS, COFINS, IPI e ISS somados"),
 ]
 
@@ -192,7 +202,7 @@ def _aba_parametros(workbook: Workbook, cotacao: Cotacao) -> Worksheet:
     aba.cell(
         row=formula,
         column=1,
-        value="Preço unitário = Custo un. × (1 + (Transporte + Garantia)/100 + Margem/100) ÷ (1 − Tributos/100)",
+        value="Preço unitário = Custo un. × (1 + (Transporte + Garantia)/100 + Markup/100) ÷ (1 − Tributos/100)",
     ).font = Font(name="Consolas", size=9, color="FF16294D")
 
     aba.sheet_view.showGridLines = False
@@ -214,8 +224,8 @@ COLUNAS_PROPOSTA = [
     "Outros (un.)",
     "Custo un.",
     "Custo total",
-    "Margem mín. %",
-    "Margem máx. %",
+    "Markup mín. %",
+    "Markup alvo %",
     "Tributos %",
     "Preço un.",
     "Preço de reserva un.",
@@ -393,13 +403,13 @@ def _linha_item(aba: Worksheet, linha: int, item, padroes) -> None:
     # item com regra própria vira número (decisão específica dele).
     aba.cell(
         row=linha,
-        column=COL["Margem mín. %"],
-        value="=LucroMinimo" if item.margem_minima is None else item.margem_minima,
+        column=COL["Markup mín. %"],
+        value="=MarkupMinimo" if item.margem_minima is None else item.margem_minima,
     )
     aba.cell(
         row=linha,
-        column=COL["Margem máx. %"],
-        value="=LucroMaximo" if item.margem_maxima is None else item.margem_maxima,
+        column=COL["Markup alvo %"],
+        value="=MarkupAlvo" if item.margem_maxima is None else item.margem_maxima,
     )
     aba.cell(
         row=linha,
@@ -407,14 +417,14 @@ def _linha_item(aba: Worksheet, linha: int, item, padroes) -> None:
         value="=Tributos" if item.impostos is None else item.impostos,
     )
 
-    majoracao = "(1+(Transporte+Garantia)/100+{margem}/100)"
+    majoracao = "(1+(Transporte+Garantia)/100+{markup}/100)"
     divisor = f"(1-{_c('Tributos %', linha)}/100)"
     aba.cell(
         row=linha,
         column=COL["Preço un."],
         value=(
             f"={_c('Custo un.', linha)}*"
-            f"{majoracao.format(margem=_c('Margem máx. %', linha))}/{divisor}"
+            f"{majoracao.format(markup=_c('Markup alvo %', linha))}/{divisor}"
         ),
     )
     aba.cell(
@@ -422,13 +432,13 @@ def _linha_item(aba: Worksheet, linha: int, item, padroes) -> None:
         column=COL["Preço de reserva un."],
         value=(
             f"={_c('Custo un.', linha)}*"
-            f"{majoracao.format(margem=_c('Margem mín. %', linha))}/{divisor}"
+            f"{majoracao.format(markup=_c('Markup mín. %', linha))}/{divisor}"
         ),
     )
     aba.cell(
         row=linha,
         column=COL["Lucro un."],
-        value=f"={_c('Custo un.', linha)}*{_c('Margem máx. %', linha)}/100",
+        value=f"={_c('Custo un.', linha)}*{_c('Markup alvo %', linha)}/100",
     )
     aba.cell(
         row=linha,
@@ -488,7 +498,7 @@ def _formatar_linha_item(aba: Worksheet, linha: int, *, destacar: bool) -> None:
         "Ref. edital (un.)",
     ):
         aba.cell(row=linha, column=COL[nome]).number_format = MOEDA
-    for nome in ("Margem mín. %", "Margem máx. %", "Tributos %"):
+    for nome in ("Markup mín. %", "Markup alvo %", "Tributos %"):
         celula = aba.cell(row=linha, column=COL[nome])
         celula.number_format = PERCENTUAL
         celula.alignment = Alignment(horizontal="center")
@@ -569,7 +579,7 @@ def _bloco_resumo(aba: Worksheet, cotacao: Cotacao, itens: list, linha: int) -> 
             totais.margem_media / 100,
             "0.0%",
             VERDE,
-            "lucro sobre o capital",
+            f"markup médio {totais.markup_medio:.1f}% sobre o capital",
         ),
     ]
 

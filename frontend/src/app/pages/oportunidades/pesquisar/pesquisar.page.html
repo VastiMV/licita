@@ -1,18 +1,22 @@
 <h1>Oportunidades</h1>
 <p class="muted">
-  Busca item a item nas contratações do compras.gov.br (Lei 14.133). Informe uma palavra-chave para
-  casar com o objeto do edital, ou deixe em branco para listar as contratações do período.
+  Busca item a item nas contratações do compras.gov.br (Lei 14.133). Escolha buscar por
+  <strong>palavra-chave</strong> (casa com o objeto do edital) ou por <strong>UASG</strong> (lista o
+  que a unidade publicou no período) — deixe o campo em branco para listar as contratações do
+  período.
 </p>
 
 <form [formGroup]="form" (ngSubmit)="buscar()" class="form-grid" novalidate>
+  <app-radio-group label="Buscar por" [options]="modos" formControlName="modo" />
   <app-input-text
-    label="Palavra-chave"
-    formControlName="palavra_chave"
-    placeholder="ex: notebook, cimento, uniforme..."
+    [label]="modoUasg() ? 'UASG' : 'Palavra-chave'"
+    formControlName="termo"
+    [placeholder]="modoUasg() ? 'ex: 925874' : 'ex: notebook, cimento, uniforme...'"
+    [maxlength]="modoUasg() ? 6 : null"
+    [error]="erroTermo()"
   />
   <app-select label="Modalidade" [options]="modalidades" formControlName="modalidade" />
   <app-select label="UF" [options]="ufs" formControlName="uf" />
-  <app-input-text label="UASG" formControlName="codigo_unidade" placeholder="opcional" />
   <app-date-picker label="Publicadas de" formControlName="data_inicial" />
   <app-date-picker label="até" formControlName="data_final" />
   <div class="form-acoes">
@@ -44,8 +48,13 @@
 @if (buscou() && !erro() && !buscando()) {
   @if (editais().length === 0) {
     <p class="muted">
-      Nenhum item encontrado. Tente ampliar o período, trocar a modalidade ou usar uma palavra-chave
-      mais genérica.
+      @if (modoUasg()) {
+        Nenhum item encontrado para esta UASG. Confira o código da unidade e tente ampliar o período
+        — o compras.gov.br publica as contratações com alguns dias de atraso.
+      } @else {
+        Nenhum item encontrado. Tente ampliar o período, trocar a modalidade ou usar uma
+        palavra-chave mais genérica.
+      }
     </p>
   } @else {
     <p class="muted">{{ editais().length }} edital(is) encontrado(s).</p>

@@ -16,8 +16,9 @@ outra continua de pé e a divergência aparece.
 
 Trocá-las é o erro clássico desta conta:
 
-- **% sobre o custo** — transporte, garantia e lucro incidem sobre o que se
-  paga ao fornecedor. "35% de lucro" é ganhar 35% do que o produto custou.
+- **% sobre o custo** — transporte, garantia e markup incidem sobre o que se
+  paga ao fornecedor. "45% de markup" é acrescentar 45% do que custou. Markup
+  não tem teto: em item barato passa de 100% sem esforço.
 - **% sobre a venda** — os tributos (ICMS/Simples + PIS + COFINS + IPI +
   ISS, aqui já somados num número só) incidem sobre o preço final, que é
   justamente o que se quer descobrir.
@@ -182,7 +183,17 @@ class Totais:
 
     @property
     def margem_media(self) -> Decimal:
-        """Lucro como % do capital — a leitura de quem põe o dinheiro."""
+        """A margem real da cotação: lucro como % da **venda**.
+
+        Coincide com `lucro_percentual` por definição — a tela mostra o
+        mesmo número no painel de composição e no resultado."""
+
+        return _dividir(self.lucro_total, self.valor_cotado) * CEM
+
+    @property
+    def markup_medio(self) -> Decimal:
+        """Lucro como % do capital — o markup médio, a leitura de quem põe o
+        dinheiro."""
 
         return _dividir(self.lucro_total, self.capital) * CEM
 

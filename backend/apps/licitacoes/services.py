@@ -18,7 +18,13 @@ A reserva entra sozinha quando o PNCP falha ou devolve vazio. Ela só cobre
 material, então acha menos coisa que a busca textual.
 
 Sem palavra-chave, o modo é de navegação: lista as contratações do período
-(por modalidade/UF) e seus itens — não depende de PNCP nem de catálogo.
+(por modalidade/UF/UASG) no compras.gov.br e desdobra cada uma nos itens que
+o PNCP publica (ver `_itens_da_compra` — o mirror de itens do compras.gov.br
+está semanas atrás do de contratações). Não depende do catálogo.
+É por aí que passa a **busca por UASG** da tela (a tela deixa escolher entre
+buscar por palavra-chave OU por UASG, nunca os dois): a unidade é filtro
+nativo do compras.gov.br (`unidadeOrgaoCodigoUnidade`), então a busca por
+unidade não passa pela busca textual — nem precisa, porque o filtro é exato.
 
 **Toda oportunidade devolvida é da plataforma escolhida e tem
 `link_plataforma` garantido** (decisão de produto, 28/08/2026): oportunidade
@@ -48,6 +54,7 @@ from config.settings.environment import env
 
 from apps.integracoes.clients.compras_gov import (
     MODALIDADE_CONTRATACOES_PARA_PNCP,
+    MODALIDADES_CONTRATACOES,
     ComprasGovClient,
     ComprasGovClientError,
     montar_link_pncp,
@@ -75,6 +82,15 @@ MAX_EDITAIS_PNCP = 20  # teto de editais desdobrados em itens na busca textual
 # quase nada. Custo: até MAX_EDITAIS_BRUTOS chamadas de detalhe por busca,
 # em paralelo (MAX_WORKERS por rodada).
 MAX_EDITAIS_BRUTOS = 50
+
+# Modalidade usada no modo navegação quando o usuário não escolhe nenhuma.
+# "5" = Pregão Eletrônico NESTA tabela (MODALIDADES_CONTRATACOES em
+# integracoes/clients/compras_gov.py) — não confundir com "6", que é o código
+# do PNCP para a mesma modalidade. Usar o código errado aqui filtra
+# silenciosamente por Dispensa (visto na prática: causava o link "abrir no
+# compras.gov.br" sempre dar 404, porque Dispensa não tem sessão de disputa
+# ao vivo).
+MODALIDADE_PADRAO_NAVEGACAO = "5"
 
 
 # O detalhe de uma compra não muda no que usamos dele (link de origem,
@@ -122,21 +138,17 @@ def buscar_oportunidades(
     # vazio cai na padrão (hoje a única: compras.gov.br).
     plataforma = PLATAFORMAS.get(plataforma_id) or plataforma_padrao()
     termo = palavra_chave.strip()
+    unidade = (codigo_unidade or "").strip() or None
     if not termo:
         return _navegar_contratacoes(
             client,
             data_inicial=data_inicial,
             data_final=data_final,
-            # "5" = Pregão Eletrônico NESTA tabela (MODALIDADES_CONTRATACOES
-            # em integracoes/clients/compras_gov.py) — não confundir com "6",
-            # que é o código do PNCP para a mesma modalidade. Usar o código
-            # errado aqui filtra silenciosamente por Dispensa (visto na
-            # prática: causava o link "abrir no compras.gov.br" sempre dar
-            # 404, porque Dispensa não tem sessão de disputa ao vivo).
-            codigo_modalidade=codigo_modalidade or "5",
+            codigos_modalidade=_modalidades_da_navegacao(codigo_modalidade, unidade),
             uf=uf,
-            codigo_unidade=codigo_unidade,
+            codigo_unidade=unidade,
             plataforma=plataforma,
+            pncp_client=pncp_client,
         )
 
     # Caminho preferido: busca textual do portal do PNCP.
@@ -148,7 +160,7 @@ def buscar_oportunidades(
                 data_final=data_final,
                 codigo_modalidade=codigo_modalidade,
                 uf=uf,
-                codigo_unidade=codigo_unidade,
+                codigo_unidade=unidade,
                 pncp_client=pncp_client,
                 plataforma=plataforma,
             )
@@ -173,9 +185,35 @@ def buscar_oportunidades(
         data_final=data_final,
         codigo_modalidade=codigo_modalidade,
         uf=uf,
-        codigo_unidade=codigo_unidade,
+        codigo_unidade=unidade,
         plataforma=plataforma,
     )
+
+
+def _modalidades_da_navegacao(codigo_modalidade: str, codigo_unidade: str | None) -> list[str]:
+    """Quais modalidades o modo navegação varre.
+
+    Escolhida no dropdown, é ela e ponto. "Todas" (vazio) depende de haver
+    UASG:
+
+    - **Com UASG** (a busca por unidade da tela) varre as quatro modalidades
+      que a API do compras.gov.br realmente devolve (`MODALIDADES_CONTRATACOES`
+      — ver a varredura de 26/08/2026 em docs/DOMINIO.md). Uma unidade publica
+      poucos editais por período, então são 4 listagens baratas — e é o que
+      "Todas" promete. Antes daqui a busca por UASG caía no default de Pregão
+      Eletrônico e escondia dispensa/inexigibilidade sem avisar, o que fazia a
+      busca por unidade parecer quebrada (bug relatado pelo cliente).
+    - **Sem UASG** o modo é varredura ampla do período inteiro: cada
+      modalidade a mais multiplica MAX_CONTRATACOES chamadas de itens, então
+      continua no default de Pregão Eletrônico — o caso de uso da tela.
+      Ampliar isso é decisão de produto, não consequência desta correção.
+    """
+
+    if codigo_modalidade:
+        return [codigo_modalidade]
+    if codigo_unidade:
+        return list(MODALIDADES_CONTRATACOES)
+    return [MODALIDADE_PADRAO_NAVEGACAO]
 
 
 def _buscar_no_pncp(
@@ -405,35 +443,143 @@ def _navegar_contratacoes(
     *,
     data_inicial: str,
     data_final: str,
-    codigo_modalidade: str,
+    codigos_modalidade: list[str],
     uf: str | None,
     codigo_unidade: str | None,
     plataforma: Plataforma,
+    pncp_client: PncpClient | None = None,
 ) -> list[dict[str, Any]]:
-    contratacoes, _ = client.buscar_contratacoes(
-        data_publicacao_inicial=data_inicial,
-        data_publicacao_final=data_final,
-        codigo_modalidade=codigo_modalidade,
-        uf=uf,
-        codigo_unidade=codigo_unidade,
-        tamanho_pagina=MAX_CONTRATACOES,
-    )
-    candidatas = [c for c in contratacoes if c.get("id_compra")][:MAX_CONTRATACOES]
+    """Lista as contratações do período (uma listagem por modalidade, em
+    paralelo) e desdobra cada uma em itens.
+
+    É o caminho da busca por UASG e da navegação sem palavra-chave. O
+    `codigoModalidade` do compras.gov.br é obrigatório e aceita **um** código
+    por chamada (sem ele a API responde 404), por isso "Todas" vira N
+    listagens — ver `_modalidades_da_navegacao` para quando isso acontece.
+
+    Os **itens** vêm do PNCP, não do compras.gov.br — ver `_itens_da_compra`.
+    """
+
+    def listar_seguro(
+        codigo_modalidade: str,
+    ) -> tuple[list[dict[str, Any]], ComprasGovClientError | None]:
+        """Devolve (contratações, erro) — a falha vira dado em vez de subir na
+        hora, para que uma modalidade fora do ar não zere as outras."""
+
+        try:
+            contratacoes, _ = client.buscar_contratacoes(
+                data_publicacao_inicial=data_inicial,
+                data_publicacao_final=data_final,
+                codigo_modalidade=codigo_modalidade,
+                uf=uf,
+                codigo_unidade=codigo_unidade,
+                tamanho_pagina=MAX_CONTRATACOES,
+            )
+        except ComprasGovClientError as exc:
+            logger.warning("Falha ao listar contratações da modalidade %s", codigo_modalidade)
+            return [], exc
+        return [c for c in contratacoes if c.get("id_compra")], None
+
+    with ThreadPoolExecutor(max_workers=MAX_WORKERS) as pool:
+        respostas = list(pool.map(listar_seguro, codigos_modalidade))
+    # Nenhuma modalidade respondeu = a API está fora, não "nada encontrado":
+    # o erro sobe e a view devolve 502, em vez de mentir uma tela vazia.
+    erros = [erro for _, erro in respostas if erro is not None]
+    if erros and len(erros) == len(respostas):
+        raise erros[0]
+    por_modalidade = [contratacoes for contratacoes, _ in respostas]
+    # Intercalado, não concatenado: o teto de MAX_CONTRATACOES é global, e
+    # concatenar deixaria a primeira modalidade consumir a cota sozinha —
+    # a busca por UASG voltaria a esconder dispensa/inexigibilidade.
+    candidatas = _intercalar(por_modalidade)[:MAX_CONTRATACOES]
+
+    # Só abre client de PNCP se for usar (e fecha o que abriu) — quem chama
+    # de fora pode passar o dele, e é o que os testes fazem pra não sair na rede.
+    usar_pncp = env.usar_busca_pncp
+    proprio = usar_pncp and pncp_client is None
+    cliente_pncp = (pncp_client or PncpClient()) if usar_pncp else None
 
     def itens_seguros(contratacao: dict[str, Any]) -> list[dict[str, Any]]:
-        try:
-            return client.listar_itens(contratacao["id_compra"])
-        except ComprasGovClientError:
-            logger.warning("Falha ao buscar itens da compra %s", contratacao.get("id_compra"))
-            return []
+        return _itens_da_compra(client, cliente_pncp, contratacao)
 
-    oportunidades = []
-    with ThreadPoolExecutor(max_workers=MAX_WORKERS) as pool:
-        for contratacao, itens in zip(candidatas, pool.map(itens_seguros, candidatas)):
-            for item in itens:
-                oportunidades.append(_montar_oportunidade(contratacao, item, plataforma))
+    try:
+        oportunidades = []
+        with ThreadPoolExecutor(max_workers=MAX_WORKERS) as pool:
+            for contratacao, itens in zip(candidatas, pool.map(itens_seguros, candidatas)):
+                # Contratação sem item publicado ainda vira card: dá pra abrir
+                # o edital e a disputa na plataforma. Mesmo tratamento que a
+                # busca textual dá (ver `_itens_relevantes`) — sumir com a
+                # contratação seria pior que mostrá-la sem a lista de itens.
+                for item in itens or [{}]:
+                    oportunidades.append(_montar_oportunidade(contratacao, item, plataforma))
+    finally:
+        if proprio and cliente_pncp is not None:
+            cliente_pncp.close()
 
     return oportunidades
+
+
+def _itens_da_compra(
+    client: ComprasGovClient,
+    pncp: PncpClient | None,
+    contratacao: dict[str, Any],
+) -> list[dict[str, Any]]:
+    """Itens de uma contratação, **do PNCP primeiro**, com o compras.gov.br
+    como reserva.
+
+    Achado de 06/09/2026, medido ao vivo: o mirror de *itens* do
+    compras.gov.br (`2.1_consultarItensContratacoes...`) está muito mais
+    atrasado que o de *contratações*. Contratação publicada até 02/09 já
+    aparece na listagem; os itens dela só existem para o que foi publicado
+    até ~24/07 — de 01/08 em diante o endpoint responde `resultado: []`, sem
+    erro. Como este caminho só produzia oportunidade a partir de item, a
+    navegação e a busca por UASG voltavam **vazias para qualquer edital
+    recente** (era o "a busca por UASG não funciona" relatado pelo cliente).
+
+    O PNCP não tem essa defasagem — é a mesma fonte de itens que a busca
+    textual já usa. A reserva no compras.gov.br continua valendo para o
+    período antigo e para quando o PNCP está fora do ar (ele cai bastante,
+    ver `PncpClient`).
+    """
+
+    identificado = all(
+        contratacao.get(campo) for campo in ("cnpj_orgao", "ano_compra", "sequencial_compra")
+    )
+    if pncp is not None and identificado:
+        try:
+            itens = pncp.listar_itens(
+                cnpj=contratacao["cnpj_orgao"],
+                ano=contratacao["ano_compra"],
+                sequencial=contratacao["sequencial_compra"],
+            )
+        except PncpClientError:
+            logger.warning(
+                "Falha ao buscar itens no PNCP da compra %s", contratacao.get("id_compra")
+            )
+        else:
+            if itens:
+                return itens
+
+    if not contratacao.get("id_compra"):
+        return []
+    try:
+        return client.listar_itens(contratacao["id_compra"])
+    except ComprasGovClientError:
+        logger.warning("Falha ao buscar itens da compra %s", contratacao.get("id_compra"))
+        return []
+
+
+def _intercalar(listas: list[list[dict[str, Any]]]) -> list[dict[str, Any]]:
+    """Uma de cada lista, em rodadas, até acabarem — mantém a ordem relativa
+    dentro de cada lista e dá a mesma chance a todas quando o resultado é
+    cortado por um teto."""
+
+    intercalada: list[dict[str, Any]] = []
+    for posicao in range(max((len(lista) for lista in listas), default=0)):
+        for lista in listas:
+            if posicao < len(lista):
+                intercalada.append(lista[posicao])
+    return intercalada
 
 
 def _detalhar_em_paralelo(

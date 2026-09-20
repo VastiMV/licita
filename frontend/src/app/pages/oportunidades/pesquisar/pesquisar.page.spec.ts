@@ -109,15 +109,122 @@ describe('PesquisarPage', () => {
     fixture.detectChanges();
   }
 
+  /** O campo de busca é um só (palavra-chave OU UASG, conforme o rádio). */
+  function digitar(valor: string): void {
+    const campo: HTMLInputElement = fixture.debugElement.query(
+      By.css('app-input-text input'),
+    ).nativeElement;
+    campo.value = valor;
+    campo.dispatchEvent(new Event('input'));
+    fixture.detectChanges();
+  }
+
+  function escolherModo(modo: 'palavra_chave' | 'uasg'): void {
+    fixture.debugElement
+      .queryAll(By.css('app-radio-group input'))
+      .find((el) => el.nativeElement.value === modo)!
+      .nativeElement.dispatchEvent(new Event('change'));
+    fixture.detectChanges();
+  }
+
+  function datas(): string[] {
+    return fixture.debugElement
+      .queryAll(By.css('app-date-picker input'))
+      .map((el) => el.nativeElement.value);
+  }
+
   it('antes de qualquer busca, não mostra mensagem de resultado', () => {
     expect(fixture.debugElement.query(By.css('.oportunidades'))).toBeNull();
   });
 
   it('abre com a janela da última semana já preenchida, não em branco', () => {
-    const campos = fixture.debugElement.queryAll(By.css('app-date-picker input'));
+    expect(datas()).toEqual([formatarBr(somarDias(hojeIso(), -7)), formatarBr(hojeIso())]);
+  });
 
-    expect(campos[0].nativeElement.value).toBe(formatarBr(somarDias(hojeIso(), -7)));
-    expect(campos[1].nativeElement.value).toBe(formatarBr(hojeIso()));
+  it('abre no modo palavra-chave, com o rótulo e o placeholder dele', () => {
+    const [porPalavra, porUasg] = fixture.debugElement.queryAll(By.css('app-radio-group input'));
+
+    expect(porPalavra.nativeElement.checked).toBe(true);
+    expect(porUasg.nativeElement.checked).toBe(false);
+    const campo = fixture.debugElement.query(By.css('app-input-text'));
+    expect(campo.nativeElement.textContent).toContain('Palavra-chave');
+    expect(campo.query(By.css('input')).nativeElement.placeholder).toContain('notebook');
+  });
+
+  it('no modo palavra-chave, o termo vai como palavra_chave e a UASG vai vazia', () => {
+    licitacoes.buscarOportunidades.mockReturnValue(of([]));
+    digitar('café');
+
+    buscar();
+
+    expect(licitacoes.buscarOportunidades).toHaveBeenCalledWith(
+      expect.objectContaining({ palavra_chave: 'café', codigo_unidade: '' }),
+    );
+  });
+
+  it('no modo UASG, o mesmo campo vira código de unidade e a palavra vai vazia', () => {
+    licitacoes.buscarOportunidades.mockReturnValue(of([]));
+    escolherModo('uasg');
+    digitar('925874');
+
+    buscar();
+
+    expect(licitacoes.buscarOportunidades).toHaveBeenCalledWith(
+      expect.objectContaining({ palavra_chave: '', codigo_unidade: '925874' }),
+    );
+  });
+
+  it('trocar de modo troca o rótulo e o placeholder do campo de busca', () => {
+    escolherModo('uasg');
+
+    const campo = fixture.debugElement.query(By.css('app-input-text'));
+    expect(campo.nativeElement.textContent).toContain('UASG');
+    expect(campo.nativeElement.textContent).not.toContain('Palavra-chave');
+    expect(campo.query(By.css('input')).nativeElement.placeholder).toContain('925874');
+  });
+
+  it('trocar de modo limpa o termo — o campo passou a significar outra coisa', () => {
+    licitacoes.buscarOportunidades.mockReturnValue(of([]));
+    digitar('café');
+
+    escolherModo('uasg');
+    buscar();
+
+    expect(fixture.debugElement.query(By.css('app-input-text input')).nativeElement.value).toBe('');
+    expect(licitacoes.buscarOportunidades).toHaveBeenCalledWith(
+      expect.objectContaining({ palavra_chave: '', codigo_unidade: '' }),
+    );
+  });
+
+  it('modo UASG abre a janela para 30 dias (a unidade publica pouco, e o mirror atrasa)', () => {
+    escolherModo('uasg');
+
+    expect(datas()).toEqual([formatarBr(somarDias(hojeIso(), -30)), formatarBr(hojeIso())]);
+  });
+
+  it('trocar de modo não joga fora um período que o usuário digitou', () => {
+    const campo: HTMLInputElement = fixture.debugElement.queryAll(
+      By.css('app-date-picker input'),
+    )[0].nativeElement;
+    campo.value = formatarBr(somarDias(hojeIso(), -120));
+    campo.dispatchEvent(new Event('input'));
+    campo.dispatchEvent(new Event('blur'));
+    fixture.detectChanges();
+
+    escolherModo('uasg');
+
+    expect(datas()[0]).toBe(formatarBr(somarDias(hojeIso(), -120)));
+  });
+
+  it('UASG com letra avisa o erro e não dispara a busca', () => {
+    licitacoes.buscarOportunidades.mockReturnValue(of([]));
+    escolherModo('uasg');
+    digitar('abc');
+
+    buscar();
+
+    expect(fixture.debugElement.nativeElement.textContent).toContain('A UASG é só números');
+    expect(licitacoes.buscarOportunidades).not.toHaveBeenCalled();
   });
 
   it('manda a janela preenchida na busca, sem o usuário digitar data', () => {
@@ -271,8 +378,21 @@ describe('PesquisarPage', () => {
     expect(fixture.debugElement.query(By.css('.erro'))).toBeNull();
     expect(fixture.debugElement.nativeElement.textContent).not.toContain('Nenhum item encontrado');
     // "Limpar" devolve a janela padrão, não deixa as datas vazias.
-    const campos = fixture.debugElement.queryAll(By.css('app-date-picker input'));
-    expect(campos[0].nativeElement.value).toBe(formatarBr(somarDias(hojeIso(), -7)));
+    expect(datas()[0]).toBe(formatarBr(somarDias(hojeIso(), -7)));
+  });
+
+  it('"Limpar" volta também o modo de busca para palavra-chave', () => {
+    escolherModo('uasg');
+
+    fixture.debugElement
+      .queryAll(By.css('app-button'))
+      .find((el) => el.nativeElement.textContent.includes('Limpar'))!
+      .triggerEventHandler('click');
+    fixture.detectChanges();
+
+    const [porPalavra] = fixture.debugElement.queryAll(By.css('app-radio-group input'));
+    expect(porPalavra.nativeElement.checked).toBe(true);
+    expect(datas()).toEqual([formatarBr(somarDias(hojeIso(), -7)), formatarBr(hojeIso())]);
   });
   it('salvar pede confirmação antes de persistir', () => {
     licitacoes.buscarOportunidades.mockReturnValue(of([OPORTUNIDADE_ABERTA]));

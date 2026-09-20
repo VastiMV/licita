@@ -7,7 +7,7 @@ mantém a conta verificável mesmo sem Postgres no ambiente.
 Os números vêm de duas âncoras:
 
 - o exemplo do protótipo (`docs/Mockups/cotador`): resma de papel a R$ 24,90
-  + R$ 1,20 de frete, transporte 8%, tributos 10%, margem 35%;
+  + R$ 1,20 de frete, transporte 8%, tributos 10%, markup 35%;
 - o exemplo da planilha de origem, que o cotador antigo também usa
   (R$ 100 + 8% de transporte + 10% de imposto + 35% de lucro = R$ 158,89) —
   as duas fórmulas coincidem quando não há frete nem outros custos, e é bom
@@ -28,6 +28,9 @@ from .formulas import Item, Oferta, Padroes, calcular_item, escolhida, melhor, t
 D = Decimal
 
 
+# Escritos aqui, e não lidos dos defaults do model: o padrão com que a tela
+# abre pode mudar (mudou para markup 12%–45%) sem que a conta mude, e são
+# estes números que estão ancorados do outro lado, em `cotador.model.spec.ts`.
 PADROES = Padroes(
     transporte=D("8"),
     garantia=D("0"),
@@ -90,11 +93,11 @@ class PrecoDeUmItemTests(unittest.TestCase):
         )
         self.assertEqual(calculo.preco_final_unitario.quantize(D("0.01")), D("158.89"))
 
-    def test_margem_do_item_vence_o_padrao_da_cotacao(self):
+    def test_markup_do_item_vence_o_padrao_da_cotacao(self):
         calculo = calcular_item(item(margem_maxima=D("50")), PADROES)
         self.assertEqual(calculo.margem_maxima, D("50"))
 
-    def test_margem_zero_do_item_nao_e_confundida_com_ausencia(self):
+    def test_markup_zero_do_item_nao_e_confundido_com_ausencia(self):
         """Zero é decisão (vender no custo), não "usa o padrão" — por isso o
         ausente é `None`."""
 
@@ -102,10 +105,19 @@ class PrecoDeUmItemTests(unittest.TestCase):
         self.assertEqual(calculo.margem_maxima, D("0"))
         self.assertEqual(calculo.lucro_unitario, D("0"))
 
-    def test_margem_maxima_nunca_fica_abaixo_da_minima(self):
+    def test_markup_alvo_nunca_fica_abaixo_do_minimo(self):
         calculo = calcular_item(item(margem_minima=D("40"), margem_maxima=D("10")), PADROES)
         self.assertEqual(calculo.margem_maxima, D("40"))
         self.assertEqual(calculo.preco_final_unitario, calculo.preco_reserva_unitario)
+
+    def test_markup_nao_tem_teto(self):
+        """250% de markup é preço de item barato, não erro de digitação: a
+        conta precisa aceitar (o teto de 100% do serializer saiu junto)."""
+
+        calculo = calcular_item(item(margem_maxima=D("250")), PADROES)
+        self.assertEqual(calculo.margem_maxima, D("250"))
+        # 26,10 × (1 + 8% + 250%) ÷ (1 − 10%) = 103,82
+        self.assertEqual(calculo.preco_final_unitario.quantize(D("0.01")), D("103.82"))
 
     def test_tributo_proprio_do_item_vence_o_padrao(self):
         calculo = calcular_item(item(impostos=D("21.25")), PADROES)
@@ -180,10 +192,18 @@ class TotaisTests(unittest.TestCase):
         self.assertLess(totais.preco_reserva, totais.valor_cotado)
         self.assertEqual(totais.folga, totais.valor_cotado - totais.preco_reserva)
 
-    def test_margem_media_e_lucro_sobre_o_capital(self):
+    def test_margem_media_e_lucro_sobre_a_venda(self):
+        totais = totalizar(self.itens, PADROES)
+        esperado = totais.lucro_total / totais.valor_cotado * 100
+        self.assertEqual(totais.margem_media, esperado)
+        self.assertEqual(totais.margem_media, totais.lucro_percentual)
+
+    def test_markup_medio_e_lucro_sobre_o_capital(self):
         totais = totalizar(self.itens, PADROES)
         esperado = totais.lucro_total / totais.capital * 100
-        self.assertEqual(totais.margem_media, esperado)
+        self.assertEqual(totais.markup_medio, esperado)
+        # Mesma conta, denominador menor: markup é sempre maior que a margem.
+        self.assertGreater(totais.markup_medio, totais.margem_media)
 
     def test_pendencia_conta_item_sem_descricao_ou_sem_preco(self):
         totais = totalizar(
@@ -196,6 +216,7 @@ class TotaisTests(unittest.TestCase):
         totais = totalizar([], PADROES)
         self.assertEqual(totais.valor_cotado, D("0"))
         self.assertEqual(totais.margem_media, D("0"))
+        self.assertEqual(totais.markup_medio, D("0"))
         self.assertEqual(totais.lucro_percentual, D("0"))
 
 

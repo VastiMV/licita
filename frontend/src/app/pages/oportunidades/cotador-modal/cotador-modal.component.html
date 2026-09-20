@@ -38,17 +38,19 @@
             marcado é o que entra no cálculo.
           </li>
           <li>
-            Cada item tem duas margens: a <strong>mínima</strong> define o preço de reserva (o piso
-            que ainda compensa) e a <strong>máxima</strong> é o preço que você propõe.
+            Você ajusta o <strong>markup</strong> — quanto acrescenta sobre o custo, e pode passar
+            de 100%. O markup mínimo define o preço de reserva (o piso que ainda compensa); o markup
+            alvo é o preço que você propõe. A <strong>margem</strong> (% da venda) é calculada e
+            mostrada ao lado.
           </li>
           <li>Tributo diferente num item? Use "imposto próprio" — os demais seguem o padrão.</li>
           <li>"Exportar" gera a proposta em Excel, com as fórmulas abertas para conferência.</li>
         </ol>
         <p class="ajuda-formula">
-          Preço = custo × (1 + transporte + garantia + margem) ÷ (1 − tributos)
+          Preço = custo × (1 + transporte + garantia + markup) ÷ (1 − tributos)
         </p>
         <p class="ajuda-nota">
-          Transporte, garantia e lucro incidem sobre o <strong>custo</strong>; os tributos incidem
+          Transporte, garantia e markup incidem sobre o <strong>custo</strong>; os tributos incidem
           sobre a <strong>venda</strong>. Dividir por (1 − tributos) embute o imposto que vai cair
           sobre o próprio preço.
         </p>
@@ -89,7 +91,7 @@
       <div class="cartao-total">
         <span class="cartao-rotulo sucesso">Margem média</span>
         <span class="cartao-valor sucesso">{{ percentual(totais().margemMedia) }}</span>
-        <span class="cartao-apoio">lucro sobre o capital</span>
+        <span class="cartao-apoio">markup médio {{ percentual(totais().markupMedio) }}</span>
       </div>
     </div>
 
@@ -130,6 +132,25 @@
                   <button type="button" class="chip chip-fornecedor" (click)="alternar(item)">
                     <span class="ponto"></span>{{ rotuloDoFornecedor(item) }}
                   </button>
+                  @if (estimadoDe(item); as estimado) {
+                    <span
+                      class="chip chip-estimado"
+                      [title]="'Total estimado do lote: ' + moeda(estimado * item.quantidade)"
+                    >
+                      Estimado {{ moeda(estimado) }}/un
+                    </span>
+                    @if (comparacaoDe(i); as comparacao) {
+                      <span
+                        class="chip"
+                        [class.chip-acima]="comparacao.acima"
+                        [class.chip-abaixo]="!comparacao.acima"
+                      >
+                        {{ comparacao.texto }}
+                      </span>
+                    }
+                  } @else {
+                    <span class="chip chip-sem-estimado">sem valor estimado</span>
+                  }
                   @if (calculoDe(i).economiaUnitaria > 0) {
                     <button type="button" class="chip chip-economia" (click)="usarMelhor(item)">
                       {{ moeda(calculoDe(i).economiaUnitaria) }} mais barato em
@@ -166,14 +187,15 @@
                 </div>
                 <div class="metrica">
                   <span class="metrica-rotulo">Lucro</span>
-                  <span class="metrica-valor sucesso">
-                    {{ moeda(calculoDe(i).lucroTotal) }}
-                    <span class="metrica-nota">{{ percentual(calculoDe(i).margemMaxima) }}</span>
+                  <span class="metrica-valor sucesso">{{ moeda(calculoDe(i).lucroTotal) }}</span>
+                  <span class="metrica-nota sucesso">
+                    margem {{ percentual(calculoDe(i).margemAlvo) }}
                   </span>
                 </div>
                 <div class="metrica">
                   <span class="metrica-rotulo">Total</span>
                   <span class="metrica-valor">{{ moeda(calculoDe(i).precoFinalTotal) }}</span>
+                  <span class="metrica-nota">markup {{ percentual(calculoDe(i).markupAlvo) }}</span>
                 </div>
 
                 <div class="item-acoes">
@@ -300,40 +322,105 @@
                   </p>
                 </section>
 
-                <!-- Coluna B: margem, memória de cálculo e imposto -->
+                <!-- Coluna B: markup, memória de cálculo e imposto -->
                 <div class="bloco-lateral">
                   <section class="cartao">
                     <div class="cartao-topo">
-                      <h4>Margem deste item</h4>
+                      <h4>Markup deste item</h4>
                       <span class="cartao-numero">
-                        {{ percentual(calculoDe(i).margemMinima) }} →
-                        {{ percentual(calculoDe(i).margemMaxima) }}
+                        {{ percentual(calculoDe(i).markupMinimo) }} →
+                        {{ percentual(calculoDe(i).markupAlvo) }}
                       </span>
                     </div>
 
-                    <label class="slider">
-                      <span class="slider-rotulo alerta">Margem mínima</span>
+                    <div class="markup">
+                      <div class="markup-topo">
+                        <span class="markup-rotulo alerta">Markup mínimo (reserva)</span>
+                        <label class="markup-campo alerta">
+                          <input
+                            type="number"
+                            min="0"
+                            step="1"
+                            [value]="calculoDe(i).markupMinimo"
+                            (input)="alterarMarkupMinimo(item, $any($event.target).value)"
+                            [attr.aria-label]="
+                              'Markup mínimo do item ' + indice(i) + ', em % do custo'
+                            "
+                          />
+                          <span>%</span>
+                        </label>
+                      </div>
                       <input
                         type="range"
                         min="0"
-                        max="100"
-                        step="0.5"
+                        step="1"
                         class="alerta"
-                        [value]="calculoDe(i).margemMinima"
-                        (input)="alterarMargemMinima(item, $any($event.target).value)"
+                        [max]="teto(calculoDe(i).markupMinimo)"
+                        [value]="calculoDe(i).markupMinimo"
+                        (input)="alterarMarkupMinimo(item, $any($event.target).value)"
+                        aria-hidden="true"
+                        tabindex="-1"
                       />
-                    </label>
-                    <label class="slider">
-                      <span class="slider-rotulo">Margem máxima (alvo)</span>
+                      <div class="markup-leitura">
+                        <span
+                          >markup {{ percentual(calculoDe(i).markupMinimo) }} sobre o custo</span
+                        >
+                        <span>
+                          margem <strong>{{ percentual(calculoDe(i).margemMinima) }}</strong> da
+                          venda
+                        </span>
+                      </div>
+                    </div>
+
+                    <div class="markup">
+                      <div class="markup-topo">
+                        <span class="markup-rotulo">Markup alvo (proposta)</span>
+                        <label class="markup-campo">
+                          <input
+                            type="number"
+                            min="0"
+                            step="1"
+                            [value]="calculoDe(i).markupAlvo"
+                            (input)="alterarMarkupAlvo(item, $any($event.target).value)"
+                            [attr.aria-label]="
+                              'Markup alvo do item ' + indice(i) + ', em % do custo'
+                            "
+                          />
+                          <span>%</span>
+                        </label>
+                      </div>
                       <input
                         type="range"
                         min="0"
-                        max="100"
-                        step="0.5"
-                        [value]="calculoDe(i).margemMaxima"
-                        (input)="alterarMargemMaxima(item, $any($event.target).value)"
+                        step="1"
+                        [max]="teto(calculoDe(i).markupAlvo)"
+                        [value]="calculoDe(i).markupAlvo"
+                        (input)="alterarMarkupAlvo(item, $any($event.target).value)"
+                        aria-hidden="true"
+                        tabindex="-1"
                       />
-                    </label>
+                      <div class="markup-leitura">
+                        <span>markup {{ percentual(calculoDe(i).markupAlvo) }} sobre o custo</span>
+                        <span>
+                          margem <strong>{{ percentual(calculoDe(i).margemAlvo) }}</strong> da venda
+                        </span>
+                      </div>
+                    </div>
+
+                    <div class="alvos">
+                      <span class="alvos-rotulo">Alvo rápido</span>
+                      @for (alvo of alvosRapidos; track alvo) {
+                        <button
+                          type="button"
+                          class="alvo"
+                          [class.ativo]="alvoAtivo(i, alvo)"
+                          [attr.aria-pressed]="alvoAtivo(i, alvo)"
+                          (click)="aplicarAlvo(item, alvo)"
+                        >
+                          {{ alvo }}%
+                        </button>
+                      }
+                    </div>
 
                     <div class="reserva">
                       <div>
@@ -342,7 +429,8 @@
                           {{ moeda(calculoDe(i).precoReservaUnitario) }}
                         </strong>
                         <span class="reserva-nota">
-                          mínimo que compensa · {{ moeda(calculoDe(i).precoReservaTotal) }} no lote
+                          markup mín {{ percentual(calculoDe(i).markupMinimo) }} ·
+                          {{ moeda(calculoDe(i).precoReservaTotal) }} no lote
                         </span>
                       </div>
                       <div class="reserva-folga">
@@ -422,7 +510,62 @@
         @if (mostrarPadroes()) {
           <div class="padroes-corpo">
             <div class="padroes-coluna">
-              <h4>Sobre o custo</h4>
+              <h4>Markup padrão (sobre o custo)</h4>
+              <div class="markup">
+                <div class="markup-topo">
+                  <span class="markup-rotulo alerta">Markup mínimo (reserva)</span>
+                  <label class="markup-campo alerta">
+                    <input
+                      type="number"
+                      min="0"
+                      step="1"
+                      [value]="padroes().markupMinimo"
+                      (input)="alterarPadrao('markupMinimo', $any($event.target).value)"
+                      aria-label="Markup mínimo padrão da cotação, em % do custo"
+                    />
+                    <span>%</span>
+                  </label>
+                </div>
+                <input
+                  type="range"
+                  min="0"
+                  step="1"
+                  class="alerta"
+                  [max]="teto(padroes().markupMinimo)"
+                  [value]="padroes().markupMinimo"
+                  (input)="alterarPadrao('markupMinimo', $any($event.target).value)"
+                  aria-hidden="true"
+                  tabindex="-1"
+                />
+              </div>
+              <div class="markup">
+                <div class="markup-topo">
+                  <span class="markup-rotulo">Markup alvo</span>
+                  <label class="markup-campo">
+                    <input
+                      type="number"
+                      min="0"
+                      step="1"
+                      [value]="padroes().markupAlvo"
+                      (input)="alterarPadrao('markupAlvo', $any($event.target).value)"
+                      aria-label="Markup alvo padrão da cotação, em % do custo"
+                    />
+                    <span>%</span>
+                  </label>
+                </div>
+                <input
+                  type="range"
+                  min="0"
+                  step="1"
+                  [max]="teto(padroes().markupAlvo)"
+                  [value]="padroes().markupAlvo"
+                  (input)="alterarPadrao('markupAlvo', $any($event.target).value)"
+                  aria-hidden="true"
+                  tabindex="-1"
+                />
+              </div>
+
+              <h4 class="padroes-subtitulo">Custos adicionais</h4>
               <label class="slider">
                 <span class="slider-rotulo">
                   Transporte <em>{{ percentual(padroes().transporte) }}</em>
@@ -447,33 +590,6 @@
                   step="0.5"
                   [value]="padroes().garantia"
                   (input)="alterarPadrao('garantia', $any($event.target).value)"
-                />
-              </label>
-              <label class="slider">
-                <span class="slider-rotulo">
-                  Lucro mínimo <em>{{ percentual(padroes().lucroMinimo) }}</em>
-                </span>
-                <input
-                  type="range"
-                  min="0"
-                  max="100"
-                  step="0.5"
-                  class="alerta"
-                  [value]="padroes().lucroMinimo"
-                  (input)="alterarPadrao('lucroMinimo', $any($event.target).value)"
-                />
-              </label>
-              <label class="slider">
-                <span class="slider-rotulo">
-                  Lucro máximo <em>{{ percentual(padroes().lucroMaximo) }}</em>
-                </span>
-                <input
-                  type="range"
-                  min="0"
-                  max="100"
-                  step="0.5"
-                  [value]="padroes().lucroMaximo"
-                  (input)="alterarPadrao('lucroMaximo', $any($event.target).value)"
                 />
               </label>
             </div>
