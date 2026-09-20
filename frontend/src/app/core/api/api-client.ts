@@ -1,4 +1,4 @@
-import { HttpClient, HttpParams, HttpResponse } from '@angular/common/http';
+import { HttpClient, HttpEvent, HttpParams, HttpResponse } from '@angular/common/http';
 import { Injectable, inject } from '@angular/core';
 import { Observable } from 'rxjs';
 
@@ -51,6 +51,25 @@ export class ApiClient {
    */
   getArquivo(path: string): Observable<HttpResponse<Blob>> {
     return this.http.get(this.url(path), { observe: 'response', responseType: 'blob' });
+  }
+
+  /**
+   * Upload de arquivo com progresso real.
+   *
+   * `reportProgress` faz o `HttpClient` emitir um evento a cada pedaço que
+   * sobe, em vez de só a resposta final — é o que permite a barra da
+   * dropzone mostrar o que está acontecendo de verdade num balanço de 20 MB,
+   * em vez de uma animação inventada.
+   *
+   * Sem `Content-Type`: o navegador monta o `multipart/form-data` com o
+   * `boundary` correto sozinho, e defini-lo aqui quebraria o parsing no
+   * Django.
+   */
+  upload<TResponse>(path: string, form: FormData): Observable<HttpEvent<TResponse>> {
+    return this.http.post<TResponse>(this.url(path), form, {
+      reportProgress: true,
+      observe: 'events',
+    });
   }
 
   private url(path: string): string {

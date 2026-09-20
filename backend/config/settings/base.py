@@ -49,6 +49,7 @@ INSTALLED_APPS = [
     "apps.capag",
     "apps.licitacoes",
     "apps.empresas",
+    "apps.documentos",
     "apps.fornecedores",
     "apps.cotador",
 ]

@@ -61,7 +61,7 @@ marcado na mão, vira conta.
 
 ### Documentos da empresa
 
-- [ ] **5. `TipoDocumento` — o catálogo**
+- [x] **5. `TipoDocumento` — o catálogo**
   Os quatro blocos de habilitação da Lei 14.133 (jurídica; fiscal, social e
   trabalhista; econômico-financeira; técnica), semeados por migração, com
   `exige_validade` e `obrigatorio`. Mais um tipo livre "outro documento" para
@@ -70,7 +70,7 @@ marcado na mão, vira conta.
   *Teste antes:* a migração semeia o catálogo; tipo com `exige_validade=False`
   (contrato social, atestado) nunca conta como vencido.
 
-- [ ] **6. `Documento` e `VersaoDocumento`**
+- [x] **6. `Documento` e `VersaoDocumento`**
   `Documento` é a **vaga**: `(empresa, tipo)` única, sem arquivo e sem data.
   `VersaoDocumento` é o arquivo: chave no bucket, nome original, tamanho,
   hash, content-type, **número, emissão e validade**, quem enviou, quando e a
@@ -80,7 +80,7 @@ marcado na mão, vira conta.
   histórico; a versão antiga continua acessível; validade é da versão, não do
   documento.
 
-- [ ] **7. Situação calculada, nunca gravada**
+- [x] **7. Situação calculada, nunca gravada**
   `pendente` (sem versão) · `valido` · `a_vencer` (≤ 30 dias) · `vencido`
   (validade < hoje) · `arquivado`. No queryset, comparando com hoje — campo
   gravado envelhece sozinho, que é exatamente o que aconteceu com
@@ -88,13 +88,13 @@ marcado na mão, vira conta.
   *Teste antes:* cada estado com data de fronteira (hoje, ontem, hoje+30,
   hoje+31); empresa com um vencido fica vencida.
 
-- [ ] **8. `EventoDocumento`**
+- [x] **8. `EventoDocumento`**
   Enviou, renovou, baixou, arquivou. Mesmo padrão de
   `EventoOportunidadeSalva` — a história se escreve desde o primeiro dia
   porque depois não dá para reconstruir.
   *Teste antes:* cada ação grava um evento com autor e momento.
 
-- [ ] **9. Endpoints de documento**
+- [x] **9. Endpoints de documento**
   Listar por empresa; criar versão (upload `multipart`, validando tipo e
   tamanho, calculando hash e gravando pelo `apps/armazenamento`); listar
   versões; baixar (redireciona para URL assinada de curta duração — o bucket
@@ -103,7 +103,7 @@ marcado na mão, vira conta.
   extensão fora da lista; download não expõe a chave do bucket; arquivar não
   apaga.
 
-- [ ] **10. Documentos no modal**
+- [x] **10. Documentos no modal**
   Os três contadores, a dropzone (`shared/ui/upload-dropzone`, a única peça
   que o projeto ainda não tem — progresso real do `HttpClient`, não simulado),
   os chips de filtro, a lista agrupada por bloco com **coluna de validade** e
@@ -111,14 +111,15 @@ marcado na mão, vira conta.
   *Teste antes:* progresso reflete o evento de upload; filtro por vencidos;
   "+ versão" é a ação principal da linha.
 
-- [ ] **11. Fechar o ciclo**
+- [ ] **11. Fechar o ciclo** — *bloqueado: o app `alertas` ainda não existe
+  (ver `INSTALLED_APPS`), então o alerta de vencimento não tem onde nascer.*
   Alerta de vencimento em 30, 15 e 3 dias, com link para o emissor (segundo
   tipo de alerta do módulo que já existe), e a mesma aba de documentos no
   cadastro de fornecedores — que é o que torna a situação dele calculada em
   vez de digitada.
   *Teste antes:* a task não duplica alerta do mesmo documento no mesmo dia.
 
-- [ ] **12. Documentação**
+- [x] **12. Documentação**
   `docs/DOMINIO.md`: `Empresa`, `TipoDocumento`, `Documento`,
   `VersaoDocumento` e a tabela de situações — no mesmo formato das entidades
   que já estão lá.

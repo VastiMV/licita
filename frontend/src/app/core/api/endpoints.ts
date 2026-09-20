@@ -34,6 +34,18 @@ export const ENDPOINTS = {
     config: 'armazenamento/config/',
     testar: 'armazenamento/testar/',
   },
+  /** O dossiê de habilitação da empresa (`apps/documentos`) — certidões,
+   * contrato social, balanço. Não confundir com os documentos da
+   * **licitação**, que são arquivo de uma fase do processo. */
+  documentos: {
+    lista: 'documentos/',
+    tipos: 'documentos/tipos/',
+    detalhe: (id: number) => `documentos/${id}/`,
+    restaurar: (id: number) => `documentos/${id}/restaurar/`,
+    versoes: (id: number) => `documentos/${id}/versoes/`,
+    eventos: (id: number) => `documentos/${id}/eventos/`,
+    download: (versaoId: number) => `documentos/versoes/${versaoId}/download/`,
+  },
   /** Os CNPJs com que a equipe disputa (`apps/empresas`) — não confundir
    * com `fornecedores`, que é de quem a equipe compra. */
   empresas: {

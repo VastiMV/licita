@@ -103,10 +103,46 @@ empresa importa habilitação. Implementado em `apps/empresas/models.py`.
   clientes do produto podem cadastrar o mesmo CNPJ de uma sociedade que
   compartilham, e um não pode impedir o outro.
 
-Os documentos da empresa (certidões, contrato social, balanço) e o
-armazenamento deles ainda não existem — ver
-[`Tarefas/feat-cadastro-empresa.md`](Tarefas/feat-cadastro-empresa.md) e
-[`Tarefas/feat-armazenamento.md`](Tarefas/feat-armazenamento.md).
+### Documentos da empresa — `TipoDocumento`, `Documento`, `VersaoDocumento`
+
+A pergunta que este módulo responde não é "onde estão meus arquivos", é
+**"estou habilitado hoje?"**. Em pregão a habilitação só é cobrada de quem já
+venceu, com prazo de horas para enviar tudo, e o CRF do FGTS vale 30 dias —
+doze vencimentos por ano em um documento só. Implementado em
+`apps/documentos/models.py`.
+
+- **`TipoDocumento` é o catálogo.** A lista é fixa porque a Lei 14.133
+  organiza a habilitação em quatro blocos (jurídica; fiscal, social e
+  trabalhista; econômico-financeira; técnica) e são sempre os mesmos
+  documentos — o que muda é a data. Vem semeado por migração; `tenant` nulo é
+  o catálogo padrão e preenchido é o que aquele cliente acrescentou, porque o
+  edital que pede um alvará específico não pode exigir deploy.
+- **`Documento` é a vaga** daquele tipo naquela empresa: não guarda arquivo
+  nem validade, guarda qual versão está valendo. É a linha da tabela.
+- **`VersaoDocumento` é o arquivo**, com o número, a emissão e a validade
+  *daquela emissão*. Renovar não corrige uma data: cria outra certidão, que é
+  outra versão da mesma vaga. Imutável depois de gravada — é isso que permite
+  provar depois o que foi entregue num processo.
+- **A situação é calculada, nunca gravada**: `pendente` (sem versão),
+  `valido`, `a_vencer` (≤ 30 dias), `vencido` (validade < hoje) e
+  `arquivado`. Campo gravado envelhece sozinho, que foi exatamente o que
+  aconteceu com `Fornecedor.situacao`. Tipo que não vence (contrato social,
+  atestado) nunca entra na conta de vencidos.
+- **Empresa nova nasce com as vagas abertas** (signal em
+  `apps/documentos/signals.py`): uma tela em branco não diz o que falta, e
+  "nove pendentes" diz.
+- **Nada some.** `DELETE` arquiva; a versão anterior continua no histórico; o
+  arquivo mora no bucket do tenant (`apps/armazenamento`) e o download é
+  sempre por URL assinada de curta duração — certidão tem CNPJ, endereço e
+  nome de sócio.
+- **`EventoDocumento`** registra enviou, renovou, baixou, arquivou —
+  mesmo padrão do `EventoOportunidadeSalva`.
+
+Não confundir com os documentos da **licitação** (edital, proposta do
+fornecedor, empenho): lá não há lista fixa nem validade, e o mesmo processo
+tem três catálogos e nenhum atestado. Os dois só compartilham o
+armazenamento — ver
+[`Tarefas/feat-documentos-processo.md`](Tarefas/feat-documentos-processo.md).
 
 ### `OportunidadeSalva`
 

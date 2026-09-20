@@ -47,6 +47,7 @@ manifests já usam esse nome; o valor `licita` que aparecia aqui antes nunca foi
 | `licitacoes` | busca de oportunidades (live, cruza PNCP + catálogo) e os models `OportunidadeSalva`/`EventoOportunidadeSalva` (lista salva + histórico) |
 | `tenants` | model `Tenant` (uma linha só hoje) e `tenant_atual()`, o único ponto que resolve de quem é a requisição — ver `DOMINIO.md` |
 | `empresas` | model `Empresa` — os CNPJs com que a equipe disputa (não confundir com `fornecedores`, que é de quem ela compra) |
+| `documentos` | dossiê de habilitação da empresa: catálogo da Lei 14.133, a vaga de cada documento, as versões com validade e o histórico — ver `DOMINIO.md` |
 | `fornecedores` | model `Fornecedor` — o cadastro compartilhado de quem a empresa compra para revender; é a base que o Cotador amarra a cada item |
 | `cotador` | formação de preço de uma oportunidade (`Cotacao`/`ItemCotacao`/`OfertaFornecedor`), a conta em `formulas.py` e a proposta em .xlsx (`planilha.py`). App próprio, e não um campo novo no cotador antigo de `licitacoes`: os dois respondem perguntas diferentes e os nomes de campo colidiriam — ver a docstring de `apps/cotador/models.py` |
 | `filtros` | model `Filtro` (dono = usuário autenticado) |
@@ -58,8 +59,9 @@ manifests já usam esse nome; o valor `licita` que aparecia aqui antes nunca foi
 ### Frontend — organização Angular
 
 - Standalone components (padrão atual do Angular), lazy-loaded por feature:
-  `oportunidades/` (com os submódulos `pesquisar/` e `salvas/`), `empresas/`,
-  `fornecedores/`, `filtros/`, `alertas/`, `auth/`.
+  `oportunidades/` (com os submódulos `pesquisar/` e `salvas/`), `empresas/`
+  (com o dossiê de documentos dentro do modal), `fornecedores/`,
+  `configuracoes/`, `filtros/`, `alertas/`, `auth/`.
   Sinaliza-se aqui a intenção; a estrutura definitiva de módulos é detalhada
   quando o harness de código for gerado.
 - Um `ApiService`/`HttpInterceptor` central cuida do token JWT e do refresh.
