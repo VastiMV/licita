@@ -95,3 +95,24 @@ class CompletaTests(TestCase):
         self.assertEqual(driver.secret_key, "x")
         # R2 ignora região, mas a assinatura v4 exige alguma.
         self.assertEqual(driver.regiao, "auto")
+
+
+class PorTenantNaoPorEmpresaTests(TestCase):
+    """O bucket é do **cliente**, não de cada empresa dele: os documentos de
+    todas as empresas convivem no mesmo destino, separados por caminho."""
+
+    def test_a_configuracao_e_alcancavel_a_partir_do_tenant(self):
+        c = config()
+
+        self.assertEqual(tenant_atual().config_armazenamento.get(), c)
+
+    def test_um_tenant_com_varias_empresas_tem_uma_configuracao_so(self):
+        from apps.empresas.models import Empresa
+
+        tenant = tenant_atual()
+        Empresa.objects.create(tenant=tenant, nome="Inside Solutions Ltda", cnpj="11222333000181")
+        Empresa.objects.create(tenant=tenant, nome="Inside Log Ltda", cnpj="45723174000110")
+        config()
+
+        self.assertEqual(tenant.empresas.count(), 2)
+        self.assertEqual(tenant.config_armazenamento.count(), 1)

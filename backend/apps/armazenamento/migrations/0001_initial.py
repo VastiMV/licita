@@ -26,7 +26,7 @@ class Migration(migrations.Migration):
                 ('testado_em', models.DateTimeField(blank=True, null=True, verbose_name='testado com sucesso em')),
                 ('atualizado_em', models.DateTimeField(auto_now=True, verbose_name='atualizado em')),
                 ('atualizado_por', models.ForeignKey(blank=True, null=True, on_delete=django.db.models.deletion.SET_NULL, related_name='configs_armazenamento', to=settings.AUTH_USER_MODEL, verbose_name='atualizado por')),
-                ('tenant', models.ForeignKey(on_delete=django.db.models.deletion.PROTECT, related_name='+', to='tenants.tenant', verbose_name='tenant')),
+                ('tenant', models.ForeignKey(on_delete=django.db.models.deletion.PROTECT, related_name='config_armazenamento', to='tenants.tenant', verbose_name='tenant')),
             ],
             options={
                 'verbose_name': 'configuração de armazenamento',

@@ -22,9 +22,10 @@ from .registro import driver
 
 
 class ConfigArmazenamento(models.Model):
-    # Um por tenant: é "onde este cliente guarda os arquivos dele", não uma
-    # lista de destinos.
-    tenant = tenant_campo()
+    # Um por tenant, e não por empresa: o bucket é do **cliente**, e os
+    # documentos de todas as empresas dele convivem lá dentro, separados por
+    # caminho (ver `caminhos.py`). Daí o singular no `related_name`.
+    tenant = tenant_campo("config_armazenamento")
 
     driver = models.CharField(
         "driver",
