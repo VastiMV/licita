@@ -171,6 +171,9 @@ function interno(fixture: ComponentFixture<CotadorModalComponent>) {
     removerItem: (item: unknown) => void;
     duplicarItem: (item: unknown) => void;
     alternarImposto: (item: unknown) => void;
+    alterarMarkupMinimo: (item: unknown, valor: string) => void;
+    alterarMarkupAlvo: (item: unknown, valor: string) => void;
+    padroes: () => { markupMinimo: number; markupAlvo: number };
     salvar: () => void;
     exportar: () => void;
   };
@@ -267,7 +270,8 @@ describe('CotadorModalComponent', () => {
       precificar(fixture, '15,00');
 
       const chip = fixture.debugElement.query(By.css('.chip-abaixo'));
-      expect(chip.nativeElement.textContent).toContain('14,2% abaixo do estimado');
+      // 16,20 × 1,53 ÷ 0,9 = 27,54 contra o estimado de 30,00.
+      expect(chip.nativeElement.textContent).toContain('8,2% abaixo do estimado');
       expect(fixture.debugElement.query(By.css('.chip-acima'))).toBeNull();
     });
 
@@ -276,7 +280,8 @@ describe('CotadorModalComponent', () => {
       precificar(fixture);
 
       const chip = fixture.debugElement.query(By.css('.chip-acima'));
-      expect(chip.nativeElement.textContent).toContain('38,2% acima do estimado');
+      // 26,10 × 1,53 ÷ 0,9 = 44,37 contra o estimado de 30,00.
+      expect(chip.nativeElement.textContent).toContain('47,9% acima do estimado');
     });
 
     it('item criado à mão não inventa estimado', () => {
@@ -294,6 +299,108 @@ describe('CotadorModalComponent', () => {
       const { fixture } = montar(DA_SALVA, of(COTACAO_SALVA));
 
       expect(fixture.nativeElement.textContent).toContain('Estimado R$ 30,00/un');
+    });
+  });
+
+  describe('markup do item', () => {
+    /** Os dois campos numéricos do card "Markup deste item", na ordem em
+     * que aparecem: mínimo (reserva) e alvo (proposta). */
+    function campos(fixture: ComponentFixture<CotadorModalComponent>) {
+      return fixture.debugElement
+        .queryAll(By.css('.item-detalhe .markup-campo input'))
+        .map((campo) => campo.nativeElement as HTMLInputElement);
+    }
+
+    it('o item abre com o markup padrão da cotação', () => {
+      const { fixture } = montar(DA_BUSCA);
+
+      expect(campos(fixture).map((campo) => campo.value)).toEqual(['12', '45']);
+    });
+
+    it('markup acima de 100% é aceito — o campo não tem teto', () => {
+      const { fixture } = montar(DA_BUSCA);
+      precificar(fixture);
+
+      interno(fixture).alterarMarkupAlvo(interno(fixture).itens()[0], '250');
+      fixture.detectChanges();
+
+      expect(campos(fixture)[1].value).toBe('250');
+      expect(fixture.nativeElement.textContent).toContain('markup 250%');
+    });
+
+    it('a régua do slider cresce junto, em vez de travar o valor', () => {
+      const { fixture } = montar(DA_BUSCA);
+      const regua = () =>
+        fixture.debugElement.queryAll(By.css('.item-detalhe .markup input[type=range]'))[1]
+          .nativeElement as HTMLInputElement;
+
+      expect(regua().max).toBe('100');
+
+      interno(fixture).alterarMarkupAlvo(interno(fixture).itens()[0], '250');
+      fixture.detectChanges();
+
+      expect(Number(regua().max)).toBeGreaterThan(250);
+    });
+
+    it('baixar o alvo abaixo do mínimo arrasta o mínimo junto', () => {
+      const { fixture } = montar(DA_BUSCA);
+
+      interno(fixture).alterarMarkupAlvo(interno(fixture).itens()[0], '5');
+      fixture.detectChanges();
+
+      expect(campos(fixture).map((campo) => campo.value)).toEqual(['5', '5']);
+    });
+
+    it('subir o mínimo acima do alvo empurra o alvo', () => {
+      const { fixture } = montar(DA_BUSCA);
+
+      interno(fixture).alterarMarkupMinimo(interno(fixture).itens()[0], '80');
+      fixture.detectChanges();
+
+      expect(campos(fixture).map((campo) => campo.value)).toEqual(['80', '80']);
+    });
+
+    it('markup negativo é zerado', () => {
+      const { fixture } = montar(DA_BUSCA);
+
+      interno(fixture).alterarMarkupMinimo(interno(fixture).itens()[0], '-40');
+      fixture.detectChanges();
+
+      expect(campos(fixture)[0].value).toBe('0');
+    });
+
+    it('o chip de alvo rápido aplica o markup e fica marcado', () => {
+      const { fixture } = montar(DA_BUSCA);
+      const chips = () => fixture.debugElement.queryAll(By.css('.alvo'));
+
+      expect(chips()).toHaveLength(6);
+      // 25 / 50 / 75 / 100 / 150 / 200 — o quarto é o de 100%.
+      chips()[3].nativeElement.click();
+      fixture.detectChanges();
+
+      expect(campos(fixture)[1].value).toBe('100');
+      expect(chips()[3].nativeElement.classList).toContain('ativo');
+      expect(chips()[0].nativeElement.classList).not.toContain('ativo');
+    });
+
+    it('a linha do item mostra margem (da venda) ao lado do lucro e markup ao lado do total', () => {
+      const { fixture } = montar(DA_BUSCA);
+      precificar(fixture);
+
+      const notas = fixture.debugElement
+        .queryAll(By.css('.metrica-nota'))
+        .map((nota) => nota.nativeElement.textContent.trim());
+
+      // Markup 45% sobre o custo de R$ 26,10 é margem de 26,5% da venda.
+      expect(notas).toContain('margem 26,5%');
+      expect(notas).toContain('markup 45%');
+    });
+
+    it('o resumo dos padrões fala em markup, não em lucro', () => {
+      const { fixture } = montar(DA_BUSCA);
+
+      const resumo = fixture.debugElement.query(By.css('.padroes-resumo'));
+      expect(resumo.nativeElement.textContent).toContain('Markup 12%–45%');
     });
   });
 
@@ -336,8 +443,8 @@ describe('CotadorModalComponent', () => {
 
       precificar(fixture);
 
-      // 26,10 × (1+8%+35%) ÷ 90% × 120 = 4.976,40
-      expect(interno(fixture).totais().valorCotado).toBeCloseTo(4976.4, 2);
+      // 26,10 × (1 + 8% de transporte + 45% de markup) ÷ 90% × 120 = 5.324,40
+      expect(interno(fixture).totais().valorCotado).toBeCloseTo(5324.4, 2);
       expect(cotador.salvar).not.toHaveBeenCalled();
     });
 

@@ -19,6 +19,7 @@ import { parseNumero } from '../../../shared/ui/input-number/input-number.compon
 import { ToastService } from '../../../shared/ui/toast/toast.service';
 import { FornecedorModalComponent } from '../../fornecedores/fornecedor-modal/fornecedor-modal.component';
 import {
+  ALVOS_RAPIDOS,
   ItemCalculado,
   ItemCotador,
   OfertaCotador,
@@ -32,6 +33,7 @@ import {
   melhorOferta,
   ofertaEscolhida,
   referenciaDe,
+  tetoDoSlider,
   totalizar,
 } from './cotador.model';
 
@@ -92,6 +94,12 @@ function ofertaVazia(): OfertaCotador {
  * O operador não digita o nome do fornecedor: escolhe um do cadastro
  * (módulo Fornecedores) no seletor de cada oferta — e pode cadastrar um
  * novo sem sair daqui.
+ *
+ * **O que se ajusta aqui é markup, não margem.** Markup é o acréscimo sobre
+ * o custo e não tem teto (item barato passa de 100% sem esforço); a margem
+ * é o mesmo lucro como % da venda e aparece só como leitura, ao lado de
+ * cada controle. Por isso o markup tem campo numérico — o slider sozinho
+ * mentiria um limite que não existe (ver `tetoDoSlider`).
  */
 @Component({
   selector: 'app-cotador-modal',
@@ -157,7 +165,7 @@ export class CotadorModalComponent implements OnInit {
     const p = this.padroes();
     return (
       `Transporte ${formatarPercentual(p.transporte)} · ` +
-      `Lucro ${formatarPercentual(p.lucroMinimo)}–${formatarPercentual(p.lucroMaximo)} · ` +
+      `Markup ${formatarPercentual(p.markupMinimo)}–${formatarPercentual(p.markupAlvo)} · ` +
       `Tributos ${formatarPercentual(p.impostos)}`
     );
   });
@@ -202,8 +210,8 @@ export class CotadorModalComponent implements OnInit {
         unidade: item.unidade_medida ?? '',
         quantidade: item.quantidade ?? QUANTIDADE_PADRAO,
         valorReferencia: item.valor_unitario_estimado,
-        margemMinima: null,
-        margemMaxima: null,
+        markupMinimo: null,
+        markupAlvo: null,
         impostos: null,
         ofertas: [ofertaVazia()],
         escolhida: '',
@@ -220,8 +228,8 @@ export class CotadorModalComponent implements OnInit {
     this.padroes.set({
       transporte: Number(cotacao.transporte),
       garantia: Number(cotacao.garantia),
-      lucroMinimo: Number(cotacao.lucro_minimo),
-      lucroMaximo: Number(cotacao.lucro_maximo),
+      markupMinimo: Number(cotacao.lucro_minimo),
+      markupAlvo: Number(cotacao.lucro_maximo),
       impostos: Number(cotacao.impostos),
     });
 
@@ -243,8 +251,8 @@ export class CotadorModalComponent implements OnInit {
           unidade: item.unidade,
           quantidade: Number(item.quantidade),
           valorReferencia: item.valor_referencia === null ? null : Number(item.valor_referencia),
-          margemMinima: item.margem_minima === null ? null : Number(item.margem_minima),
-          margemMaxima: item.margem_maxima === null ? null : Number(item.margem_maxima),
+          markupMinimo: item.margem_minima === null ? null : Number(item.margem_minima),
+          markupAlvo: item.margem_maxima === null ? null : Number(item.margem_maxima),
           impostos: item.impostos === null ? null : Number(item.impostos),
           ofertas,
           escolhida: ofertas[Math.max(marcada, 0)]?.id ?? '',
@@ -339,8 +347,8 @@ export class CotadorModalComponent implements OnInit {
       unidade: '',
       quantidade: QUANTIDADE_PADRAO,
       valorReferencia: null,
-      margemMinima: null,
-      margemMaxima: null,
+      markupMinimo: null,
+      markupAlvo: null,
       impostos: null,
       ofertas: [oferta],
       escolhida: oferta.id,
@@ -477,29 +485,45 @@ export class CotadorModalComponent implements OnInit {
     );
   }
 
-  // ---------- margens e tributos ----------
+  // ---------- markup e tributos ----------
 
-  protected alterarMargemMinima(item: ItemCotador, valor: string): void {
-    const minima = Number(valor);
+  /** Os alvos de um clique, e o teto que a régua do slider assume — o
+   * markup em si não tem teto (ver `cotador.model.ts`). */
+  protected readonly alvosRapidos = ALVOS_RAPIDOS;
+  protected readonly teto = tetoDoSlider;
+
+  /** O chip de alvo rápido que está valendo neste item. */
+  protected alvoAtivo(indice: number, alvo: number): boolean {
+    return Math.abs(this.calculoDe(indice).markupAlvo - alvo) < 0.01;
+  }
+
+  protected alterarMarkupMinimo(item: ItemCotador, valor: string): void {
+    // Sem teto — só o piso em zero. O campo numérico é a fonte da verdade e
+    // aceita o que o slider não alcança.
+    const minimo = Math.max(parseNumero(valor) ?? 0, 0);
     this.atualizarItem(item.id, (atual) => {
-      const maxima = atual.margemMaxima ?? this.padroes().lucroMaximo;
-      // Os dois sliders se travam entre si: subir o mínimo empurra o máximo.
+      const alvo = atual.markupAlvo ?? this.padroes().markupAlvo;
+      // Os dois controles se travam entre si: subir o mínimo empurra o alvo.
       return {
         ...atual,
-        margemMinima: minima,
-        margemMaxima: maxima < minima ? minima : atual.margemMaxima,
+        markupMinimo: minimo,
+        markupAlvo: alvo < minimo ? minimo : atual.markupAlvo,
       };
     });
   }
 
-  protected alterarMargemMaxima(item: ItemCotador, valor: string): void {
-    const maxima = Number(valor);
+  protected alterarMarkupAlvo(item: ItemCotador, valor: string): void {
+    this.aplicarAlvo(item, Math.max(parseNumero(valor) ?? 0, 0));
+  }
+
+  /** O alvo de markup do item, vindo do campo, do slider ou de um chip. */
+  protected aplicarAlvo(item: ItemCotador, alvo: number): void {
     this.atualizarItem(item.id, (atual) => {
-      const minima = atual.margemMinima ?? this.padroes().lucroMinimo;
+      const minimo = atual.markupMinimo ?? this.padroes().markupMinimo;
       return {
         ...atual,
-        margemMaxima: maxima,
-        margemMinima: minima > maxima ? maxima : atual.margemMinima,
+        markupAlvo: alvo,
+        markupMinimo: minimo > alvo ? alvo : atual.markupMinimo,
       };
     });
   }
@@ -521,12 +545,12 @@ export class CotadorModalComponent implements OnInit {
   }
 
   protected alterarPadrao(campo: keyof PadroesCotador, valor: string): void {
-    const numero = Number(valor);
+    const numero = Math.max(parseNumero(valor) ?? 0, 0);
     this.padroes.update((atuais) => {
       const proximos = { ...atuais, [campo]: numero };
-      // Mesmo travamento dos sliders do item, agora no padrão da cotação.
-      if (campo === 'lucroMinimo' && proximos.lucroMaximo < numero) proximos.lucroMaximo = numero;
-      if (campo === 'lucroMaximo' && proximos.lucroMinimo > numero) proximos.lucroMinimo = numero;
+      // Mesmo travamento dos controles do item, agora no padrão da cotação.
+      if (campo === 'markupMinimo' && proximos.markupAlvo < numero) proximos.markupAlvo = numero;
+      if (campo === 'markupAlvo' && proximos.markupMinimo > numero) proximos.markupMinimo = numero;
       return proximos;
     });
   }
@@ -633,8 +657,10 @@ export class CotadorModalComponent implements OnInit {
       unidade: item.unidade,
       quantidade: item.quantidade,
       valor_referencia: item.valorReferencia,
-      margem_minima: item.margemMinima,
-      margem_maxima: item.margemMaxima,
+      // Os nomes do contrato ainda dizem "margem"/"lucro" — o que viaja
+      // neles sempre foi o percentual sobre o custo, que é o markup.
+      margem_minima: item.markupMinimo,
+      margem_maxima: item.markupAlvo,
       impostos: item.impostos,
       ofertas: item.ofertas.map((oferta) => ({
         fornecedor: oferta.fornecedorId,
@@ -650,8 +676,8 @@ export class CotadorModalComponent implements OnInit {
       titulo: this.titulo(),
       transporte: padroes.transporte,
       garantia: padroes.garantia,
-      lucro_minimo: padroes.lucroMinimo,
-      lucro_maximo: padroes.lucroMaximo,
+      lucro_minimo: padroes.markupMinimo,
+      lucro_maximo: padroes.markupAlvo,
       impostos: padroes.impostos,
       itens,
       // Um dos dois, nunca os dois — ver `CotadorModalData`.

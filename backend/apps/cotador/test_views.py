@@ -234,12 +234,26 @@ class TotaisEValidacaoTests(APITestCase):
         ofertas = Cotacao.objects.get().itens.get().ofertas.all()
         self.assertEqual([o.escolhida for o in ofertas], [True, False])
 
-    def test_lucro_minimo_acima_do_maximo_e_recusado(self):
+    def test_markup_minimo_acima_do_alvo_e_recusado(self):
         resposta = self.salvar(lucro_minimo="50", lucro_maximo="10")
         self.assertEqual(resposta.status_code, 400)
 
     def test_percentual_absurdo_e_recusado(self):
         self.assertEqual(self.salvar(transporte="900").status_code, 400)
+
+    def test_markup_acima_de_100_e_aceito(self):
+        """Markup não tem teto — é o que separa ele dos demais percentuais.
+        Item barato passa de 100% sem esforço, e recusar seria recusar preço
+        legítimo."""
+
+        resposta = self.salvar(lucro_minimo="120", lucro_maximo="250")
+        self.assertEqual(resposta.status_code, 201, resposta.content)
+        self.assertEqual(Cotacao.objects.get().lucro_maximo, Decimal("250.00"))
+
+    def test_markup_do_item_acima_de_100_e_aceito(self):
+        resposta = self.salvar(itens=[item_cotado(margem_maxima="180")])
+        self.assertEqual(resposta.status_code, 201, resposta.content)
+        self.assertEqual(Cotacao.objects.get().itens.get().margem_maxima, Decimal("180.00"))
 
     def test_fornecedor_do_cadastro_e_vinculado_e_o_nome_vem_dele(self):
         fornecedor = Fornecedor.objects.create(
@@ -309,7 +323,7 @@ class PlanilhaTests(APITestCase):
         )
         # Os nomes definidos são o que faz mudar um parâmetro recalcular a
         # proposta inteira.
-        for nome in ("Transporte", "Garantia", "LucroMinimo", "LucroMaximo", "Tributos"):
+        for nome in ("Transporte", "Garantia", "MarkupMinimo", "MarkupAlvo", "Tributos"):
             self.assertIn(nome, workbook.defined_names)
 
         proposta = workbook["Proposta"]

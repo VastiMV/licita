@@ -50,6 +50,28 @@ def _percentual(nome: str, *, opcional: bool = False):
     )
 
 
+def _markup(nome: str, *, opcional: bool = False):
+    """O acréscimo sobre o custo, em pontos percentuais (45 = 45%).
+
+    Diferente dos demais percentuais, **markup não tem teto**: em item de
+    baixo custo passar de 100% é rotina, e cortar em 100 seria recusar
+    preço legítimo. O limite que sobra é o da coluna (`max_digits=6`), que
+    devolve erro de validação em vez de estourar no banco.
+
+    Os nomes de campo ainda dizem "margem"/"lucro" porque são os do banco e
+    do contrato; o que viaja neles sempre foi o percentual sobre o custo.
+    """
+
+    return serializers.DecimalField(
+        max_digits=6,
+        decimal_places=2,
+        min_value=Decimal("0"),
+        label=nome,
+        required=not opcional,
+        allow_null=opcional,
+    )
+
+
 class OfertaSerializer(serializers.ModelSerializer):
     fornecedor = serializers.PrimaryKeyRelatedField(
         queryset=Fornecedor.objects.all(), allow_null=True, required=False
@@ -80,8 +102,8 @@ class ItemSerializer(serializers.ModelSerializer):
     # Nulo = "usa o padrão da cotação". Declarados aqui (e não via
     # `extra_kwargs`) porque campo declarado ignora `extra_kwargs` — o
     # `allow_null` precisa vir no próprio campo.
-    margem_minima = _percentual("margem mínima", opcional=True)
-    margem_maxima = _percentual("margem máxima", opcional=True)
+    margem_minima = _markup("markup mínimo", opcional=True)
+    margem_maxima = _markup("markup alvo", opcional=True)
     impostos = _percentual("tributos", opcional=True)
 
     class Meta:
@@ -120,8 +142,8 @@ class CotacaoSerializer(serializers.ModelSerializer):
 
     transporte = _percentual("transporte")
     garantia = _percentual("garantia extra")
-    lucro_minimo = _percentual("lucro mínimo")
-    lucro_maximo = _percentual("lucro máximo")
+    lucro_minimo = _markup("markup mínimo")
+    lucro_maximo = _markup("markup alvo")
     impostos = _percentual("tributos")
 
     oportunidade_id = serializers.IntegerField(source="oportunidade.id", read_only=True)
@@ -179,7 +201,7 @@ class CotacaoSerializer(serializers.ModelSerializer):
         maximo = dados.get("lucro_maximo", getattr(self.instance, "lucro_maximo", None))
         if minimo is not None and maximo is not None and minimo > maximo:
             raise serializers.ValidationError(
-                {"lucro_minimo": "O lucro mínimo não pode ser maior que o máximo."}
+                {"lucro_minimo": "O markup mínimo não pode ser maior que o alvo."}
             )
         return dados
 
@@ -205,6 +227,7 @@ class CotacaoSerializer(serializers.ModelSerializer):
             "lucro_total": totais.lucro_total,
             "lucro_percentual": totais.lucro_percentual,
             "margem_media": totais.margem_media,
+            "markup_medio": totais.markup_medio,
             "economia": totais.economia,
             "pendencias": totais.pendencias,
         }

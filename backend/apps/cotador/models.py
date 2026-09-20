@@ -46,8 +46,8 @@ from . import formulas
 # cotação criada pela API (ou pelo admin) nasça com a mesma régua.
 PADRAO_TRANSPORTE = Decimal("8")
 PADRAO_GARANTIA = Decimal("0")
-PADRAO_LUCRO_MINIMO = Decimal("10")
-PADRAO_LUCRO_MAXIMO = Decimal("35")
+PADRAO_LUCRO_MINIMO = Decimal("12")
+PADRAO_LUCRO_MAXIMO = Decimal("45")
 PADRAO_IMPOSTOS = Decimal("10")
 
 
@@ -85,11 +85,14 @@ class Cotacao(models.Model):
     garantia = models.DecimalField(
         "garantia extra (% do custo)", max_digits=6, decimal_places=2, default=PADRAO_GARANTIA
     )
+    # Markup: o acréscimo sobre o custo, sem teto (item barato passa de 100%).
+    # O nome da coluna é anterior ao vocabulário atual da tela e fica como
+    # está — renomear custaria migração de dados sem ganhar nada.
     lucro_minimo = models.DecimalField(
-        "lucro mínimo (% do custo)", max_digits=6, decimal_places=2, default=PADRAO_LUCRO_MINIMO
+        "markup mínimo (% do custo)", max_digits=6, decimal_places=2, default=PADRAO_LUCRO_MINIMO
     )
     lucro_maximo = models.DecimalField(
-        "lucro máximo (% do custo)", max_digits=6, decimal_places=2, default=PADRAO_LUCRO_MAXIMO
+        "markup alvo (% do custo)", max_digits=6, decimal_places=2, default=PADRAO_LUCRO_MAXIMO
     )
     impostos = models.DecimalField(
         "tributos (% da venda)",
@@ -245,13 +248,13 @@ class ItemCotacao(models.Model):
         help_text="O estimado do edital — base do desconto mostrado na planilha.",
     )
 
-    # Nulo = usa o padrão da cotação. Zero é valor legítimo (margem zero,
+    # Nulo = usa o padrão da cotação. Zero é valor legítimo (markup zero,
     # item isento), então o ausente não pode ser 0 — ver `formulas.Item`.
     margem_minima = models.DecimalField(
-        "margem mínima (%)", max_digits=6, decimal_places=2, null=True, blank=True
+        "markup mínimo (% do custo)", max_digits=6, decimal_places=2, null=True, blank=True
     )
     margem_maxima = models.DecimalField(
-        "margem máxima (%)", max_digits=6, decimal_places=2, null=True, blank=True
+        "markup alvo (% do custo)", max_digits=6, decimal_places=2, null=True, blank=True
     )
     impostos = models.DecimalField(
         "tributos próprios (% da venda)",

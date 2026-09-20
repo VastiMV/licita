@@ -371,8 +371,14 @@ button.chip {
 }
 
 .metrica-nota {
-  font-size: var(--font-size-xs);
-  opacity: 0.75;
+  font-size: 0.66rem;
+  color: var(--color-muted);
+  white-space: nowrap;
+  font-variant-numeric: tabular-nums;
+
+  &.sucesso {
+    color: color-mix(in srgb, var(--color-success) 60%, var(--color-muted));
+  }
 }
 
 .metrica-campo input {
@@ -708,6 +714,125 @@ h4 {
   }
 }
 
+// ---------- Markup: campo numérico manda, slider acompanha ----------
+
+.markup {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-1);
+
+  input[type='range'] {
+    accent-color: var(--color-blue);
+
+    &.alerta {
+      accent-color: var(--color-warn);
+    }
+  }
+}
+
+.markup-topo {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-2);
+}
+
+.markup-rotulo {
+  @include uppercase-label;
+  font-size: 0.58rem;
+  color: var(--color-blue);
+
+  &.alerta {
+    color: var(--color-warn);
+  }
+}
+
+.markup-campo {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.25rem;
+  font-size: var(--font-size-xs);
+  color: var(--color-muted);
+
+  input {
+    width: 72px;
+    font: inherit;
+    font-size: var(--font-size-sm);
+    font-weight: var(--font-weight-bold);
+    font-variant-numeric: tabular-nums;
+    text-align: right;
+    color: var(--color-blue);
+    padding: 0.35rem 0.5rem;
+    border: 1px solid var(--color-border);
+    border-radius: var(--radius-sm);
+    background: var(--color-bg);
+
+    &:focus-visible {
+      @include focus-ring;
+      background: var(--color-surface);
+    }
+  }
+
+  &.alerta input {
+    color: var(--color-warn);
+  }
+}
+
+// As duas leituras do mesmo dinheiro: markup sobre o custo, margem da venda.
+.markup-leitura {
+  display: flex;
+  justify-content: space-between;
+  gap: var(--space-2);
+  font-size: var(--font-size-xs);
+  color: var(--color-muted);
+
+  strong {
+    color: var(--color-fg);
+    font-variant-numeric: tabular-nums;
+  }
+}
+
+.alvos {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--space-1);
+}
+
+.alvos-rotulo {
+  @include uppercase-label;
+  font-size: 0.58rem;
+  margin-right: var(--space-1);
+}
+
+.alvo {
+  padding: 0.25rem 0.6rem;
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-pill);
+  background: var(--color-surface);
+  color: var(--color-fg);
+  font: inherit;
+  font-size: var(--font-size-xs);
+  font-weight: var(--font-weight-semibold);
+  font-variant-numeric: tabular-nums;
+  cursor: pointer;
+
+  &:hover {
+    border-color: var(--color-blue);
+    color: var(--color-blue);
+  }
+
+  &.ativo {
+    border-color: var(--color-blue);
+    background: var(--color-blue);
+    color: var(--color-surface);
+  }
+
+  &:focus-visible {
+    @include focus-ring;
+  }
+}
+
 .reserva {
   display: flex;
   justify-content: space-between;
@@ -837,6 +962,12 @@ h4 {
   display: flex;
   flex-direction: column;
   gap: var(--space-3);
+}
+
+// Segundo título dentro da mesma coluna ("Custos adicionais") — precisa de
+// ar acima para não colar no controle anterior.
+.padroes-subtitulo {
+  margin-top: var(--space-2);
 }
 
 .botao-adicionar {

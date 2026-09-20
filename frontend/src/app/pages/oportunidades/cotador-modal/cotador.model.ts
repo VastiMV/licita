@@ -14,18 +14,30 @@
  *
  * Trocá-las é o erro clássico desta conta:
  *
- * - **% sobre o custo** — transporte, garantia e lucro incidem sobre o que
- *   se paga ao fornecedor. "35% de lucro" é ganhar 35% do que custou.
+ * - **% sobre o custo** — transporte, garantia e markup incidem sobre o que
+ *   se paga ao fornecedor. "45% de markup" é acrescentar 45% do que custou.
  * - **% sobre a venda** — os tributos (ICMS/Simples, PIS, COFINS, IPI e ISS
  *   já somados num número só) incidem sobre o preço final, que é justamente
  *   o que se quer descobrir.
  *
- * Por isso o preço não é "custo + margem": é uma divisão por
+ * Por isso o preço não é "custo + markup": é uma divisão por
  * `(1 − tributos)`, que embute o imposto que ainda vai cair sobre o próprio
  * preço.
  *
- * Percentuais entram como **percentual** (35 = 35%), o mesmo número do
- * slider — a divisão por 100 acontece só aqui dentro.
+ * ## Markup é entrada, margem é leitura
+ *
+ * O operador ajusta **markup** — quanto se acrescenta sobre o custo. Ele
+ * **não tem teto**: passar de 100% é rotina em item de baixo custo. A
+ * **margem** é o mesmo lucro lido como % da **venda**, e por isso nunca
+ * chega a 100% — é sempre calculada e exibida, nunca digitada. Os dois
+ * nomes olham para o mesmo dinheiro de pontos diferentes:
+ *
+ * ```
+ * markup 45% sobre custo de R$ 100 → lucro R$ 45 → margem ~24% da venda
+ * ```
+ *
+ * Percentuais entram como **percentual** (45 = 45%), o mesmo número do
+ * campo — a divisão por 100 acontece só aqui dentro.
  */
 
 /** Teto da carga tributária. Acima de 90% a divisão explode o preço (e em
@@ -55,10 +67,10 @@ export interface ItemCotador {
   readonly quantidade: number;
   /** O unitário estimado do edital. Nulo = edital sem referência. */
   readonly valorReferencia: number | null;
-  /** Nulo = usa o padrão da cotação. Zero é decisão (vender no custo), por
-   * isso o ausente não pode ser 0. */
-  readonly margemMinima: number | null;
-  readonly margemMaxima: number | null;
+  /** Markup em % do custo. Nulo = usa o padrão da cotação; zero é decisão
+   * (vender no custo), por isso o ausente não pode ser 0. */
+  readonly markupMinimo: number | null;
+  readonly markupAlvo: number | null;
   readonly impostos: number | null;
   readonly ofertas: readonly OfertaCotador[];
   /** Id da oferta que entra no cálculo. */
@@ -68,18 +80,33 @@ export interface ItemCotador {
 export interface PadroesCotador {
   readonly transporte: number;
   readonly garantia: number;
-  readonly lucroMinimo: number;
-  readonly lucroMaximo: number;
+  /** Markup do preço de reserva — o piso que ainda compensa. */
+  readonly markupMinimo: number;
+  /** Markup da proposta. */
+  readonly markupAlvo: number;
   readonly impostos: number;
 }
 
 export const PADROES_INICIAIS: PadroesCotador = {
   transporte: 8,
   garantia: 0,
-  lucroMinimo: 10,
-  lucroMaximo: 35,
+  markupMinimo: 12,
+  markupAlvo: 45,
   impostos: 10,
 };
+
+/** Os alvos de markup de um clique, na ordem em que aparecem na tela. Vão
+ * até 200% porque é lá que mora boa parte dos itens de baixo custo — o
+ * campo numérico aceita qualquer valor acima disso. */
+export const ALVOS_RAPIDOS: readonly number[] = [25, 50, 75, 100, 150, 200];
+
+/** O teto do slider de markup. O markup não tem teto — quem manda é o campo
+ * numérico ao lado; a régua só acompanha, mantendo sempre ~50% de curso à
+ * direita do valor atual (em múltiplos de 50, nunca menos que 100). Sem
+ * isso o usuário bate no fim da régua e acha que 100% é o limite. */
+export function tetoDoSlider(valor: number): number {
+  return Math.max(100, Math.ceil((Math.max(valor, 0) * 1.5) / 50) * 50);
+}
 
 /** Um degrau da "memória de cálculo" — a escada que mostra como se chegou
  * no preço. `sinal` é `+`, `=` ou vazio. */
@@ -96,8 +123,13 @@ export interface ItemCalculado {
   readonly melhor: OfertaCotador | null;
   readonly quantidade: number;
   readonly custoUnitario: number;
+  /** O que o operador ajusta — % sobre o custo, sem teto. */
+  readonly markupMinimo: number;
+  readonly markupAlvo: number;
+  /** O mesmo lucro lido como % da venda. Leitura derivada: é o número que
+   * o edital e o contador enxergam, mas não é campo de entrada. */
   readonly margemMinima: number;
-  readonly margemMaxima: number;
+  readonly margemAlvo: number;
   /** Fração já limitada pelo teto (0,10 = 10%). */
   readonly tributos: number;
   readonly precoFinalUnitario: number;
@@ -141,8 +173,13 @@ export interface TotaisCotador {
   readonly lucroTotal: number;
   /** Lucro como % da venda — a leitura de quem olha a proposta. */
   readonly lucroPercentual: number;
-  /** Lucro como % do capital — a leitura de quem põe o dinheiro. */
+  /** A margem real da cotação: lucro como % da venda. Coincide com
+   * `lucroPercentual` por definição — são o mesmo número em dois lugares da
+   * tela, um no painel de composição e outro no resultado. */
   readonly margemMedia: number;
+  /** Lucro como % do capital — a leitura de quem põe o dinheiro, e a linha
+   * de apoio do mesmo card da margem média. */
+  readonly markupMedio: number;
   readonly economia: number;
   readonly pendencias: number;
 }
@@ -197,21 +234,26 @@ export function calcularItem(item: ItemCotador, padroes: PadroesCotador): ItemCa
   // margem.
   const sobreCusto = (padroes.transporte + padroes.garantia) / 100;
 
-  const margemMinima = ouPadrao(item.margemMinima, padroes.lucroMinimo);
-  // A máxima nunca fica abaixo da mínima: os dois sliders se travam entre si
+  // Markup negativo não existe (seria vender abaixo do custo de propósito,
+  // que é o que o preço de reserva já representa quando vai a zero).
+  const markupMinimo = Math.max(ouPadrao(item.markupMinimo, padroes.markupMinimo), 0);
+  // O alvo nunca fica abaixo do mínimo: os dois controles se travam entre si
   // na tela, e uma cotação salva antes de o mínimo subir não pode passar a
   // propor menos que o próprio piso.
-  const margemMaxima = Math.max(ouPadrao(item.margemMaxima, padroes.lucroMaximo), margemMinima);
+  const markupAlvo = Math.max(ouPadrao(item.markupAlvo, padroes.markupAlvo), markupMinimo);
 
   const tributos = Math.min(ouPadrao(item.impostos, padroes.impostos) / 100, TETO_TRIBUTOS);
 
-  const preco = (margem: number) =>
-    dividir(custoUnitario * (1 + sobreCusto + margem / 100), 1 - tributos);
+  const preco = (markup: number) =>
+    dividir(custoUnitario * (1 + sobreCusto + markup / 100), 1 - tributos);
 
-  const precoFinalUnitario = preco(margemMaxima);
-  const precoReservaUnitario = preco(margemMinima);
+  /** A margem que um markup produz — o lucro dele lido como % da venda. */
+  const margemNo = (markup: number) => dividir((custoUnitario * markup) / 100, preco(markup)) * 100;
+
+  const precoFinalUnitario = preco(markupAlvo);
+  const precoReservaUnitario = preco(markupMinimo);
   const impostoUnitario = precoFinalUnitario * tributos;
-  const lucroUnitario = (custoUnitario * margemMaxima) / 100;
+  const lucroUnitario = (custoUnitario * markupAlvo) / 100;
 
   const economiaUnitaria =
     melhor && escolhida && melhor.id !== escolhida.id
@@ -232,8 +274,10 @@ export function calcularItem(item: ItemCotador, padroes: PadroesCotador): ItemCa
     melhor,
     quantidade,
     custoUnitario,
-    margemMinima,
-    margemMaxima,
+    markupMinimo,
+    markupAlvo,
+    margemMinima: margemNo(markupMinimo),
+    margemAlvo: margemNo(markupAlvo),
     tributos,
     precoFinalUnitario,
     precoReservaUnitario,
@@ -266,7 +310,7 @@ export function calcularItem(item: ItemCotador, padroes: PadroesCotador): ItemCa
       },
       {
         sinal: '+',
-        rotulo: `Lucro ${formatarPercentual(margemMaxima)} do custo`,
+        rotulo: `Markup ${formatarPercentual(markupAlvo)} sobre o custo`,
         valor: lucroUnitario,
         forte: false,
       },
@@ -304,7 +348,8 @@ export function totalizar(itens: readonly ItemCotador[], padroes: PadroesCotador
     folga: valorCotado - precoReserva,
     lucroTotal,
     lucroPercentual: dividir(lucroTotal, valorCotado) * 100,
-    margemMedia: dividir(lucroTotal, capital) * 100,
+    margemMedia: dividir(lucroTotal, valorCotado) * 100,
+    markupMedio: dividir(lucroTotal, capital) * 100,
     economia: somar((c) => c.economiaUnitaria * c.quantidade),
     pendencias: calculados.filter((c) => c.incompleto).length,
   };
