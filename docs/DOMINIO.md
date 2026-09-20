@@ -65,6 +65,14 @@ não tem como ser preenchida. Quem nasce daqui para frente já nasce com ela;
 `Fornecedor`, `OportunidadeSalva` e `Cotacao` ganham a sua no dia do segundo
 cliente, e aí a migração é trivial porque só há um tenant para apontar.
 
+**Tenant não é empresa.** Um cliente tem *várias* empresas — matriz, filial,
+a que cobre outro CNAE — e escolhe com qual delas disputa cada licitação. A
+relação é um-para-muitos e o caminho de volta faz parte do model:
+`tenant.empresas` e `tenant.empresa_padrao`. Toda FK de tenant no projeto sai
+de `tenant_campo(related_name)`, que exige o nome da volta justamente para
+que nenhuma nasça com `related_name="+"` — vínculo que existe só no banco não
+existe no Django.
+
 `apps/tenants/atual.py` é **o único lugar** que responde "de quem é esta
 requisição". Todo o resto chama `tenant_atual(request)` — é o que torna a
 virada multiempresa uma mudança de uma função, e não uma varredura por todo

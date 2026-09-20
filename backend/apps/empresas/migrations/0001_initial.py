@@ -42,7 +42,7 @@ class Migration(migrations.Migration):
                 ('criado_em', models.DateTimeField(auto_now_add=True, verbose_name='cadastrada em')),
                 ('atualizado_em', models.DateTimeField(auto_now=True, verbose_name='atualizada em')),
                 ('criado_por', models.ForeignKey(blank=True, null=True, on_delete=django.db.models.deletion.SET_NULL, related_name='empresas_cadastradas', to=settings.AUTH_USER_MODEL, verbose_name='cadastrada por')),
-                ('tenant', models.ForeignKey(on_delete=django.db.models.deletion.PROTECT, related_name='+', to='tenants.tenant', verbose_name='tenant')),
+                ('tenant', models.ForeignKey(on_delete=django.db.models.deletion.PROTECT, related_name='empresas', to='tenants.tenant', verbose_name='tenant')),
             ],
             options={
                 'verbose_name': 'empresa',

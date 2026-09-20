@@ -79,7 +79,8 @@ class EmpresaQuerySet(TenantQuerySet):
 
 
 class Empresa(models.Model):
-    tenant = tenant_campo()
+    # `tenant.empresas` — um cliente disputa com mais de um CNPJ.
+    tenant = tenant_campo("empresas")
 
     nome = models.CharField("razão social", max_length=255)
     fantasia = models.CharField("nome fantasia", max_length=255, blank=True)
