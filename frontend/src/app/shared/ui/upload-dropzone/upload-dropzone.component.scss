@@ -1,0 +1,129 @@
+@use 'mixins' as *;
+
+:host {
+  display: block;
+}
+
+.zona {
+  display: flex;
+  align-items: center;
+  gap: var(--space-4);
+  padding: var(--space-4);
+  border: 1px dashed var(--color-border);
+  border-radius: var(--radius-lg);
+  background: var(--color-bg);
+  cursor: pointer;
+  transition:
+    border-color var(--transition-fast),
+    background var(--transition-fast);
+
+  &:hover,
+  &.arrastando {
+    border-color: var(--color-blue);
+    background: var(--color-blue-soft);
+  }
+
+  &:focus-visible {
+    @include focus-ring;
+  }
+
+  &.desabilitada {
+    cursor: not-allowed;
+    opacity: 0.6;
+  }
+}
+
+.icone {
+  display: grid;
+  place-items: center;
+  flex: none;
+  width: 34px;
+  height: 34px;
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-md);
+  background: var(--color-surface);
+  color: var(--color-blue);
+
+  app-icon {
+    width: 16px;
+    height: 16px;
+  }
+}
+
+.texto {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  flex: 1;
+  min-width: 0;
+}
+
+.titulo {
+  font-size: var(--font-size-sm);
+  font-weight: var(--font-weight-semibold);
+  color: var(--color-fg);
+}
+
+.ajuda {
+  font-size: var(--font-size-xs);
+  color: var(--color-muted);
+}
+
+.link {
+  flex: none;
+  font-size: var(--font-size-sm);
+  font-weight: var(--font-weight-semibold);
+  color: var(--color-blue);
+}
+
+// Enquanto sobe, a área vira barra: o gesto acabou, o que importa agora é
+// quanto falta.
+.enviando {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2);
+  padding: var(--space-3) var(--space-4);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-lg);
+  background: var(--color-surface);
+}
+
+.enviando-topo {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: var(--space-3);
+  font-size: var(--font-size-sm);
+}
+
+.nome {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  color: var(--color-fg);
+}
+
+.pct {
+  flex: none;
+  font-variant-numeric: tabular-nums;
+  font-weight: var(--font-weight-semibold);
+  color: var(--color-muted);
+}
+
+.barra {
+  height: 6px;
+  border-radius: var(--radius-pill);
+  background: var(--color-border);
+  overflow: hidden;
+}
+
+.preenchimento {
+  height: 100%;
+  border-radius: inherit;
+  background: var(--color-blue);
+  transition: width 0.2s ease;
+}
+
+.escondido {
+  display: none;
+}

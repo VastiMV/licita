@@ -45,18 +45,23 @@ manifests já usam esse nome; o valor `licita` que aparecia aqui antes nunca foi
 | `accounts` | usuários, autenticação (JWT), perfil |
 | `catalogo` | model `Pdm`, sincronização do catálogo de materiais |
 | `licitacoes` | busca de oportunidades (live, cruza PNCP + catálogo) e os models `OportunidadeSalva`/`EventoOportunidadeSalva` (lista salva + histórico) |
+| `tenants` | model `Tenant` (uma linha só hoje) e `tenant_atual()`, o único ponto que resolve de quem é a requisição — ver `DOMINIO.md` |
+| `empresas` | model `Empresa` — os CNPJs com que a equipe disputa (não confundir com `fornecedores`, que é de quem ela compra) |
+| `documentos` | dossiê de habilitação da empresa: catálogo da Lei 14.133, a vaga de cada documento, as versões com validade e o histórico — ver `DOMINIO.md` |
 | `fornecedores` | model `Fornecedor` — o cadastro compartilhado de quem a empresa compra para revender; é a base que o Cotador amarra a cada item |
 | `cotador` | formação de preço de uma oportunidade (`Cotacao`/`ItemCotacao`/`OfertaFornecedor`), a conta em `formulas.py` e a proposta em .xlsx (`planilha.py`). App próprio, e não um campo novo no cotador antigo de `licitacoes`: os dois respondem perguntas diferentes e os nomes de campo colidiriam — ver a docstring de `apps/cotador/models.py` |
 | `filtros` | model `Filtro` (dono = usuário autenticado) |
 | `alertas` | model `Alerta`, geração e disparo de notificação |
 | `integracoes` | clients HTTP para PNCP e compras.gov.br, isolados do resto (mockáveis nos testes) |
+| `armazenamento` | onde os arquivos ficam — interface única, drivers registráveis (Cloudflare R2, AWS S3, disco local) e a configuração que o cliente edita na tela; ver a seção "Armazenamento de arquivos" |
 | `core` | settings, healthcheck, exceptions/handlers comuns da API |
 
 ### Frontend — organização Angular
 
 - Standalone components (padrão atual do Angular), lazy-loaded por feature:
-  `oportunidades/` (com os submódulos `pesquisar/` e `salvas/`), `filtros/`,
-  `alertas/`, `auth/`.
+  `oportunidades/` (com os submódulos `pesquisar/` e `salvas/`), `empresas/`
+  (com dois modais: o cadastro e o dossiê de documentos), `fornecedores/`,
+  `configuracoes/`, `filtros/`, `alertas/`, `auth/`.
   Sinaliza-se aqui a intenção; a estrutura definitiva de módulos é detalhada
   quando o harness de código for gerado.
 - Um `ApiService`/`HttpInterceptor` central cuida do token JWT e do refresh.
@@ -159,12 +164,70 @@ sobrevive a múltiplas réplicas do pod da API.
 - Credenciais via `Secret` (`POSTGRES_USER`, `POSTGRES_PASSWORD`,
   `POSTGRES_DB`), nunca em `ConfigMap`.
 
+## Armazenamento de arquivos
+
+Documentos da empresa, edital baixado do PNCP, planilha do Cotador: tudo que
+é arquivo passa por `apps/armazenamento`, e **nada no resto do projeto sabe
+que existe S3**. Quem grava chama quatro métodos — `salvar`, `abrir`,
+`url_temporaria`, `remover` — e qual serviço responde é decisão de
+configuração.
+
+### Por que é plugin
+
+Um driver se registra no `ready()` do app dele (`registrar(Classe)`), e
+**declara os campos que precisa** (`CAMPOS`). Isso tem duas consequências que
+valem a indireção:
+
+1. **Trocar de provedor não é deploy.** Cloudflare R2, AWS S3, MinIO e Spaces
+   falam o mesmo protocolo — muda `endpoint_url` e região. Por isso não há um
+   driver por fornecedor: há `drivers/s3.py`, registrado como `r2` e `s3`.
+2. **A tela se desenha sozinha.** O frontend não conhece R2: ele pede
+   `GET /api/armazenamento/drivers/`, recebe a lista de campos e monta o
+   formulário. Um driver novo, instalado como pacote no backend, aparece na
+   tela sem uma linha de Angular.
+
+O driver `local` (disco) existe para o desenvolvimento e **para os testes**:
+nenhum teste do projeto fala com bucket de verdade, pela mesma disciplina de
+`integracoes`, que nunca faz rede em teste.
+
+### Por que a configuração é registro de banco
+
+`ConfigArmazenamento` (um por tenant) guarda driver, opções e segredos. Não é
+`ConfigMap`/`Secret` porque precisa ser **por cliente** e **mudável pela tela
+sem redeploy** — que é o pedido. Em troca, uma credencial de bucket passa a
+morar no Postgres, então:
+
+- o segredo é **cifrado** (Fernet) e nunca volta pela API — a tela recebe
+  "definido em tal data" e só envia valor novo se alguém digitar;
+- a chave da cifra — **e só ela** — vem do ambiente
+  (`ARMAZENAMENTO_CHAVE_CIFRA`, no `backend-secrets`): é a única coisa que não
+  pode estar junto do dado que protege. Driver, bucket, endpoint e credencial
+  ficam todos no banco, na configuração do plugin daquele tenant;
+- "Testar conexão" grava um byte, lê de volta e apaga, para credencial errada
+  aparecer ali e não no primeiro upload.
+
+Só `is_staff` configura (`IsAdminUser`), enquanto o produto não tiver papéis
+de acesso.
+
+### Caminho e download
+
+A chave é `tenant/<slug>/...` desde o primeiro arquivo, mesmo com um cliente
+só: um bucket com prefixo por tenant atende os dois mundos, e quem preferir
+bucket separado por cliente só preenche outro bucket. Começar sem prefixo e
+querer separar depois é mover arquivo, não mudar código.
+
+**O bucket nunca é público.** O download é sempre URL assinada de curta
+duração — certidão tem CNPJ, endereço e nome de sócio. O upload passa pelo
+backend enquanto o teto for 50 MB (valida tipo, calcula hash, grava o
+evento); quando houver arquivo grande, o mesmo driver emite URL de envio
+direto e a interface não muda.
+
 ## Configuração e segredos
 
 | Recurso | Conteúdo |
 |---|---|
 | `ConfigMap` `backend-config` | `DJANGO_SETTINGS_MODULE`, URLs internas de serviço, feature flags |
-| `Secret` `backend-secrets` | `SECRET_KEY`, credenciais do Postgres, credenciais RabbitMQ, credenciais do provedor de e-mail |
+| `Secret` `backend-secrets` | `SECRET_KEY`, credenciais do Postgres, credenciais RabbitMQ, credenciais do provedor de e-mail, `ARMAZENAMENTO_CHAVE_CIFRA` (cifra dos segredos de `apps/armazenamento`) |
 | `Secret` `postgres-secrets` | usuário/senha do banco |
 
 ## Estratégia de testes

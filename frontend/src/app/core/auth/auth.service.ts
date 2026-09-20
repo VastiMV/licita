@@ -3,7 +3,11 @@ import { Observable, tap } from 'rxjs';
 
 import { ApiClient } from '../api/api-client';
 import { ENDPOINTS } from '../api/endpoints';
-import type { LoginRequest, LoginResponse, RefreshResponse } from '../../contracts/auth/auth.contracts';
+import type {
+  LoginRequest,
+  LoginResponse,
+  RefreshResponse,
+} from '../../contracts/auth/auth.contracts';
 import { decodeJwtPayload } from './jwt';
 
 /**
@@ -16,6 +20,10 @@ import { decodeJwtPayload } from './jwt';
 export interface UsuarioClaims {
   readonly email?: string;
   readonly nome?: string;
+  /** Administrador (`is_staff` no backend). Hoje só decide se a tela de
+   * armazenamento aparece no menu — quem realmente barra é o backend, que
+   * responde 403 de qualquer jeito. */
+  readonly is_staff?: boolean;
 }
 
 /**
@@ -39,6 +47,10 @@ export class AuthService {
     const token = this.accessToken();
     return token ? decodeJwtPayload<UsuarioClaims>(token) : null;
   });
+
+  /** Não oferecer no menu o que o backend vai recusar. Nunca é isto que
+   * protege a rota — ver `apps/armazenamento/views.py`. */
+  readonly ehAdmin = computed(() => this.usuario()?.is_staff === true);
 
   getAccessToken(): string | null {
     return this.accessToken();

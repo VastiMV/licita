@@ -99,14 +99,39 @@ kubectl apply -f k8s/backend/deployment.yaml
 kubectl apply -f k8s/backend/service.yaml
 ```
 
-Depende de `backend-secrets` (`DJANGO_SECRET_KEY`), `postgres-secrets` e
-`rabbitmq-secrets` já existirem:
+Depende de `backend-secrets` (`DJANGO_SECRET_KEY`,
+`ARMAZENAMENTO_CHAVE_CIFRA`), `postgres-secrets` e `rabbitmq-secrets` já
+existirem:
 
 ```bash
 kubectl create secret generic backend-secrets \
   --namespace inside-solutions-licita \
-  --from-literal=DJANGO_SECRET_KEY=<gerar, ex.: python3 -c "import secrets; print(secrets.token_urlsafe(50))">
+  --from-literal=DJANGO_SECRET_KEY=<gerar, ex.: python3 -c "import secrets; print(secrets.token_urlsafe(50))"> \
+  --from-literal=ARMAZENAMENTO_CHAVE_CIFRA=<gerar, ex.: python3 -c "from cryptography.fernet import Fernet; print(Fernet.generate_key().decode())">
 ```
+
+Para acrescentar a chave de cifra a um `backend-secrets` que já existe, sem
+mexer no resto dele:
+
+```bash
+CHAVE=$(python3 -c "from cryptography.fernet import Fernet; print(Fernet.generate_key().decode())")
+kubectl patch secret backend-secrets -n inside-solutions-licita \
+  --type=merge -p "{\"stringData\":{\"ARMAZENAMENTO_CHAVE_CIFRA\":\"$CHAVE\"}}"
+```
+
+**`ARMAZENAMENTO_CHAVE_CIFRA` não é a configuração do armazenamento** — essa
+fica no banco, em `ConfigArmazenamento`, uma linha por tenant, editada pela
+tela (driver, bucket, endpoint, credencial). O que está aqui é só a chave que
+cifra a coluna do segredo: guardá-la na mesma tabela que ela protege tornaria
+a cifra decorativa diante de um dump do banco. Ver a seção "Armazenamento de
+arquivos" em [`docs/ARQUITETURA.md`](../docs/ARQUITETURA.md).
+
+Trocar esta chave torna ilegíveis as credenciais já gravadas — a tela passa a
+pedi-las de novo. Não há passo de rotação automática.
+
+Os três Deployments do backend (`backend`, `celery-beat`,
+`sincronizador-catalogo-pdm`) carregam `backend-secrets` inteiro via
+`envFrom`, então a chave chega nos três sem mudar manifesto nenhum.
 
 Mesma lógica de `:latest` do frontend — depois de buildar
 (`.github/workflows/build-image.yml`, escolha `backend`), force o rollout:

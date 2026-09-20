@@ -27,10 +27,18 @@ describe('ApiClient', () => {
   });
 
   it('omite da query string os parâmetros vazios, nulos ou indefinidos', () => {
-    client.get('licitacoes/oportunidades/', { palavra_chave: 'notebook', uf: '', uasg: null, buscar: undefined }).subscribe();
+    client
+      .get('licitacoes/oportunidades/', {
+        palavra_chave: 'notebook',
+        uf: '',
+        uasg: null,
+        buscar: undefined,
+      })
+      .subscribe();
 
     const req = httpMock.expectOne(
-      (r) => r.url === '/api/licitacoes/oportunidades/' && r.params.get('palavra_chave') === 'notebook',
+      (r) =>
+        r.url === '/api/licitacoes/oportunidades/' && r.params.get('palavra_chave') === 'notebook',
     );
     expect(req.request.params.has('uf')).toBe(false);
     expect(req.request.params.has('uasg')).toBe(false);

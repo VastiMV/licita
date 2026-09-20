@@ -30,7 +30,7 @@ import {
   mascararDocumento,
   mascararTelefone,
   somenteDigitos,
-} from '../documento';
+} from '../../../shared/documento/documento';
 
 /** Campo que o backend pode recusar, mapeado para a mensagem da tela. Só
  * estes viram erro embaixo do campo; o resto cai no aviso do rodapé. */

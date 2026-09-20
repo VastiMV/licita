@@ -1,0 +1,132 @@
+@use 'field' as *;
+@use 'mixins' as *;
+
+h1 {
+  font-size: var(--font-size-xl);
+  margin-bottom: var(--space-1);
+}
+
+.pagina-topo p {
+  max-width: 62ch;
+}
+
+.carregando {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+  margin-top: var(--space-5);
+
+  app-icon {
+    width: 18px;
+    height: 18px;
+  }
+}
+
+.cartao {
+  margin-top: var(--space-5);
+  padding: var(--space-5);
+  background: var(--color-surface);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-lg);
+  box-shadow: var(--shadow-sm);
+  max-width: 720px;
+}
+
+app-select {
+  display: block;
+  max-width: 320px;
+}
+
+.aviso {
+  display: flex;
+  align-items: flex-start;
+  gap: var(--space-2);
+  margin-top: var(--space-4);
+  padding: var(--space-3) var(--space-4);
+  border-radius: var(--radius-md);
+  background: var(--color-warn-bg);
+  color: var(--color-warn);
+  font-size: var(--font-size-sm);
+
+  app-icon {
+    flex: none;
+    width: 18px;
+    height: 18px;
+  }
+}
+
+.campos {
+  display: grid;
+  gap: var(--space-4);
+  margin-top: var(--space-5);
+}
+
+.campo {
+  @include field-wrapper;
+}
+
+.campo-rotulo {
+  @include field-label;
+
+  em {
+    margin-left: 0.2em;
+    font-style: normal;
+    color: var(--color-danger);
+  }
+}
+
+.campo input {
+  @include field-control;
+}
+
+.campo-ajuda {
+  font-size: var(--font-size-xs);
+  color: var(--color-muted);
+
+  &.definido {
+    color: var(--color-success);
+  }
+}
+
+.acoes {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-3);
+  margin-top: var(--space-5);
+}
+
+.resultado {
+  margin-top: var(--space-4);
+}
+
+// Não é card: é uma faixa de estado, e três caixas iguais aqui competiriam
+// com o formulário, que é o que a tela veio fazer.
+.estado {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+  gap: var(--space-5);
+  max-width: 720px;
+  margin-top: var(--space-5);
+  padding-top: var(--space-5);
+  border-top: 1px solid var(--color-border);
+
+  p {
+    margin: var(--space-1) 0 0;
+    font-size: var(--font-size-sm);
+  }
+
+  .pendente {
+    color: var(--color-warn);
+  }
+}
+
+.estado-rotulo {
+  @include uppercase-label;
+}
+
+.nota {
+  max-width: 70ch;
+  margin-top: var(--space-5);
+  font-size: var(--font-size-xs);
+  color: var(--color-muted);
+}

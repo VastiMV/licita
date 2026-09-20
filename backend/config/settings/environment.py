@@ -87,6 +87,20 @@ class Environment:
         default_factory=lambda: float(os.environ.get("CATALOGO_SYNC_INTERVALO_SEGUNDOS", "0.3"))
     )
 
+    # Armazenamento de arquivos (ver apps/armazenamento). Só a **chave de
+    # cifra** vem do ambiente: o resto da configuração (driver, bucket,
+    # credencial) é registro de banco, porque precisa ser por cliente e
+    # mudável pela tela sem redeploy.
+    #
+    # Em branco, `apps/armazenamento/cripto.py` deriva uma chave da
+    # SECRET_KEY — serve para desenvolvimento, mas em produção configure
+    # esta: sem ela, rotacionar a SECRET_KEY torna ilegíveis as credenciais
+    # já gravadas. Gerar com:
+    #   python -c "from cryptography.fernet import Fernet; print(Fernet.generate_key().decode())"
+    armazenamento_chave_cifra: str = field(
+        default_factory=lambda: os.environ.get("ARMAZENAMENTO_CHAVE_CIFRA", "")
+    )
+
     # JWT (ver docs/ARQUITETURA.md — seção "Autenticação")
     jwt_access_lifetime_minutes: int = field(
         default_factory=lambda: _get_int("JWT_ACCESS_LIFETIME_MINUTES", default=15)

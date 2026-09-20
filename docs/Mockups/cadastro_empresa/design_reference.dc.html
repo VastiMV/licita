@@ -1,0 +1,372 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Public+Sans:wght@400;500;600;700;800&family=IBM+Plex+Mono:wght@400;500&display=swap" rel="stylesheet">
+<style>
+  body { margin:0; background:#eef1f5; font-family:"Public Sans", Helvetica, Arial, sans-serif; color:#1a2233; -webkit-font-smoothing:antialiased; }
+  a { color:oklch(0.55 0.15 255); text-decoration:none; }
+  a:hover { color:oklch(0.46 0.15 255); text-decoration:underline; }
+  * { box-sizing:border-box; }
+  input::placeholder { color:#a3a9b3; }
+</style>
+</helmet>
+
+<div style="min-height:100vh; background:#eef1f5; padding:32px 0 64px;">
+  <div style="max-width:1200px; margin:0 auto; padding:0 28px;">
+
+    <sc-if value="{{ isEmpresas }}" hint-placeholder-val="{{ true }}">
+      <div style="display:flex; align-items:flex-start; justify-content:space-between; gap:20px; margin-bottom:22px; flex-wrap:wrap;">
+        <div style="max-width:640px;">
+          <h1 style="margin:0 0 8px; font-size:28px; font-weight:800; letter-spacing:-0.01em;">Empresas</h1>
+          <div style="font-size:14px; color:#767c88; line-height:1.5;">Cadastro compartilhado por toda a equipe. Linhas destacadas em vermelho têm documentação vencida e não são elegíveis para novas propostas.</div>
+        </div>
+        <button onClick="{{ onAddCompany }}" style="font:inherit; font-size:13.5px; font-weight:700; padding:11px 18px; border-radius:9px; border:none; background:#1a2233; color:#fff; cursor:pointer; white-space:nowrap;" style-hover="background:#28324a;">+ Adicionar empresa</button>
+      </div>
+
+      <div style="background:#fff; border:1px solid #e2e5ea; border-radius:14px; overflow:hidden;">
+        <div style="display:flex; align-items:flex-end; justify-content:space-between; gap:16px; padding:18px 20px; border-bottom:1px solid #edeff2; flex-wrap:wrap;">
+          <div style="min-width:240px; flex:1;">
+            <div style="font-size:11px; font-weight:700; letter-spacing:0.06em; color:#9aa0aa; margin-bottom:6px;">BUSCAR</div>
+            <input value="{{ companySearch }}" onChange="{{ onCompanySearch }}" placeholder="Busca por razão social, CNPJ, cidade ou categoria…" style="font:inherit; font-size:13.5px; width:100%; max-width:420px; padding:9px 12px; border-radius:9px; border:1px solid #d9dce1; outline:none; color:#1a2233;" />
+          </div>
+          <div style="display:flex; align-items:center; gap:8px;">
+            <span style="font-size:11px; font-weight:700; letter-spacing:0.06em; color:#9aa0aa;">LINHAS</span>
+            <sc-for list="{{ pageSizes }}" as="p" hint-placeholder-count="3">
+              <button onClick="{{ p.onClick }}" style="font:inherit; font-size:12.5px; font-weight:700; padding:7px 11px; border-radius:8px; border:1px solid {{ p.border }}; background:{{ p.bg }}; color:{{ p.fg }}; cursor:pointer;">{{ p.label }}</button>
+            </sc-for>
+          </div>
+        </div>
+
+        <div style="display:flex; gap:14px; padding:12px 20px; font-size:11px; font-weight:700; letter-spacing:0.04em; color:#767c88;">
+          <div style="flex:2.2; min-width:0;">RAZÃO SOCIAL</div>
+          <div style="flex:1.2; min-width:0;">CNPJ / CPF</div>
+          <div style="flex:0.6; min-width:0;">CIDADE</div>
+          <div style="flex:1; min-width:0;">CATEGORIA</div>
+          <div style="flex:1.1; min-width:0;">DOCUMENTAÇÃO</div>
+          <div style="flex:0.9; min-width:0; text-align:right;">AÇÕES</div>
+        </div>
+
+        <sc-for list="{{ companies }}" as="c" hint-placeholder-count="5">
+          <div onClick="{{ c.onOpen }}" style="display:flex; gap:14px; align-items:center; padding:16px 20px; border-top:1px solid #edeff2; background:{{ c.rowBg }}; cursor:pointer; flex-wrap:wrap;" style-hover="background:{{ c.rowHoverBg }};">
+            <div style="flex:2.2; min-width:180px;">
+              <a href="#" onClick="{{ c.onOpenLink }}" style="font-size:14px; font-weight:700;">{{ c.name }}</a>
+              <div style="font-size:12px; color:#9aa0aa; margin-top:2px;">{{ c.docCount }} documentos{{ c.overdueSuffix }}</div>
+            </div>
+            <div style="flex:1.2; min-width:140px; font-family:'IBM Plex Mono', monospace; font-size:12.5px; color:#3d4453;">{{ c.doc }}</div>
+            <div style="flex:0.6; min-width:50px; font-size:13px; color:#3d4453;">{{ c.city }}</div>
+            <div style="flex:1; min-width:100px; font-size:13px; color:#3d4453;">{{ c.category }}</div>
+            <div style="flex:1.1; min-width:110px;">
+              <span style="display:inline-block; font-size:11.5px; font-weight:700; padding:4px 10px; border-radius:999px; background:{{ c.statusBg }}; color:{{ c.statusFg }};">{{ c.statusLabel }}</span>
+            </div>
+            <div style="flex:0.9; min-width:100px; text-align:right;">
+              <button onClick="{{ c.onOpenLink }}" style="font:inherit; font-size:12.5px; font-weight:700; padding:7px 13px; border-radius:8px; border:1px solid #d9dce1; background:#fff; color:#3d4453; cursor:pointer;" style-hover="background:#f5f6f8;">Ações ▾</button>
+            </div>
+          </div>
+        </sc-for>
+      </div>
+    </sc-if>
+  </div>
+
+  <sc-if value="{{ modalOpen }}" hint-placeholder-val="{{ false }}">
+    <div onClick="{{ onBackdrop }}" style="position:fixed; inset:0; background:rgba(20,24,34,0.5); display:flex; align-items:center; justify-content:center; padding:28px; z-index:50;">
+      <div onClick="{{ stop }}" style="background:#fff; border-radius:16px; width:100%; max-width:880px; max-height:88vh; overflow-y:auto; box-shadow:0 24px 60px rgba(0,0,0,0.25);">
+
+        <div style="display:flex; align-items:flex-start; justify-content:space-between; gap:16px; padding:22px 26px; border-bottom:1px solid #edeff2; position:sticky; top:0; background:#fff;">
+          <div>
+            <div style="font-size:12px; font-weight:700; letter-spacing:0.05em; color:#9aa0aa; margin-bottom:4px;">{{ modalKicker }}</div>
+            <h2 style="margin:0; font-size:20px; font-weight:800;">{{ modalTitle }}</h2>
+          </div>
+          <button onClick="{{ onCloseModal }}" style="font:inherit; font-size:15px; padding:7px 10px; border-radius:8px; border:1px solid #e2e5ea; background:#fff; color:#767c88; cursor:pointer;" style-hover="background:#f5f6f8;">✕</button>
+        </div>
+
+        <div style="padding:22px 26px 26px;">
+
+          <sc-if value="{{ isEmpresaModal }}" hint-placeholder-val="{{ false }}">
+            <div style="display:grid; grid-template-columns:repeat(auto-fit, minmax(180px, 1fr)); gap:14px; margin-bottom:26px;">
+              <div><div style="font-size:11px; font-weight:700; color:#9aa0aa; margin-bottom:6px;">RAZÃO SOCIAL</div><input defaultValue="{{ modalCompany.name }}" style="font:inherit; font-size:13.5px; width:100%; padding:9px 11px; border-radius:8px; border:1px solid #d9dce1;" /></div>
+              <div><div style="font-size:11px; font-weight:700; color:#9aa0aa; margin-bottom:6px;">CNPJ / CPF</div><input defaultValue="{{ modalCompany.doc }}" style="font:inherit; font-size:13.5px; width:100%; padding:9px 11px; border-radius:8px; border:1px solid #d9dce1;" /></div>
+              <div><div style="font-size:11px; font-weight:700; color:#9aa0aa; margin-bottom:6px;">CIDADE</div><input defaultValue="{{ modalCompany.city }}" style="font:inherit; font-size:13.5px; width:100%; padding:9px 11px; border-radius:8px; border:1px solid #d9dce1;" /></div>
+              <div><div style="font-size:11px; font-weight:700; color:#9aa0aa; margin-bottom:6px;">CATEGORIA</div><input defaultValue="{{ modalCompany.category }}" style="font:inherit; font-size:13.5px; width:100%; padding:9px 11px; border-radius:8px; border:1px solid #d9dce1;" /></div>
+            </div>
+          </sc-if>
+
+          <div style="display:grid; grid-template-columns:repeat(auto-fit, minmax(150px, 1fr)); gap:12px; margin-bottom:20px;">
+              <sc-for list="{{ docStatCards }}" as="card" hint-placeholder-count="3">
+                <div style="border-radius:12px; padding:14px 16px; background:{{ card.bg }};">
+                  <div style="font-size:22px; font-weight:800; color:{{ card.fg }}; margin-bottom:2px;">{{ card.count }}</div>
+                  <div style="font-size:12px; font-weight:600; color:{{ card.fg }};">{{ card.label }}</div>
+                </div>
+              </sc-for>
+            </div>
+
+          <div style="font-size:13.5px; font-weight:800; margin-bottom:12px;">{{ docsSectionLabel }}</div>
+
+          <div onDragOver="{{ onDragOver }}" onDragLeave="{{ onDragLeave }}" onDrop="{{ onDrop }}" onClick="{{ onPickFile }}" style="border:1.5px dashed {{ dropBorder }}; background:{{ dropBg }}; border-radius:12px; padding:18px; display:flex; align-items:center; gap:14px; cursor:pointer; margin-bottom:14px; flex-wrap:wrap;">
+            <div style="width:36px; height:36px; border-radius:9px; background:#fff; border:1px solid #e2e5ea; display:flex; align-items:center; justify-content:center; font-size:17px; color:#9aa0aa;">↑</div>
+            <div style="min-width:0; flex:1;">
+              <div style="font-size:13.5px; font-weight:700; margin-bottom:1px;">Arraste arquivos ou clique para enviar</div>
+              <div style="font-size:12px; color:#9aa0aa;">PDF, DWG, XLSX e imagens até 50 MB</div>
+            </div>
+            <span style="font-size:12.5px; font-weight:700; color:oklch(0.55 0.15 255); white-space:nowrap;">Selecionar arquivos</span>
+          </div>
+
+          <sc-if value="{{ uploading }}" hint-placeholder-val="{{ false }}">
+            <div style="background:#f6f7f9; border-radius:10px; padding:11px 14px; display:flex; align-items:center; gap:12px; margin-bottom:14px;">
+              <div style="font-family:'IBM Plex Mono', monospace; font-size:12px; color:#767c88;">{{ uploadPct }}%</div>
+              <div style="flex:1; height:6px; border-radius:999px; background:#e2e5ea; overflow:hidden;"><div style="height:100%; border-radius:999px; background:oklch(0.55 0.15 255); width:{{ uploadWidth }}; transition:width .2s;"></div></div>
+              <div style="font-size:12.5px; color:#3d4453;">{{ uploadName }}</div>
+            </div>
+          </sc-if>
+
+          <div style="display:flex; gap:8px; margin-bottom:12px; flex-wrap:wrap;">
+            <sc-for list="{{ docFilters }}" as="f" hint-placeholder-count="3">
+              <button onClick="{{ f.onClick }}" style="font:inherit; font-size:12px; font-weight:700; padding:6px 11px; border-radius:999px; cursor:pointer; border:1px solid {{ f.border }}; background:{{ f.bg }}; color:{{ f.fg }};">{{ f.label }}</button>
+            </sc-for>
+          </div>
+
+          <div style="border:1px solid #edeff2; border-radius:12px; overflow:hidden;">
+            <sc-for list="{{ modalDocs }}" as="doc" hint-placeholder-count="4">
+              <div style="border-bottom:1px solid #f0f1f3;">
+                <div style="display:flex; flex-wrap:wrap; gap:10px 14px; padding:12px 14px; align-items:center; background:{{ doc.rowBg }};" style-hover="background:#fafbfc;">
+                  <div style="display:flex; align-items:center; gap:10px; min-width:180px; flex:1 1 220px;">
+                    <span style="width:28px; height:32px; flex:none; border-radius:5px; border:1px solid #e2e5ea; background:#fbfbfc; display:flex; align-items:center; justify-content:center; font-family:'IBM Plex Mono', monospace; font-size:8.5px; font-weight:600; color:{{ doc.extColor }};">{{ doc.ext }}</span>
+                    <div style="min-width:0;">
+                      <div style="font-size:13px; font-weight:700; overflow:hidden; text-overflow:ellipsis; white-space:nowrap;">{{ doc.name }}</div>
+                      <div style="font-size:11.5px; color:#9aa0aa; overflow:hidden; text-overflow:ellipsis; white-space:nowrap;">{{ doc.meta }}</div>
+                    </div>
+                  </div>
+                  <div style="display:flex; align-items:center; gap:8px; flex-wrap:wrap; font-size:12px; color:#767c88;">
+                    <span style="font-family:'IBM Plex Mono', monospace;">{{ doc.version }}</span>
+                    <span style="color:#d3d5d1;">·</span>
+                    <span>{{ doc.updated }}</span>
+                    <span style="display:inline-block; font-size:11px; font-weight:700; padding:3px 9px; border-radius:999px; background:{{ doc.statusBg }}; color:{{ doc.statusFg }};">{{ doc.statusLabel }}</span>
+                  </div>
+                  <div style="flex:1 0 0;"></div>
+                  <div style="display:flex; align-items:center; gap:6px; flex:none;">
+                    <button onClick="{{ doc.onToggle }}" style="font:inherit; font-size:11px; font-weight:700; padding:5px 9px; border-radius:7px; border:1px solid #e2e5ea; background:#fff; color:#767c88; cursor:pointer;" style-hover="background:#f5f6f8;">{{ doc.toggleLabel }}</button>
+                    <button onClick="{{ doc.onNewVersion }}" style="font:inherit; font-size:11px; font-weight:700; padding:5px 9px; border-radius:7px; border:1px solid #e2e5ea; background:#fff; color:#767c88; cursor:pointer;" style-hover="background:#f5f6f8;">+ versão</button>
+                  </div>
+                </div>
+                <sc-if value="{{ doc.expanded }}" hint-placeholder-val="{{ false }}">
+                  <div style="background:#fafbfc; border-top:1px solid #f0f1f3; padding:12px 14px;">
+                    <div style="font-size:10.5px; font-weight:700; letter-spacing:0.05em; color:#9aa0aa; margin-bottom:8px;">HISTÓRICO DE VERSÕES</div>
+                    <sc-for list="{{ doc.versions }}" as="v" hint-placeholder-count="2">
+                      <div style="display:flex; flex-wrap:wrap; gap:6px 12px; align-items:center; padding:7px 9px; border-radius:8px;">
+                        <span style="font-family:'IBM Plex Mono', monospace; font-size:11.5px; color:#3d4453; flex:none;">{{ v.tag }}</span>
+                        <span style="font-size:12px; color:#767c88; flex:1 1 180px; min-width:0;">{{ v.note }}</span>
+                        <span style="font-size:11.5px; color:#9aa0aa; flex:none;">{{ v.when }}</span>
+                        <a href="#" style="font-size:11.5px; font-weight:700; flex:none;">Baixar</a>
+                      </div>
+                    </sc-for>
+                  </div>
+                </sc-if>
+              </div>
+            </sc-for>
+            <sc-if value="{{ modalDocsEmpty }}" hint-placeholder-val="{{ false }}">
+              <div style="padding:30px 14px; text-align:center; color:#9aa0aa; font-size:13px;">Nenhum documento neste filtro.</div>
+            </sc-if>
+          </div>
+        </div>
+
+        <div style="display:flex; justify-content:flex-end; gap:10px; padding:16px 26px; border-top:1px solid #edeff2; position:sticky; bottom:0; background:#fff;">
+          <button onClick="{{ onCloseModal }}" style="font:inherit; font-size:13px; font-weight:700; padding:9px 16px; border-radius:8px; border:1px solid #d9dce1; background:#fff; color:#3d4453; cursor:pointer;" style-hover="background:#f5f6f8;">Cancelar</button>
+          <button onClick="{{ onSaveModal }}" style="font:inherit; font-size:13px; font-weight:700; padding:9px 18px; border-radius:8px; border:none; background:#1a2233; color:#fff; cursor:pointer;" style-hover="background:#28324a;">{{ modalSaveLabel }}</button>
+        </div>
+      </div>
+    </div>
+  </sc-if>
+
+  <sc-if value="{{ toast }}" hint-placeholder-val="{{ false }}">
+    <div style="position:fixed; left:50%; bottom:26px; transform:translateX(-50%); background:#1a2233; color:#fff; font-size:13px; font-weight:600; padding:11px 18px; border-radius:10px; box-shadow:0 8px 24px rgba(0,0,0,0.18); z-index:60;">{{ toast }}</div>
+  </sc-if>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script>
+const EMPRESA_STATUS = {
+  valido: { label: "Documentação válida", bg: "oklch(0.93 0.05 152)", fg: "oklch(0.40 0.10 152)" },
+  vencido: { label: "Documentação vencida", bg: "oklch(0.94 0.05 27)", fg: "oklch(0.48 0.16 27)" },
+  pendente: { label: "Pendente", bg: "#eef0f3", fg: "#767c88" }
+};
+const DOC_STATUS_EMPRESA = {
+  valido: { label: "Válido", bg: "oklch(0.93 0.05 152)", fg: "oklch(0.40 0.10 152)" },
+  vencido: { label: "Vencido", bg: "oklch(0.94 0.05 27)", fg: "oklch(0.48 0.16 27)" },
+  pendente: { label: "Pendente", bg: "#eef0f3", fg: "#767c88" }
+};
+
+const COMPANIES = [
+  { id: 1, name: "Alfamed", doc: "11.405.384/0001-49", city: "SP", category: "Materiais",
+    docs: [d("Alvará sanitário.pdf","PDF","Fiscal","v1","12/06/2026","valido"), d("Contrato social.pdf","PDF","Jurídico","v2","03/01/2026","valido"), d("Certidão negativa.pdf","PDF","Fiscal","v1","18/09/2025","vencido")] },
+  { id: 2, name: "CMOS Drake", doc: "03.620.716/0001-80", city: "SP", category: "Materiais",
+    docs: [d("Contrato social.pdf","PDF","Jurídico","v1","20/02/2026","valido"), d("ISO 9001.pdf","PDF","Qualidade","v1","—","pendente")] },
+  { id: 3, name: "DellaMed", doc: "11.666.105/0001-09", city: "SP", category: "Equipamentos",
+    docs: [d("Alvará de funcionamento.pdf","PDF","Fiscal","v3","30/11/2026","valido"), d("Certidão FGTS.pdf","PDF","Fiscal","v1","10/08/2026","valido")] },
+  { id: 4, name: "Vidraçaria Aurora", doc: "22.910.774/0001-15", city: "SP", category: "Vidros",
+    docs: [d("Contrato social.pdf","PDF","Jurídico","v1","05/05/2026","valido"), d("Certidão negativa.pdf","PDF","Fiscal","v1","01/07/2025","vencido"), d("ART responsável técnico.pdf","PDF","Técnico","v2","—","pendente")] },
+  { id: 5, name: "Metalfer Estruturas", doc: "14.203.890/0001-77", city: "Guarulhos", category: "Estruturas",
+    docs: [d("Alvará sanitário.pdf","PDF","Fiscal","v1","15/04/2026","valido")] }
+];
+
+function d(name, ext, category, version, updated, status) {
+  return { name, ext, category, version, updated, status, versions: [["v1","Versão inicial","—"]] };
+}
+
+class Component extends DCLogic {
+  state = {
+    view: "empresas",
+    companySearch: "",
+    pageSize: 10,
+    modalType: null, modalId: null,
+    modalDocs: [], modalExpanded: null, docFilter: "Todos",
+    uploading: false, uploadPct: 0, uploadName: "",
+    toast: null
+  };
+
+  componentWillUnmount() { clearInterval(this._t); clearTimeout(this._toast); }
+
+  flash(msg) {
+    clearTimeout(this._toast);
+    this.setState({ toast: msg });
+    this._toast = setTimeout(() => this.setState({ toast: null }), 2400);
+  }
+
+  startUpload(name) {
+    clearInterval(this._t);
+    this.setState({ uploading: true, uploadPct: 0, uploadName: name });
+    this._t = setInterval(() => {
+      this.setState(s => {
+        const pct = Math.min(100, s.uploadPct + 10 + Math.random() * 15);
+        if (pct >= 100) {
+          clearInterval(this._t);
+          setTimeout(() => this.setState({ uploading: false }), 500);
+          setTimeout(() => this.flash(name + " enviado — nova versão registrada"), 550);
+        }
+        return { uploadPct: pct };
+      });
+    }, 170);
+  }
+
+  openCompany(id) {
+    const c = COMPANIES.find(x => x.id === id);
+    this.setState({ modalType: "empresa", modalId: id, modalDocs: c.docs.map(x => ({ ...x })), docFilter: "Todos", modalExpanded: null });
+  }
+  closeModal() { this.setState({ modalType: null, modalId: null }); }
+
+  renderVals() {
+    const s = this.state;
+    const statusMap = DOC_STATUS_EMPRESA;
+
+    const companies = COMPANIES.filter(c => {
+      const q = s.companySearch.toLowerCase();
+      return !q || c.name.toLowerCase().includes(q) || c.doc.includes(q) || c.city.toLowerCase().includes(q) || c.category.toLowerCase().includes(q);
+    }).slice(0, s.pageSize).map(c => {
+      const overdue = c.docs.filter(x => x.status === "vencido").length;
+      const st = overdue ? EMPRESA_STATUS.vencido : EMPRESA_STATUS.valido;
+      return {
+        ...c,
+        docCount: c.docs.length,
+        overdueSuffix: overdue ? " · " + overdue + " vencido" + (overdue > 1 ? "s" : "") : "",
+        statusLabel: st.label, statusBg: st.bg, statusFg: st.fg,
+        rowBg: overdue ? "oklch(0.98 0.015 27)" : "#fff",
+        rowHoverBg: overdue ? "oklch(0.965 0.02 27)" : "#fafbfc",
+        onOpen: () => this.openCompany(c.id),
+        onOpenLink: e => { e.stopPropagation(); this.openCompany(c.id); }
+      };
+    });
+
+    const modalDocs = s.modalDocs.filter(doc => {
+      if (s.docFilter === "Todos") return true;
+      if (s.docFilter === "Pendentes") return doc.status === "pendente";
+      if (s.docFilter === "Vencidos") return doc.status === "vencido";
+      if (s.docFilter === "Em revisão") return doc.status === "revisao";
+      return true;
+    }).map((doc, i) => {
+      const st = statusMap[doc.status] || DOC_STATUS_EMPRESA.pendente;
+      const key = doc.name;
+      return {
+        ...doc,
+        statusLabel: st.label, statusBg: st.bg, statusFg: st.fg,
+        extColor: doc.ext === "PDF" ? "oklch(0.52 0.15 27)" : doc.ext === "XLSX" ? "oklch(0.48 0.11 152)" : "#b0b3b0",
+        rowBg: doc.status === "vencido" ? "oklch(0.98 0.015 27)" : "#fff",
+        expanded: s.modalExpanded === key,
+        toggleLabel: s.modalExpanded === key ? "Ocultar" : "Versões",
+        versions: doc.versions.map(v => ({ tag: v[0], note: v[1], when: v[2] })),
+        onToggle: () => this.setState({ modalExpanded: s.modalExpanded === key ? null : key }),
+        onNewVersion: () => this.startUpload(doc.name)
+      };
+    });
+
+    const filterOptions = ["Todos", "Vencidos", "Pendentes"];
+
+    const validos = s.modalDocs.filter(x => x.status === "valido").length;
+    const vencidos = s.modalDocs.filter(x => x.status === "vencido").length;
+    const pendentes = s.modalDocs.filter(x => x.status === "pendente").length;
+    const docStatCards = [
+      { label: "Válidos", count: validos, bg: "oklch(0.96 0.03 152)", fg: "oklch(0.38 0.10 152)" },
+      { label: "Vencidos", count: vencidos, bg: "oklch(0.96 0.03 27)", fg: "oklch(0.46 0.16 27)" },
+      { label: "Pendentes", count: pendentes, bg: "#f1f2f4", fg: "#5a6070" }
+    ];
+
+    return {
+      isEmpresas: true,
+      companies,
+      companySearch: s.companySearch,
+      onCompanySearch: e => this.setState({ companySearch: e.target.value }),
+      pageSizes: [10, 25, 50].map(n => ({
+        label: String(n),
+        border: s.pageSize === n ? "#1a2233" : "#d9dce1",
+        bg: s.pageSize === n ? "#1a2233" : "#fff",
+        fg: s.pageSize === n ? "#fff" : "#3d4453",
+        onClick: () => this.setState({ pageSize: n })
+      })),
+      onAddCompany: () => this.setState({ modalType: "empresa", modalId: null, modalDocs: [], docFilter: "Todos", modalExpanded: null }),
+
+      modalOpen: !!s.modalType,
+      isEmpresaModal: s.modalType === "empresa",
+      modalKicker: "EMPRESA",
+      modalTitle: s.modalId ? COMPANIES.find(c => c.id === s.modalId).name : "Nova empresa",
+      modalCompany: s.modalId ? COMPANIES.find(c => c.id === s.modalId) : { name: "", doc: "", city: "", category: "" },
+      docsSectionLabel: "Documentos da empresa",
+      modalSaveLabel: "Salvar empresa",
+      onCloseModal: () => this.closeModal(),
+      onBackdrop: () => this.closeModal(),
+      stop: e => e.stopPropagation(),
+      onSaveModal: () => { this.flash("Empresa salva"); this.closeModal(); },
+
+      docFilters: filterOptions.map(label => ({
+        label,
+        border: s.docFilter === label ? "#1a2233" : "#d9dce1",
+        bg: s.docFilter === label ? "#1a2233" : "#fff",
+        fg: s.docFilter === label ? "#fff" : "#3d4453",
+        onClick: () => this.setState({ docFilter: label })
+      })),
+      modalDocs,
+      modalDocsEmpty: modalDocs.length === 0,
+      docStatCards,
+
+      dropBorder: "#d5d8dd", dropBg: "#fafbfc",
+      onPickFile: () => this.startUpload("Novo documento.pdf"),
+      onDragOver: e => e.preventDefault(),
+      onDragLeave: () => {},
+      onDrop: e => { e.preventDefault(); const f = e.dataTransfer && e.dataTransfer.files[0]; this.startUpload(f ? f.name : "Documento.pdf"); },
+      uploading: s.uploading,
+      uploadPct: Math.round(s.uploadPct),
+      uploadWidth: Math.round(s.uploadPct) + "%",
+      uploadName: s.uploadName,
+
+      toast: s.toast
+    };
+  }
+}
+</script>
+</body>
+</html>

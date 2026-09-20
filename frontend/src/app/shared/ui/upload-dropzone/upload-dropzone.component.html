@@ -1,0 +1,41 @@
+@if (progresso() !== null) {
+  <div class="enviando" role="status" aria-live="polite">
+    <div class="enviando-topo">
+      <span class="nome">{{ enviando() || 'Enviando…' }}</span>
+      <span class="pct">{{ progresso() }}%</span>
+    </div>
+    <div class="barra">
+      <div class="preenchimento" [style.width.%]="progresso()"></div>
+    </div>
+  </div>
+} @else {
+  <div
+    class="zona"
+    [class.arrastando]="arrastando()"
+    [class.desabilitada]="desabilitado()"
+    role="button"
+    tabindex="0"
+    [attr.aria-disabled]="desabilitado()"
+    (click)="abrirSeletor()"
+    (keydown)="aoTeclar($event)"
+    (dragover)="aoArrastar($event, true)"
+    (dragleave)="aoArrastar($event, false)"
+    (drop)="aoSoltar($event)"
+  >
+    <span class="icone"><app-icon name="arrow-up" /></span>
+    <span class="texto">
+      <span class="titulo">{{ titulo() }}</span>
+      <span class="ajuda">{{ ajuda() }}</span>
+    </span>
+    <span class="link">Selecionar arquivo</span>
+  </div>
+}
+
+<input
+  #campo
+  type="file"
+  class="escondido"
+  [accept]="aceita()"
+  [disabled]="desabilitado()"
+  (change)="aoSelecionar($event)"
+/>

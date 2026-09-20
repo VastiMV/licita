@@ -1,0 +1,33 @@
+h1 {
+  font-size: var(--font-size-xl);
+  margin-bottom: var(--space-1);
+}
+
+// Título à esquerda, "Adicionar empresa" à direita — mesma composição das
+// outras telas de cadastro (ver `fornecedores.page.scss`).
+.pagina-topo {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: var(--space-6);
+
+  p {
+    max-width: 62ch;
+  }
+
+  app-button {
+    flex: none;
+    margin-top: var(--space-1);
+  }
+}
+
+app-data-table {
+  margin-top: var(--space-5);
+}
+
+@media (max-width: 640px) {
+  .pagina-topo {
+    flex-direction: column;
+    gap: var(--space-4);
+  }
+}

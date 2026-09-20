@@ -1,0 +1,252 @@
+<app-modal-shell [titulo]="empresa.nome" largura="larga" (fechar)="fechar()">
+  <p class="kicker">Documentos de habilitação</p>
+  <p class="sub">
+    {{ empresa.cnpj_formatado }} · {{ empresa.porte_label }} · {{ empresa.cidade_uf }}
+  </p>
+
+  <div class="cabecalho">
+    <p class="tese">
+      A lista é fixa — são os documentos que a Lei 14.133 organiza em quatro blocos. O que muda é a
+      data, e é por ela que esta tela está ordenada.
+    </p>
+    <button type="button" class="link" (click)="abrindoVaga.set(!abrindoVaga())">
+      <app-icon name="plus" />
+      Adicionar documento
+    </button>
+  </div>
+
+  @if (abrindoVaga()) {
+    <div class="vaga-nova">
+      <app-select
+        label="Tipo de documento"
+        [options]="opcoesTipo()"
+        [ngModel]="tipoNovo()"
+        (ngModelChange)="tipoNovo.set($event)"
+        name="tipoNovo"
+        placeholder="Selecione"
+      />
+      @if (tipoEscolhidoELivre()) {
+        <label class="campo">
+          <span class="campo-rotulo">Nome do documento</span>
+          <input
+            type="text"
+            [value]="tituloNovo()"
+            (input)="tituloNovo.set($any($event.target).value)"
+            placeholder="Ex.: Alvará sanitário"
+          />
+        </label>
+      }
+      <app-button [disabled]="!tipoNovo()" (click)="abrirVaga()">Adicionar</app-button>
+    </div>
+  }
+
+  @if (carregando()) {
+    <p class="muted carregando"><app-icon name="spinner" /> Carregando documentos…</p>
+  } @else if (erro(); as mensagem) {
+    <p class="erro">{{ mensagem }}</p>
+  } @else {
+    <div class="contadores">
+      <div class="contador sucesso">
+        <span class="numero">{{ contadores().validos }}</span>
+        <span class="rotulo">válidos</span>
+      </div>
+      <div class="contador alerta">
+        <span class="numero">{{ contadores().a_vencer }}</span>
+        <span class="rotulo">a vencer</span>
+      </div>
+      <div class="contador perigo">
+        <span class="numero">{{ contadores().vencidos }}</span>
+        <span class="rotulo">vencidos</span>
+      </div>
+      <div class="contador">
+        <span class="numero">{{ contadores().pendentes }}</span>
+        <span class="rotulo">pendentes</span>
+      </div>
+    </div>
+
+    @if (contadores().vencidos > 0) {
+      <p class="aviso-vencido">
+        <app-icon name="exclamation" />
+        <span>
+          Enquanto houver documento vencido, esta empresa não está apta a assinar contrato — e o kit
+          de habilitação não fecha.
+        </span>
+      </p>
+    }
+
+    <div class="filtros" role="group" aria-label="Filtrar documentos">
+      @for (
+        opcao of [
+          { chave: 'todos', rotulo: 'Todos' },
+          { chave: 'a_vencer', rotulo: 'A vencer' },
+          { chave: 'vencidos', rotulo: 'Vencidos' },
+          { chave: 'pendentes', rotulo: 'Pendentes' },
+        ];
+        track opcao.chave
+      ) {
+        <button
+          type="button"
+          class="chip"
+          [class.ativo]="filtro() === opcao.chave"
+          [attr.aria-pressed]="filtro() === opcao.chave"
+          (click)="trocarFiltro($any(opcao.chave))"
+        >
+          {{ opcao.rotulo }}
+          <span class="chip-contagem">{{ contagemDe($any(opcao.chave)) }}</span>
+        </button>
+      }
+    </div>
+
+    @if (grupos().length === 0) {
+      <p class="vazio">Nenhum documento neste filtro.</p>
+    }
+
+    @for (grupo of grupos(); track grupo.bloco) {
+      <section class="bloco">
+        <h4>{{ grupo.label }}</h4>
+
+        @for (documento of grupo.documentos; track documento.id) {
+          <div class="linha" [class.vencida]="documento.situacao === 'vencido'">
+            <div class="identificacao">
+              <span class="nome">{{ documento.nome }}</span>
+              <span class="orgao">
+                {{ documento.orgao_emissor || 'Sem órgão emissor' }}
+                @if (documento.versao_atual; as versao) {
+                  · v{{ versao.versao }}
+                  @if (versao.numero) {
+                    · nº {{ versao.numero }}
+                  }
+                }
+              </span>
+            </div>
+
+            <div class="validade">
+              @if (documento.validade) {
+                {{ data(documento.validade) }}
+              } @else if (!documento.exige_validade) {
+                <span class="muted">não vence</span>
+              } @else {
+                <span class="muted">—</span>
+              }
+            </div>
+
+            <span class="pilula" [class]="tomDe(documento)">{{ documento.situacao_label }}</span>
+
+            <div class="acoes">
+              @if (documento.link_emissor && documento.situacao !== 'valido') {
+                <a
+                  class="link"
+                  [href]="documento.link_emissor"
+                  target="_blank"
+                  rel="noopener"
+                  [attr.aria-label]="'Emitir ' + documento.nome"
+                >
+                  Emitir
+                </a>
+              }
+              @if (documento.total_versoes > 0) {
+                <button type="button" class="link" (click)="alternarVersoes(documento)">
+                  Versões ({{ documento.total_versoes }})
+                </button>
+              }
+              <button type="button" class="link" (click)="alternarEnvio(documento)">
+                {{ documento.versao_atual ? '+ versão' : 'Enviar' }}
+              </button>
+              <button
+                type="button"
+                class="link apagado"
+                (click)="arquivar(documento)"
+                [attr.aria-label]="'Arquivar ' + documento.nome"
+              >
+                Arquivar
+              </button>
+            </div>
+          </div>
+
+          @if (enviandoEm() === documento.id) {
+            <div class="envio">
+              <div class="campos-versao">
+                <label class="campo">
+                  <span class="campo-rotulo">Número</span>
+                  <input
+                    type="text"
+                    [value]="numero()"
+                    (input)="numero.set($any($event.target).value)"
+                    placeholder="Nº da certidão"
+                  />
+                </label>
+                <app-date-picker
+                  label="Emissão"
+                  name="emissao"
+                  [max]="hoje"
+                  [ngModel]="emissao()"
+                  (ngModelChange)="emissao.set($event ?? '')"
+                />
+                @if (exigeValidade(documento)) {
+                  <app-date-picker
+                    label="Validade"
+                    name="validade"
+                    [min]="emissao() || null"
+                    [ngModel]="validade()"
+                    (ngModelChange)="validade.set($event ?? '')"
+                  />
+                }
+                <label class="campo nota">
+                  <span class="campo-rotulo">Nota</span>
+                  <input
+                    type="text"
+                    [value]="nota()"
+                    (input)="nota.set($any($event.target).value)"
+                    placeholder="Ex.: renovação de agosto"
+                  />
+                </label>
+              </div>
+
+              <app-upload-dropzone
+                [progresso]="progresso()"
+                [enviando]="arquivoEmEnvio()"
+                [desabilitado]="progresso() !== null"
+                (escolhido)="enviar(documento, $event)"
+              />
+
+              @if (exigeValidade(documento) && !validade()) {
+                <p class="dica">
+                  Sem a validade, este documento aparece como válido para sempre — e é justamente o
+                  vencimento que esta tela existe para avisar.
+                </p>
+              }
+            </div>
+          }
+
+          @if (versoesAbertas() === documento.id) {
+            <div class="versoes">
+              @for (versao of versoes(); track versao.id) {
+                <div class="versao">
+                  <span class="tag">v{{ versao.versao }}</span>
+                  <span class="descricao">
+                    {{ versao.nota || versao.nome_original }}
+                    @if (versao.validade) {
+                      · validade {{ data(versao.validade) }}
+                    }
+                  </span>
+                  <span class="quando">
+                    {{ versao.enviado_em | date: 'dd/MM/yyyy HH:mm' }}
+                    @if (versao.enviado_por_nome) {
+                      · {{ versao.enviado_por_nome }}
+                    }
+                  </span>
+                  <button type="button" class="link" (click)="baixar(versao.id)">Baixar</button>
+                </div>
+              }
+              @if (versoes().length === 0) {
+                <p class="muted">Carregando…</p>
+              }
+            </div>
+          }
+        }
+      </section>
+    }
+  }
+
+  <app-button modalFooter variant="ghost" (click)="fechar()">Fechar</app-button>
+</app-modal-shell>

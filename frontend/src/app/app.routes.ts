@@ -38,9 +38,29 @@ export const routes: Routes = [
         ],
       },
       {
+        path: 'empresas',
+        loadComponent: () => import('./pages/empresas/empresas.page').then((m) => m.EmpresasPage),
+      },
+      {
         path: 'fornecedores',
         loadComponent: () =>
           import('./pages/fornecedores/fornecedores.page').then((m) => m.FornecedoresPage),
+      },
+      // Configurações é menu de primeiro nível com filhos, como
+      // Oportunidades — hoje só "Armazenamento", e só para administrador
+      // (quem barra de verdade é o backend, com 403).
+      {
+        path: 'configuracoes',
+        children: [
+          { path: '', pathMatch: 'full', redirectTo: 'armazenamento' },
+          {
+            path: 'armazenamento',
+            loadComponent: () =>
+              import('./pages/configuracoes/armazenamento/armazenamento.page').then(
+                (m) => m.ArmazenamentoPage,
+              ),
+          },
+        ],
       },
       {
         path: 'cotador',

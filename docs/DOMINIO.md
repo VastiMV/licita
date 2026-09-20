@@ -54,6 +54,96 @@ A busca de **oportunidades item a item** (tela principal do protótipo) não
 persiste — é consulta ao vivo em `ComprasGovClient`/`PncpClient`, cruzada com
 `Pdm` quando há palavra-chave. Ver "Busca de oportunidades" abaixo.
 
+### `Tenant` e `Empresa`
+
+**`Tenant`** é a operação de licitação dona dos registros. Hoje existe uma
+linha só — Inside Solutions, criada pela migração inicial de `apps/tenants` —
+e não há tela para cadastrar outra: o produto se comporta como se fosse de um
+cliente só, porque é. O model existe porque a coluna que falta é cara de
+acrescentar depois: uma FK que nasce nula em milhares de linhas já gravadas
+não tem como ser preenchida. Quem nasce daqui para frente já nasce com ela;
+`Fornecedor`, `OportunidadeSalva` e `Cotacao` ganham a sua no dia do segundo
+cliente, e aí a migração é trivial porque só há um tenant para apontar.
+
+**Tenant não é empresa.** Um cliente tem *várias* empresas — matriz, filial,
+a que cobre outro CNAE — e escolhe com qual delas disputa cada licitação. A
+relação é um-para-muitos e o caminho de volta faz parte do model:
+`tenant.empresas` e `tenant.empresa_padrao`. Toda FK de tenant no projeto sai
+de `tenant_campo(related_name)`, que exige o nome da volta justamente para
+que nenhuma nasça com `related_name="+"` — vínculo que existe só no banco não
+existe no Django.
+
+`apps/tenants/atual.py` é **o único lugar** que responde "de quem é esta
+requisição". Todo o resto chama `tenant_atual(request)` — é o que torna a
+virada multiempresa uma mudança de uma função, e não uma varredura por todo
+filtro de queryset já escrito.
+
+**`Empresa`** são os CNPJs com que a equipe **disputa** — não confundir com
+`Fornecedor`, que é de quem a equipe compra para revender. São perguntas
+diferentes: do fornecedor importam preço, prazo e condição de pagamento; da
+empresa importa habilitação. Implementado em `apps/empresas/models.py`.
+
+- **Mais de um CNPJ é comum em licitação.** Matriz e filial disputam lotes
+  diferentes, e uma segunda empresa cobre CNAE que a primeira não tem. Quem
+  monta a proposta escolhe qual usar; com um CNPJ só, o seletor não aparece.
+- **Uma empresa é a padrão**, por tenant — garantido por índice parcial no
+  banco, além do `save()` que desmarca a anterior. A primeira empresa
+  cadastrada nasce padrão: cadastro com uma empresa só e nenhuma escolhida
+  abriria proposta sem CNPJ.
+- **`porte` não é papelada.** ME e EPP têm empate ficto e prazo para
+  regularizar certidão fiscal depois de vencer a disputa (LC 123) — é o campo
+  que mais muda o que acontece no pregão. É ele que substitui a "categoria"
+  do fornecedor, que aqui não faz sentido.
+- **Não existe excluir**, ao contrário do fornecedor: a empresa está amarrada
+  a propostas e processos, então o que existe é inativar (`ativa = False`) —
+  some do seletor de CNPJ, continua no histórico. Mesma disciplina da remoção
+  lógica da oportunidade salva. A empresa padrão não pode ser inativada sem
+  que outra assuma o lugar.
+- **Unicidade de CNPJ é por tenant**, e não global como no fornecedor: dois
+  clientes do produto podem cadastrar o mesmo CNPJ de uma sociedade que
+  compartilham, e um não pode impedir o outro.
+
+### Documentos da empresa — `TipoDocumento`, `Documento`, `VersaoDocumento`
+
+A pergunta que este módulo responde não é "onde estão meus arquivos", é
+**"estou habilitado hoje?"**. Em pregão a habilitação só é cobrada de quem já
+venceu, com prazo de horas para enviar tudo, e o CRF do FGTS vale 30 dias —
+doze vencimentos por ano em um documento só. Implementado em
+`apps/documentos/models.py`.
+
+- **`TipoDocumento` é o catálogo.** A lista é fixa porque a Lei 14.133
+  organiza a habilitação em quatro blocos (jurídica; fiscal, social e
+  trabalhista; econômico-financeira; técnica) e são sempre os mesmos
+  documentos — o que muda é a data. Vem semeado por migração; `tenant` nulo é
+  o catálogo padrão e preenchido é o que aquele cliente acrescentou, porque o
+  edital que pede um alvará específico não pode exigir deploy.
+- **`Documento` é a vaga** daquele tipo naquela empresa: não guarda arquivo
+  nem validade, guarda qual versão está valendo. É a linha da tabela.
+- **`VersaoDocumento` é o arquivo**, com o número, a emissão e a validade
+  *daquela emissão*. Renovar não corrige uma data: cria outra certidão, que é
+  outra versão da mesma vaga. Imutável depois de gravada — é isso que permite
+  provar depois o que foi entregue num processo.
+- **A situação é calculada, nunca gravada**: `pendente` (sem versão),
+  `valido`, `a_vencer` (≤ 30 dias), `vencido` (validade < hoje) e
+  `arquivado`. Campo gravado envelhece sozinho, que foi exatamente o que
+  aconteceu com `Fornecedor.situacao`. Tipo que não vence (contrato social,
+  atestado) nunca entra na conta de vencidos.
+- **Empresa nova nasce com as vagas abertas** (signal em
+  `apps/documentos/signals.py`): uma tela em branco não diz o que falta, e
+  "nove pendentes" diz.
+- **Nada some.** `DELETE` arquiva; a versão anterior continua no histórico; o
+  arquivo mora no bucket do tenant (`apps/armazenamento`) e o download é
+  sempre por URL assinada de curta duração — certidão tem CNPJ, endereço e
+  nome de sócio.
+- **`EventoDocumento`** registra enviou, renovou, baixou, arquivou —
+  mesmo padrão do `EventoOportunidadeSalva`.
+
+Não confundir com os documentos da **licitação** (edital, proposta do
+fornecedor, empenho): lá não há lista fixa nem validade, e o mesmo processo
+tem três catálogos e nenhum atestado. Os dois só compartilham o
+armazenamento — ver
+[`Tarefas/feat-documentos-processo.md`](Tarefas/feat-documentos-processo.md).
+
 ### `OportunidadeSalva`
 
 Uma compra (edital) que alguém escolheu guardar para trabalhar depois — o

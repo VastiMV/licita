@@ -1,0 +1,35 @@
+<div class="pagina-topo">
+  <div>
+    <h1>Empresas</h1>
+    <p class="muted">
+      Os CNPJs com que a equipe disputa — matriz, filial ou a empresa que cobre outro CNAE. A
+      empresa <strong>padrão</strong> é a que já vem escolhida na proposta; as inativas continuam
+      nos processos antigos, mas não são oferecidas em propostas novas.
+    </p>
+  </div>
+  <app-button (click)="adicionar()">
+    <app-icon name="plus" />
+    Adicionar empresa
+  </app-button>
+</div>
+
+@if (erro()) {
+  <p class="erro">Não foi possível carregar o cadastro de empresas agora.</p>
+}
+
+<app-data-table
+  [colunas]="colunas"
+  [linhas]="linhas()"
+  [total]="total()"
+  [estado]="estado()"
+  [carregando]="carregando()"
+  [chaveDe]="chaveDe"
+  rotuloBusca="Buscar"
+  placeholderBusca="Busca por razão social, CNPJ ou cidade…"
+  mensagemVazia="Nenhuma empresa cadastrada. Comece pela que disputa hoje."
+  (estadoMudou)="aoMudarEstado($event)"
+>
+  <ng-template appTabelaAcoes let-empresa>
+    <app-menu [itens]="acoesDe(empresa)" [descricao]="'Ações de ' + empresa.nome" />
+  </ng-template>
+</app-data-table>
