@@ -165,6 +165,18 @@ describe('DocumentosModalComponent', () => {
     expect(fixture.nativeElement.textContent).toContain('11.222.333/0001-81');
   });
 
+  it('a validade aparece no dia certo — data pura não pode voltar um dia no fuso', () => {
+    // "2026-09-24" interpretado como meia-noite UTC vira 23/09 em
+    // America/Sao_Paulo. É o mesmo motivo de `parseData` existir no card de
+    // oportunidade.
+    const validades = fixture.debugElement
+      .queryAll(By.css('.validade'))
+      .map((v) => v.nativeElement.textContent.trim());
+
+    expect(validades).toContain('24/09/2026');
+    expect(validades).toContain('31/08/2026');
+  });
+
   it('agrupa pelos blocos da Lei 14.133, na ordem em que os editais pedem', () => {
     expect(blocos()).toEqual(['Habilitação jurídica', 'Fiscal, social e trabalhista']);
   });
@@ -244,14 +256,21 @@ describe('DocumentosModalComponent', () => {
     expect(fixture.nativeElement.textContent).toContain('aparece como válido para sempre');
   });
 
-  it('documento que não vence não pede validade', () => {
+  it('as datas usam o date-picker do app, não input nativo', () => {
+    // O mesmo componente da busca de oportunidades: máscara pt-BR, calendário
+    // e valor em ISO.
+    fixture.componentInstance['alternarEnvio'](BASE);
+    fixture.detectChanges();
+
+    expect(fixture.debugElement.queryAll(By.css('.envio app-date-picker'))).toHaveLength(2);
+    expect(fixture.debugElement.queryAll(By.css('.envio input[type=date]'))).toHaveLength(0);
+  });
+
+  it('documento que não vence pede só a emissão', () => {
     fixture.componentInstance['alternarEnvio'](PENDENTE);
     fixture.detectChanges();
 
-    const rotulos = fixture.debugElement
-      .queryAll(By.css('.envio .campo-rotulo'))
-      .map((r) => r.nativeElement.textContent.trim());
-    expect(rotulos).not.toContain('Validade');
+    expect(fixture.debugElement.queryAll(By.css('.envio app-date-picker'))).toHaveLength(1);
   });
 
   it('a recusa do backend aparece como está — é a única informação útil', () => {

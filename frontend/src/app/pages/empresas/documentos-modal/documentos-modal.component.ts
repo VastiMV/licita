@@ -15,6 +15,8 @@ import { EmpresaResponse } from '../../../contracts/empresas/empresa.contracts';
 import { DocumentosService } from '../../../services/documentos/documentos.service';
 import { ModalShellComponent } from '../../../shared/overlay/modal-shell/modal-shell.component';
 import { ButtonComponent } from '../../../shared/ui/button/button.component';
+import { DatePickerComponent } from '../../../shared/ui/date-picker/date-picker.component';
+import { formatarBr, hojeIso } from '../../../shared/ui/date-picker/date-picker.utils';
 import { IconComponent } from '../../../shared/ui/icon/icon.component';
 import { SelectComponent, SelectOption } from '../../../shared/ui/select/select.component';
 import { ToastService } from '../../../shared/ui/toast/toast.service';
@@ -59,6 +61,7 @@ interface Grupo {
     ModalShellComponent,
     FormsModule,
     ButtonComponent,
+    DatePickerComponent,
     IconComponent,
     SelectComponent,
     UploadDropzoneComponent,
@@ -143,6 +146,17 @@ export class DocumentosModalComponent implements OnInit {
     this.carregar();
     this.service.tipos().subscribe({ next: (tipos) => this.tipos.set(tipos) });
   }
+
+  /** Mesmo formatador do resto do app para data pura (`aaaa-mm-dd` ->
+   * `dd/mm/aaaa`). O `DatePipe` não é usado aqui para a tela não ter uma
+   * segunda maneira de escrever data — ver `date-picker.utils.ts`.
+   *
+   * O `DatePipe` fica só para `enviado_em`, que é data **e hora** — mesmo
+   * uso que a tela de alertas faz. */
+  protected readonly data = formatarBr;
+
+  /** Certidão não é emitida no futuro: o calendário já não deixa escolher. */
+  protected readonly hoje = hojeIso();
 
   protected fechar(): void {
     this.dialogRef.close();

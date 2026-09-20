@@ -122,7 +122,7 @@
 
             <div class="validade">
               @if (documento.validade) {
-                {{ documento.validade | date: 'dd/MM/yyyy' }}
+                {{ data(documento.validade) }}
               } @else if (!documento.exige_validade) {
                 <span class="muted">não vence</span>
               } @else {
@@ -175,23 +175,21 @@
                     placeholder="Nº da certidão"
                   />
                 </label>
-                <label class="campo">
-                  <span class="campo-rotulo">Emissão</span>
-                  <input
-                    type="date"
-                    [value]="emissao()"
-                    (input)="emissao.set($any($event.target).value)"
-                  />
-                </label>
+                <app-date-picker
+                  label="Emissão"
+                  name="emissao"
+                  [max]="hoje"
+                  [ngModel]="emissao()"
+                  (ngModelChange)="emissao.set($event ?? '')"
+                />
                 @if (exigeValidade(documento)) {
-                  <label class="campo">
-                    <span class="campo-rotulo">Validade</span>
-                    <input
-                      type="date"
-                      [value]="validade()"
-                      (input)="validade.set($any($event.target).value)"
-                    />
-                  </label>
+                  <app-date-picker
+                    label="Validade"
+                    name="validade"
+                    [min]="emissao() || null"
+                    [ngModel]="validade()"
+                    (ngModelChange)="validade.set($event ?? '')"
+                  />
                 }
                 <label class="campo nota">
                   <span class="campo-rotulo">Nota</span>
@@ -228,11 +226,11 @@
                   <span class="descricao">
                     {{ versao.nota || versao.nome_original }}
                     @if (versao.validade) {
-                      · validade {{ versao.validade | date: 'dd/MM/yyyy' }}
+                      · validade {{ data(versao.validade) }}
                     }
                   </span>
                   <span class="quando">
-                    {{ versao.enviado_em | date: 'dd/MM/yyyy' }}
+                    {{ versao.enviado_em | date: 'dd/MM/yyyy HH:mm' }}
                     @if (versao.enviado_por_nome) {
                       · {{ versao.enviado_por_nome }}
                     }
