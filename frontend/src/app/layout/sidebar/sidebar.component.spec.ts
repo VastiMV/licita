@@ -1,7 +1,9 @@
+import { signal } from '@angular/core';
 import { ComponentFixture, TestBed } from '@angular/core/testing';
 import { By } from '@angular/platform-browser';
 import { provideRouter } from '@angular/router';
 
+import { AuthService } from '../../core/auth/auth.service';
 import { BrandComponent } from '../brand/brand.component';
 import { NavGroupComponent } from '../nav-group/nav-group.component';
 import { NavItemComponent } from '../nav-item/nav-item.component';
@@ -11,13 +13,20 @@ import { SidebarComponent } from './sidebar.component';
 describe('SidebarComponent', () => {
   let fixture: ComponentFixture<SidebarComponent>;
   let state: SidebarStateService;
+  const ehAdmin = signal(false);
 
   beforeEach(() => {
+    ehAdmin.set(false);
     TestBed.configureTestingModule({
       imports: [SidebarComponent],
       // Rota curinga: o teste clica num link de verdade, e sem rota casada o
       // Router rejeita a navegação depois que o teste já terminou.
-      providers: [provideRouter([{ path: '**', children: [] }])],
+      providers: [
+        provideRouter([{ path: '**', children: [] }]),
+        // Só `ehAdmin` interessa aqui, e como signal — o menu reage à
+        // troca sem remontar o componente.
+        { provide: AuthService, useValue: { ehAdmin } },
+      ],
     });
     fixture = TestBed.createComponent(SidebarComponent);
     state = TestBed.inject(SidebarStateService);
@@ -43,6 +52,22 @@ describe('SidebarComponent', () => {
       'Filtros',
       'Cotador',
     ]);
+  });
+
+  it('Configurações só aparece para administrador', () => {
+    // Cortesia, não segurança: quem barra é o backend (403). O menu só não
+    // oferece o que a pessoa não pode usar.
+    const rotulos = () =>
+      fixture.debugElement
+        .queryAll(By.directive(NavGroupComponent))
+        .map((grupo) => (grupo.componentInstance as NavGroupComponent).label());
+
+    expect(rotulos()).toEqual(['Oportunidades']);
+
+    ehAdmin.set(true);
+    fixture.detectChanges();
+
+    expect(rotulos()).toEqual(['Oportunidades', 'Configurações']);
   });
 
   it('os filhos de Oportunidades apontam para as rotas do submenu', () => {

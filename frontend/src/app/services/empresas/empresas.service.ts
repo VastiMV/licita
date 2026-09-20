@@ -34,10 +34,7 @@ export class EmpresasService {
 
   /** `PUT`, não `PATCH`: o modal edita o registro inteiro. */
   atualizar(id: number, empresa: EmpresaRequest): Observable<EmpresaResponse> {
-    return this.api.put<EmpresaResponse, EmpresaRequest>(
-      ENDPOINTS.empresas.detalhe(id),
-      empresa,
-    );
+    return this.api.put<EmpresaResponse, EmpresaRequest>(ENDPOINTS.empresas.detalhe(id), empresa);
   }
 
   /**

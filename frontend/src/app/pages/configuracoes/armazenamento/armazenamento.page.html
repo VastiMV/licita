@@ -1,0 +1,115 @@
+<div class="pagina-topo">
+  <div>
+    <h1>Armazenamento</h1>
+    <p class="muted">
+      Onde os documentos da empresa e da licitação são gravados. Escolha o serviço e preencha os
+      dados dele — o produto não depende de nenhum: trocar de serviço é trocar a seleção aqui, não
+      publicar versão nova.
+    </p>
+  </div>
+</div>
+
+@if (carregando()) {
+  <p class="muted carregando"><app-icon name="spinner" /> Carregando…</p>
+} @else {
+  @if (erro(); as mensagem) {
+    <p class="erro">{{ mensagem }}</p>
+  }
+
+  <section class="cartao">
+    <app-select
+      label="Serviço"
+      [options]="opcoesDriver()"
+      [ngModel]="escolhido()"
+      (ngModelChange)="trocarDriver($event)"
+      name="driver"
+      placeholder="Selecione"
+    />
+
+    @if (trocouDeDriver()) {
+      <p class="aviso">
+        <app-icon name="exclamation" />
+        <span>
+          O serviço em uso é outro. Os dados abaixo só passam a valer quando você salvar — e as
+          credenciais do serviço anterior são descartadas.
+        </span>
+      </p>
+    }
+
+    <div class="campos">
+      @for (campo of campos(); track campo.nome) {
+        <label class="campo">
+          <span class="campo-rotulo">
+            {{ campo.rotulo }}
+            @if (campo.obrigatorio) {
+              <em>*</em>
+            }
+          </span>
+          <input
+            [type]="campo.segredo ? 'password' : 'text'"
+            [value]="valorDe(campo)"
+            (input)="escrever(campo, $any($event.target).value)"
+            [placeholder]="campo.placeholder"
+            [attr.autocomplete]="campo.segredo ? 'new-password' : 'off'"
+          />
+          @if (segredoJaDefinido(campo)) {
+            <span class="campo-ajuda definido">
+              Já definido. Deixe em branco para manter o que está gravado.
+            </span>
+          } @else if (campo.ajuda) {
+            <span class="campo-ajuda">{{ campo.ajuda }}</span>
+          }
+        </label>
+      }
+    </div>
+
+    <div class="acoes">
+      <app-button [disabled]="salvando()" (click)="salvar()">
+        {{ salvando() ? 'Salvando…' : 'Salvar' }}
+      </app-button>
+      <app-button variant="ghost" [disabled]="testando() || !config()" (click)="testar()">
+        {{ testando() ? 'Testando…' : 'Testar conexão' }}
+      </app-button>
+    </div>
+
+    @if (resultadoTeste(); as falha) {
+      <p class="erro resultado">{{ falha }}</p>
+    }
+  </section>
+
+  @if (config(); as atual) {
+    <section class="estado">
+      <div>
+        <span class="estado-rotulo">Situação</span>
+        @if (atual.completa) {
+          <p>Configurado e pronto para receber documentos.</p>
+        } @else {
+          <p class="pendente">
+            Falta preencher algum campo obrigatório — o envio de documentos fica bloqueado.
+          </p>
+        }
+      </div>
+      <div>
+        <span class="estado-rotulo">Último teste com sucesso</span>
+        <p>
+          {{ atual.testado_em ? (atual.testado_em | date: 'dd/MM/yyyy HH:mm') : 'nunca testado' }}
+        </p>
+      </div>
+      <div>
+        <span class="estado-rotulo">Credenciais</span>
+        <p>
+          {{
+            atual.segredos_definidos.length
+              ? 'Definidas em ' + (atual.segredos_definidos_em | date: 'dd/MM/yyyy')
+              : 'nenhuma gravada'
+          }}
+        </p>
+      </div>
+    </section>
+  }
+
+  <p class="nota">
+    O arquivo nunca fica em link público: o download sempre passa por um endereço assinado que
+    expira. A credencial é gravada cifrada e não volta pela tela — para trocar, digite a nova.
+  </p>
+}

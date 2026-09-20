@@ -16,7 +16,7 @@
   </div>
 
   <nav aria-label="Menu principal" (click)="fecharSeNavegou($event)">
-    @for (link of links; track link.path) {
+    @for (link of links(); track link.path) {
       @if (link.itens; as itens) {
         <app-nav-group
           [label]="link.label"

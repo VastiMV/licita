@@ -28,6 +28,8 @@ export type IconName =
   | 'cotador'
   | 'fornecedores'
   | 'empresas'
+  | 'configuracoes'
+  | 'armazenamento'
   | 'plus'
   | 'calculadora'
   | 'copiar'

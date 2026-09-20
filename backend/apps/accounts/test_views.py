@@ -42,6 +42,9 @@ class LoginViewTests(APITestCase):
         payload = _payload(response.data["access"])
         self.assertEqual(payload["email"], "user@licita.dev")
         self.assertEqual(payload["nome"], "Usuária de Teste")
+        # O menu usa esta claim para não oferecer a tela de armazenamento a
+        # quem o backend vai recusar com 403 de qualquer jeito.
+        self.assertFalse(payload["is_staff"])
 
     def test_login_com_senha_errada_devolve_401(self):
         response = self.client.post(

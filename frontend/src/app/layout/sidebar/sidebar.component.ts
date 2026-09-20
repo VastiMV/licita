@@ -1,5 +1,6 @@
-import { Component, inject } from '@angular/core';
+import { Component, computed, inject } from '@angular/core';
 
+import { AuthService } from '../../core/auth/auth.service';
 import { IconComponent, type IconName } from '../../shared/ui/icon/icon.component';
 import { BrandComponent } from '../brand/brand.component';
 import { NavGroupComponent, type NavSubItem } from '../nav-group/nav-group.component';
@@ -28,6 +29,11 @@ interface NavLink {
  * ao resto do layout (ver `shell.component.scss`).
  *
  * Não é usada no login: essa página é independente, sem shell nenhuma.
+ *
+ * "Configurações" só aparece para administrador. Isso é cortesia, não
+ * segurança: quem barra de verdade é o backend (`IsAdminUser` em
+ * `apps/armazenamento/views.py`) — aqui é só não oferecer o que a pessoa
+ * não pode usar.
  */
 @Component({
   selector: 'app-sidebar',
@@ -37,6 +43,7 @@ interface NavLink {
 })
 export class SidebarComponent {
   protected readonly state = inject(SidebarStateService);
+  private readonly auth = inject(AuthService);
 
   /** Em mobile a Sidebar é um painel off-canvas: navegar fecha o painel.
    * Abrir/fechar um grupo (ver `NavGroupComponent`), não — o clique no
@@ -45,21 +52,33 @@ export class SidebarComponent {
     if ((evento.target as HTMLElement).closest('a')) this.state.closeMobile();
   }
 
-  protected readonly links: readonly NavLink[] = [
-    {
-      path: '/oportunidades',
-      label: 'Oportunidades',
-      icon: 'oportunidades',
-      itens: [
-        { path: '/oportunidades/pesquisar', label: 'Pesquisar', icon: 'search' },
-        { path: '/oportunidades/salvas', label: 'Salvas', icon: 'bookmark' },
-      ],
-    },
-    // O par natural: com quem eu disputo, de quem eu compro.
-    { path: '/empresas', label: 'Empresas', icon: 'empresas' },
-    { path: '/fornecedores', label: 'Fornecedores', icon: 'fornecedores' },
-    { path: '/alertas', label: 'Alertas', icon: 'alertas' },
-    { path: '/filtros', label: 'Filtros', icon: 'filtros' },
-    { path: '/cotador', label: 'Cotador', icon: 'cotador' },
-  ];
+  protected readonly links = computed<readonly NavLink[]>(() => [
+    ...MENU,
+    ...(this.auth.ehAdmin() ? [CONFIGURACOES] : []),
+  ]);
 }
+
+const CONFIGURACOES: NavLink = {
+  path: '/configuracoes',
+  label: 'Configurações',
+  icon: 'configuracoes',
+  itens: [{ path: '/configuracoes/armazenamento', label: 'Armazenamento', icon: 'armazenamento' }],
+};
+
+const MENU: readonly NavLink[] = [
+  {
+    path: '/oportunidades',
+    label: 'Oportunidades',
+    icon: 'oportunidades',
+    itens: [
+      { path: '/oportunidades/pesquisar', label: 'Pesquisar', icon: 'search' },
+      { path: '/oportunidades/salvas', label: 'Salvas', icon: 'bookmark' },
+    ],
+  },
+  // O par natural: com quem eu disputo, de quem eu compro.
+  { path: '/empresas', label: 'Empresas', icon: 'empresas' },
+  { path: '/fornecedores', label: 'Fornecedores', icon: 'fornecedores' },
+  { path: '/alertas', label: 'Alertas', icon: 'alertas' },
+  { path: '/filtros', label: 'Filtros', icon: 'filtros' },
+  { path: '/cotador', label: 'Cotador', icon: 'cotador' },
+];

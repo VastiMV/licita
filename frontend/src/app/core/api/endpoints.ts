@@ -27,6 +27,13 @@ export const ENDPOINTS = {
      * docs/DOMINIO.md, "Histórico da oportunidade salva"). */
     salvaEventos: (id: number) => `licitacoes/salvas/${id}/eventos/`,
   },
+  /** Onde os arquivos ficam (`apps/armazenamento`) — driver escolhido e
+   * configurado pelo cliente, só por administrador. */
+  armazenamento: {
+    drivers: 'armazenamento/drivers/',
+    config: 'armazenamento/config/',
+    testar: 'armazenamento/testar/',
+  },
   /** Os CNPJs com que a equipe disputa (`apps/empresas`) — não confundir
    * com `fornecedores`, que é de quem a equipe compra. */
   empresas: {

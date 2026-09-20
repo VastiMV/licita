@@ -43,6 +43,7 @@ INSTALLED_APPS = [
     "django_celery_beat",
     "apps.accounts",
     "apps.tenants",
+    "apps.armazenamento",
     "apps.integracoes",
     "apps.catalogo",
     "apps.capag",
@@ -123,6 +124,13 @@ USE_TZ = True
 # https://docs.djangoproject.com/en/6.0/howto/static-files/
 
 STATIC_URL = "static/"
+
+# Onde o driver `local` de `apps/armazenamento` grava. Só desenvolvimento e
+# testes: o pod é efêmero e não compartilha disco (ver docs/ARQUITETURA.md,
+# "Pods"), então em produção o driver é o de bucket. Nada é servido
+# diretamente daqui — o download passa por link assinado
+# (`DownloadLocalView`), como no bucket.
+MEDIA_ROOT = BASE_DIR / "arquivos"
 
 DEFAULT_AUTO_FIELD = "django.db.models.BigAutoField"
 

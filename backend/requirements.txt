@@ -31,3 +31,14 @@ openpyxl==3.1.5
 # cabeçalho da proposta exportada pelo Cotador. Sem ela o openpyxl levanta
 # ImportError na hora de inserir a imagem (não é opcional nesse caminho).
 Pillow==11.3.0
+
+# Cliente S3 do driver de bucket (apps/armazenamento/drivers/s3.py) — serve
+# Cloudflare R2, AWS S3, MinIO e Spaces, que falam o mesmo protocolo. É
+# importado dentro do método, não no topo: sem ele o produto sobe e a tela
+# mostra o driver como indisponível, em vez de quebrar na hora do upload.
+boto3==1.43.98
+
+# Cifra dos segredos da configuração de armazenamento
+# (apps/armazenamento/cripto.py). Já vinha como sub-dependência do
+# simplejwt; está aqui porque agora é uso direto.
+cryptography==50.0.1

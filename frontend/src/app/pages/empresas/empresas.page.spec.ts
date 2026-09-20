@@ -93,8 +93,7 @@ describe('EmpresasPage', () => {
 
   /** Só as linhas de dado: a tabela usa `tr.linha-status` para "carregando"
    * e para a mensagem de lista vazia. */
-  const linhas = () =>
-    fixture.debugElement.queryAll(By.css('tbody tr:not(.linha-status)'));
+  const linhas = () => fixture.debugElement.queryAll(By.css('tbody tr:not(.linha-status)'));
 
   function abrirMenuDaLinha(indice: number): HTMLButtonElement[] {
     linhas()[indice].query(By.css('app-menu .gatilho')).nativeElement.click();
