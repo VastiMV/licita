@@ -73,7 +73,7 @@ input[type=range]{accent-color:#4f46b8}
         <div style="background:#eceaf4;border:1px solid #d8d4e8;border-radius:12px;padding:11px 12px 12px;display:flex;flex-direction:column;gap:5px">
           <span style="min-height:24px;font:700 9.5px/1.25 'Plus Jakarta Sans',sans-serif;letter-spacing:.1em;text-transform:uppercase;color:#0d7a5c">Margem média</span>
           <span style="white-space:nowrap;font:700 15px/1 'JetBrains Mono',monospace;font-variant-numeric:tabular-nums;color:#0b6d52">{{ tot.margemMedia }}</span>
-          <span style="font:500 11px/1.35 'Plus Jakarta Sans',sans-serif;color:#a9a5bd">lucro sobre o capital</span>
+          <span style="font:500 11px/1.35 'Plus Jakarta Sans',sans-serif;color:#a9a5bd">{{ tot.markupMedio }}</span>
         </div>
       </div>
     </div>
@@ -132,14 +132,16 @@ input[type=range]{accent-color:#4f46b8}
                 <span style="display:block;white-space:nowrap;font:700 15px/1.2 'JetBrains Mono',monospace;font-variant-numeric:tabular-nums;color:#191823;padding:7px 0">{{ r.precoUn }}</span>
               </div>
 
-              <div style="width:118px;flex:none;display:flex;flex-direction:column;gap:3px;text-align:right">
+              <div style="width:124px;flex:none;display:flex;flex-direction:column;gap:3px;text-align:right">
                 <span style="font:700 9px/1 'Plus Jakarta Sans',sans-serif;letter-spacing:.09em;text-transform:uppercase;color:#a9a5bd">Lucro</span>
-                <span style="display:block;white-space:nowrap;font:600 13.5px/1.2 'JetBrains Mono',monospace;font-variant-numeric:tabular-nums;color:#0b6d52;padding:8px 0">{{ r.lucroTotal }} <span style="font-size:11px;color:#8fb3a7">{{ r.marginPct }}</span></span>
+                <span style="display:block;white-space:nowrap;font:600 13.5px/1.2 'JetBrains Mono',monospace;font-variant-numeric:tabular-nums;color:#0b6d52;padding:8px 0 0">{{ r.lucroTotal }}</span>
+                <span style="display:block;white-space:nowrap;font:500 10.5px/1 'Plus Jakarta Sans',sans-serif;color:#8fb3a7">margem {{ r.marginPct }}</span>
               </div>
 
               <div style="width:116px;flex:none;display:flex;flex-direction:column;gap:3px;text-align:right">
                 <span style="font:700 9px/1 'Plus Jakarta Sans',sans-serif;letter-spacing:.09em;text-transform:uppercase;color:#a9a5bd">Total</span>
-                <span style="display:block;white-space:nowrap;font:600 13.5px/1.2 'JetBrains Mono',monospace;font-variant-numeric:tabular-nums;color:#191823;padding:8px 0">{{ r.totalStr }}</span>
+                <span style="display:block;white-space:nowrap;font:600 13.5px/1.2 'JetBrains Mono',monospace;font-variant-numeric:tabular-nums;color:#191823;padding:8px 0 0">{{ r.totalStr }}</span>
+                <span style="display:block;white-space:nowrap;font:500 10.5px/1 'Plus Jakarta Sans',sans-serif;color:#a9a5bd">markup {{ r.markupPct }}</span>
               </div>
 
               <div style="flex:none;display:flex;gap:4px;padding-bottom:2px">
@@ -195,29 +197,49 @@ input[type=range]{accent-color:#4f46b8}
               <div style="flex:1 1 330px;min-width:290px;display:flex;flex-direction:column;gap:12px">
 
                 <div style="background:#fff;border:1px solid #e7e5f0;border-radius:12px;padding:13px 14px">
-                  <div style="display:flex;align-items:baseline;justify-content:space-between;gap:8px">
-                    <span style="font:700 11px/1 'Plus Jakarta Sans',sans-serif;letter-spacing:.09em;text-transform:uppercase;color:#8a86a0">Margem deste item</span>
+                  <div style="display:flex;align-items:baseline;justify-content:space-between;gap:8px;flex-wrap:wrap">
+                    <span style="font:700 11px/1 'Plus Jakarta Sans',sans-serif;letter-spacing:.09em;text-transform:uppercase;color:#8a86a0">Markup deste item</span>
                     <span style="font:700 12px/1 'JetBrains Mono',monospace;color:#4f46b8">{{ r.minMPct }} → {{ r.maxMPct }}</span>
                   </div>
-                  <div style="margin-top:12px;display:flex;flex-direction:column;gap:3px">
-                    <div style="display:flex;justify-content:space-between;align-items:baseline">
-                      <span style="font:700 9px/1 'Plus Jakarta Sans',sans-serif;letter-spacing:.09em;text-transform:uppercase;color:#8a6414">Margem mínima</span>
-                      <span style="font:600 12px/1 'JetBrains Mono',monospace;color:#8a6414">{{ r.minMPct }}</span>
+                  <div style="margin-top:12px;display:flex;flex-direction:column;gap:6px">
+                    <div style="display:flex;justify-content:space-between;align-items:center;gap:8px">
+                      <span style="font:700 9px/1.2 'Plus Jakarta Sans',sans-serif;letter-spacing:.09em;text-transform:uppercase;color:#8a6414">Markup mínimo (reserva)</span>
+                      <div style="display:flex;align-items:center;gap:5px">
+                        <input type="number" min="0" step="1" value="{{ r.mMin }}" onChange="{{ r.onMin }}" style="width:72px;border:1px solid #e4e1ef;background:#fbfbfe;border-radius:8px;padding:6px 8px;font:700 13px/1.2 'JetBrains Mono',monospace;font-variant-numeric:tabular-nums;text-align:right;color:#8a6414;outline:none" style-focus="border-color:#4f46b8;background:#fff;box-shadow:0 0 0 3px rgba(79,70,184,.13)">
+                        <span style="font:600 11px/1 'Plus Jakarta Sans',sans-serif;color:#a9a5bd">%</span>
+                      </div>
                     </div>
-                    <input type="range" min="0" max="100" step="0.5" value="{{ r.mMin }}" onChange="{{ r.onMin }}" style="width:100%;accent-color:#c08a1c">
+                    <input type="range" min="0" max="{{ r.mMinSoft }}" step="1" value="{{ r.mMin }}" onChange="{{ r.onMin }}" style="width:100%;accent-color:#8a6414">
+                    <div style="display:flex;justify-content:space-between;font:500 10.5px/1.3 'Plus Jakarta Sans',sans-serif;color:#a9a5bd">
+                      <span>markup {{ r.minMPct }} sobre o custo</span>
+                      <span>margem <strong style="color:#6f6c7d;font-weight:700">{{ r.margemMinPct }}</strong> da venda</span>
+                    </div>
                   </div>
-                  <div style="margin-top:10px;display:flex;flex-direction:column;gap:3px">
-                    <div style="display:flex;justify-content:space-between;align-items:baseline">
-                      <span style="font:700 9px/1 'Plus Jakarta Sans',sans-serif;letter-spacing:.09em;text-transform:uppercase;color:#4f46b8">Margem máxima (alvo)</span>
-                      <span style="font:600 12px/1 'JetBrains Mono',monospace;color:#4f46b8">{{ r.maxMPct }}</span>
+                  <div style="margin-top:12px;display:flex;flex-direction:column;gap:6px">
+                    <div style="display:flex;justify-content:space-between;align-items:center;gap:8px">
+                      <span style="font:700 9px/1.2 'Plus Jakarta Sans',sans-serif;letter-spacing:.09em;text-transform:uppercase;color:#4f46b8">Markup alvo (proposta)</span>
+                      <div style="display:flex;align-items:center;gap:5px">
+                        <input type="number" min="0" step="1" value="{{ r.mMax }}" onChange="{{ r.onMax }}" style="width:72px;border:1px solid #e4e1ef;background:#fbfbfe;border-radius:8px;padding:6px 8px;font:700 13px/1.2 'JetBrains Mono',monospace;font-variant-numeric:tabular-nums;text-align:right;color:#4f46b8;outline:none" style-focus="border-color:#4f46b8;background:#fff;box-shadow:0 0 0 3px rgba(79,70,184,.13)">
+                        <span style="font:600 11px/1 'Plus Jakarta Sans',sans-serif;color:#a9a5bd">%</span>
+                      </div>
                     </div>
-                    <input type="range" min="0" max="100" step="0.5" value="{{ r.mMax }}" onChange="{{ r.onMax }}" style="width:100%">
+                    <input type="range" min="0" max="{{ r.mMaxSoft }}" step="1" value="{{ r.mMax }}" onChange="{{ r.onMax }}" style="width:100%;accent-color:#4f46b8">
+                    <div style="display:flex;justify-content:space-between;font:500 10.5px/1.3 'Plus Jakarta Sans',sans-serif;color:#a9a5bd">
+                      <span>markup {{ r.maxMPct }} sobre o custo</span>
+                      <span>margem <strong style="color:#6f6c7d;font-weight:700">{{ r.margemMaxPct }}</strong> da venda</span>
+                    </div>
+                  </div>
+                  <div style="margin-top:10px;display:flex;flex-wrap:wrap;gap:5px;align-items:center">
+                    <span style="font:600 10px/1 'Plus Jakarta Sans',sans-serif;letter-spacing:.06em;text-transform:uppercase;color:#a9a5bd;margin-right:2px">Alvo rápido</span>
+                    <sc-for list="{{ r.presets }}" as="p" hint-placeholder-count="6">
+                      <button onClick="{{ p.apply }}" style="border:1px solid {{ p.bd }};background:{{ p.bg }};color:{{ p.fg }};border-radius:20px;padding:5px 10px;cursor:pointer;font:600 11.5px/1 'JetBrains Mono',monospace" style-hover="border-color:#4f46b8">{{ p.label }}</button>
+                    </sc-for>
                   </div>
                   <div style="margin-top:12px;border-top:1px solid #f1eff8;padding-top:11px;display:flex;flex-wrap:wrap;gap:12px;justify-content:space-between;align-items:flex-start">
                     <div style="display:flex;flex-direction:column;gap:4px">
                       <span style="font:700 9px/1 'Plus Jakarta Sans',sans-serif;letter-spacing:.09em;text-transform:uppercase;color:#8a6414">Preço de reserva un.</span>
                       <span style="font:700 14px/1 'JetBrains Mono',monospace;font-variant-numeric:tabular-nums;color:#8a6414">{{ r.precoMin }}</span>
-                      <span style="font:500 11px/1.4 'Plus Jakarta Sans',sans-serif;color:#a9a5bd">mínimo que compensa · {{ r.reservaTotal }} no lote</span>
+                      <span style="font:500 11px/1.4 'Plus Jakarta Sans',sans-serif;color:#a9a5bd">markup mín {{ r.minMPct }} · {{ r.reservaTotal }} no lote</span>
                     </div>
                     <div style="display:flex;flex-direction:column;gap:4px;text-align:right">
                       <span style="font:700 9px/1 'Plus Jakarta Sans',sans-serif;letter-spacing:.09em;text-transform:uppercase;color:#a9a5bd">Folga p/ negociar</span>
@@ -288,7 +310,22 @@ input[type=range]{accent-color:#4f46b8}
       <sc-if value="{{ padroes }}" hint-placeholder-val="{{ false }}">
         <div style="border-top:1px solid #eeecf6;padding:16px;display:flex;flex-wrap:wrap;gap:16px">
           <div style="flex:1 1 300px;min-width:280px">
-            <div style="font:700 11px/1 'Plus Jakarta Sans',sans-serif;letter-spacing:.09em;text-transform:uppercase;color:#8a86a0;margin-bottom:10px">Sobre o custo</div>
+            <div style="font:700 11px/1 'Plus Jakarta Sans',sans-serif;letter-spacing:.09em;text-transform:uppercase;color:#8a86a0;margin-bottom:10px">Markup padrão (sobre o custo)</div>
+            <div style="display:flex;flex-wrap:wrap;gap:14px;margin-bottom:16px">
+              <sc-for list="{{ markupFields }}" as="m" hint-placeholder-count="2">
+                <div style="flex:1 1 230px;min-width:200px;display:flex;flex-direction:column;gap:6px">
+                  <div style="display:flex;justify-content:space-between;align-items:center;gap:8px">
+                    <span style="font:700 9px/1.2 'Plus Jakarta Sans',sans-serif;letter-spacing:.09em;text-transform:uppercase;color:{{ m.accent }}">{{ m.label }}</span>
+                    <div style="display:flex;align-items:center;gap:5px">
+                      <input type="number" min="0" step="1" value="{{ m.value }}" onChange="{{ m.onChange }}" style="width:72px;border:1px solid #e4e1ef;background:#fbfbfe;border-radius:8px;padding:6px 8px;font:700 13px/1.2 'JetBrains Mono',monospace;font-variant-numeric:tabular-nums;text-align:right;color:{{ m.accent }};outline:none" style-focus="border-color:#4f46b8;background:#fff;box-shadow:0 0 0 3px rgba(79,70,184,.13)">
+                      <span style="font:600 11px/1 'Plus Jakarta Sans',sans-serif;color:#a9a5bd">%</span>
+                    </div>
+                  </div>
+                  <input type="range" min="0" max="{{ m.soft }}" step="1" value="{{ m.value }}" onChange="{{ m.onChange }}" style="width:100%;accent-color:{{ m.accent }}">
+                </div>
+              </sc-for>
+            </div>
+            <div style="font:700 11px/1 'Plus Jakarta Sans',sans-serif;letter-spacing:.09em;text-transform:uppercase;color:#8a86a0;margin-bottom:10px">Custos adicionais</div>
             <div style="display:flex;flex-wrap:wrap;gap:9px">
               <sc-for list="{{ custoFields }}" as="f" hint-placeholder-count="4">
                 <div style="flex:1 1 220px;min-width:180px;display:flex;flex-direction:column;gap:4px">
@@ -418,7 +455,7 @@ class Component extends DCLogic {
     this.state = {
       titulo: 'Cotação #2026-014 · Prefeitura de Marília',
       items,
-      defaults: { transporte: 8, garantia: 0, lucroMin: 10, lucroMax: 35, impostos: 10 },
+      defaults: { transporte: 8, garantia: 0, markupMin: 12, markupAlvo: 45, impostos: 10 },
       expanded: items[0].id,
       padroes: false, atalhos: false
     };
@@ -455,8 +492,10 @@ class Component extends DCLogic {
     if (!priced.length) return null;
     return priced.reduce((a, b) => this.supCost(b) < this.supCost(a) ? b : a);
   }
-  minOf(item) { const d = this.state.defaults; return this.n(item.mMin == null ? d.lucroMin : item.mMin); }
-  marginOf(item) { const d = this.state.defaults; return Math.max(this.n(item.mMax == null ? d.lucroMax : item.mMax), this.minOf(item)); }
+  minOf(item) { const d = this.state.defaults; return Math.max(0, this.n(item.mMin == null ? d.markupMin : item.mMin)); }
+  marginOf(item) { const d = this.state.defaults; return Math.max(this.n(item.mMax == null ? d.markupAlvo : item.mMax), this.minOf(item)); }
+  softMax(v) { return Math.max(100, Math.ceil(Math.max(this.n(v), 0) * 1.5 / 50) * 50); }
+  margemDe(item, markup) { const c = this.calc(item, markup); return c.preco > 0 ? c.lucroUn / c.preco * 100 : 0; }
   calc(item, marginOverride) {
     const d = this.state.defaults, s = this.chosenSup(item);
     const custoUn = s ? this.supCost(s) : 0;
@@ -516,7 +555,7 @@ class Component extends DCLogic {
         L('=', 'Custo unitário', this.brl(c.custoUn), true),
         L('+', 'Transporte ' + this.pct(this.n(d.transporte)) + ' do custo', this.brl(c.custoUn * this.n(d.transporte) / 100)),
         L('+', 'Garantia extra ' + this.pct(this.n(d.garantia)) + ' do custo', this.brl(c.custoUn * this.n(d.garantia) / 100)),
-        L('+', 'Lucro ' + this.pct(c.m * 100) + ' do custo', this.brl(c.lucroUn)),
+        L('+', 'Markup ' + this.pct(c.m * 100) + ' sobre o custo', this.brl(c.lucroUn)),
         L('+', 'Tributos ' + this.pct(taxT) + ' da venda', this.brl(c.impostoUn)),
         L('=', 'Preço final unitário', this.brl(c.preco), true)
       ];
@@ -535,11 +574,22 @@ class Component extends DCLogic {
         onTaxValue: e => { const v = e.target.value; this.up(items => { items.find(x => x.id === item.id).taxes = v; }); },
         custoUn: this.brl(c.custoUn), precoUn: this.brl(c.preco),
         lucroTotal: this.brl(c.lucroUn * c.qty), totalStr: this.brl(c.preco * c.qty),
-        marginPct: this.pct(c.m * 100),
+        marginPct: this.pct(this.margemDe(item, this.marginOf(item))),
+        markupPct: this.pct(c.m * 100),
         mMin: this.minOf(item), mMax: this.marginOf(item),
+        mMinSoft: this.softMax(this.minOf(item)), mMaxSoft: this.softMax(this.marginOf(item)),
         minMPct: this.pct(this.minOf(item)), maxMPct: this.pct(this.marginOf(item)),
-        onMin: e => { const v = this.n(e.target.value); this.up(items => { const i = items.find(x => x.id === item.id); i.mMin = v; if (this.n(i.mMax == null ? d.lucroMax : i.mMax) < v) i.mMax = v; }); },
-        onMax: e => { const v = this.n(e.target.value); this.up(items => { const i = items.find(x => x.id === item.id); i.mMax = v; if (this.n(i.mMin == null ? d.lucroMin : i.mMin) > v) i.mMin = v; }); },
+        margemMinPct: this.pct(this.margemDe(item, this.minOf(item))),
+        margemMaxPct: this.pct(this.margemDe(item, this.marginOf(item))),
+        presets: [25, 50, 75, 100, 150, 200].map(p => ({
+          label: p + '%',
+          bg: Math.abs(this.marginOf(item) - p) < 0.01 ? '#4f46b8' : '#fff',
+          fg: Math.abs(this.marginOf(item) - p) < 0.01 ? '#fff' : '#403c55',
+          bd: Math.abs(this.marginOf(item) - p) < 0.01 ? '#4f46b8' : '#e4e1ef',
+          apply: () => this.up(items => { const i = items.find(x => x.id === item.id); i.mMax = p; if (this.minOf(item) > p) i.mMin = p; })
+        })),
+        onMin: e => { const v = Math.max(0, this.n(e.target.value)); this.up(items => { const i = items.find(x => x.id === item.id); i.mMin = v; if (this.n(i.mMax == null ? d.markupAlvo : i.mMax) < v) i.mMax = v; }); },
+        onMax: e => { const v = Math.max(0, this.n(e.target.value)); this.up(items => { const i = items.find(x => x.id === item.id); i.mMax = v; if (this.n(i.mMin == null ? d.markupMin : i.mMin) > v) i.mMin = v; }); },
         precoMin: this.brl(cMin.preco), precoMax: this.brl(cMax.preco),
         reservaTotal: this.brl(cMin.preco * c.qty),
         folga: this.brl(c.preco - cMin.preco),
@@ -592,7 +642,8 @@ class Component extends DCLogic {
         folga: this.brl(tVenda - tReserva),
         transporte: this.brl(tTransp), transporteSub: this.pct(this.n(d.transporte)) + ' do custo' + (tGar > 0 ? ' · garantia ' + this.brl(tGar) : ''),
         impostosSub: this.pct(tVenda > 0 ? tImp / tVenda * 100 : 0) + ' da venda',
-        margemMedia: this.pct(tCapital > 0 ? tLucro / tCapital * 100 : 0),
+        margemMedia: this.pct(tVenda > 0 ? tLucro / tVenda * 100 : 0),
+        markupMedio: 'markup médio ' + this.pct(tCapital > 0 ? tLucro / tCapital * 100 : 0),
         reservaFolga: this.brl(tVenda - tReserva),
         lucroPct: tVenda > 0 ? this.pct(tLucro / tVenda * 100) + ' da venda' : '—'
       },
@@ -610,12 +661,18 @@ class Component extends DCLogic {
         { n: '1', t: 'Digite o produto e a quantidade. Pressione ↵ para já criar o item seguinte.' },
         { n: '2', t: 'Os itens vêm preenchidos a partir da oportunidade consultada — ajuste o que precisar.' },
         { n: '3', t: 'Abra o item e cadastre os fornecedores. O mais barato aparece em verde; marque o escolhido no círculo.' },
-        { n: '4', t: 'Cada item tem dois sliders de margem: a mínima define o preço de reserva (piso) e a máxima é o preço que você propõe.' },
+        { n: '4', t: 'Você ajusta o MARKUP (quanto acrescenta sobre o custo — pode passar de 100%). O markup mínimo define o preço de reserva; o markup alvo é o preço que você propõe. A margem (% da venda) é calculada e mostrada ao lado.' },
         { n: '5', t: 'Impostos diferentes num item? Clique em "usar imposto próprio" — os demais seguem o padrão da cotação.' }
       ],
-      resumoPadroes: 'Transporte ' + this.pct(this.n(d.transporte)) + ' · Lucro ' + this.pct(this.n(d.lucroMin)) + '–' + this.pct(this.n(d.lucroMax)) + ' · Tributos ' + this.pct(carga),
+      resumoPadroes: 'Transporte ' + this.pct(this.n(d.transporte)) + ' · Markup ' + this.pct(this.n(d.markupMin)) + '–' + this.pct(this.n(d.markupAlvo)) + ' · Tributos ' + this.pct(carga),
       cargaPct: this.pct(carga),
-      custoFields: [fld('transporte', 'Transporte', 50), fld('garantia', 'Garantia extra', 50), fld('lucroMin', 'Lucro mínimo', 100), fld('lucroMax', 'Lucro máximo', 100)],
+      custoFields: [fld('transporte', 'Transporte', 50), fld('garantia', 'Garantia extra', 50)],
+      markupFields: [
+        { key: 'markupMin', label: 'Markup mínimo (reserva)', accent: '#8a6414', value: this.n(d.markupMin), soft: this.softMax(d.markupMin), pct: this.pct(this.n(d.markupMin)),
+          onChange: e => { const v = Math.max(0, this.n(e.target.value)); this.setState(s => ({ defaults: { ...s.defaults, markupMin: v, markupAlvo: Math.max(this.n(s.defaults.markupAlvo), v) } })); } },
+        { key: 'markupAlvo', label: 'Markup alvo', accent: '#4f46b8', value: this.n(d.markupAlvo), soft: this.softMax(d.markupAlvo), pct: this.pct(this.n(d.markupAlvo)),
+          onChange: e => { const v = Math.max(0, this.n(e.target.value)); this.setState(s => ({ defaults: { ...s.defaults, markupAlvo: v, markupMin: Math.min(this.n(s.defaults.markupMin), v) } })); } }
+      ],
       vendaFields: [fld('impostos', 'Impostos (soma)', 60)]
     };
   }

@@ -41,8 +41,8 @@ Cotacao {
   defaults: {            // "Padrões da cotação" — valem para itens sem regra própria
     transporte: number   // % sobre o CUSTO
     garantia: number     // % sobre o CUSTO
-    lucroMin: number     // % sobre o CUSTO (margem mínima padrão)
-    lucroMax: number     // % sobre o CUSTO (margem máxima/alvo padrão)
+    markupMin: number    // % de MARKUP mínimo (sobre o custo) — gera o preço de reserva. SEM TETO
+    markupAlvo: number   // % de MARKUP alvo (sobre o custo) — gera o preço proposto. SEM TETO
     impostos: number     // % sobre a VENDA (soma de ICMS/Simples + PIS + COFINS + IPI + ISS)
   }
 }
@@ -51,8 +51,8 @@ Item {
   id: string
   desc: string
   qty: number
-  mMin: number | null    // margem mínima do item; null => defaults.lucroMin
-  mMax: number | null    // margem máxima (alvo) do item; null => defaults.lucroMax
+  mMin: number | null    // MARKUP mínimo do item (%); null => defaults.markupMin. Sem teto, >= 0
+  mMax: number | null    // MARKUP alvo do item (%);    null => defaults.markupAlvo. Sem teto, >= 0
   taxes: number | null   // imposto próprio do item (% da venda); null => defaults.impostos
   suppliers: Supplier[]
   chosen: string         // id do fornecedor escolhido (o que entra no cálculo)
@@ -68,19 +68,33 @@ custoUn(item)         = custoUn(fornecedor escolhido)
 
 over                  = (defaults.transporte + defaults.garantia) / 100
 tax(item)             = min((item.taxes ?? defaults.impostos) / 100, 0.9)
-mMin(item)            = item.mMin ?? defaults.lucroMin
-mMax(item)            = max(item.mMax ?? defaults.lucroMax, mMin(item))     // máx nunca abaixo do mín
+mkMin(item)           = max(0, item.mMin ?? defaults.markupMin)             // markup mínimo, %
+mkAlvo(item)          = max(item.mMax ?? defaults.markupAlvo, mkMin(item))  // alvo nunca abaixo do mínimo
 
-preco(item, m)        = custoUn * (1 + over + m/100) / (1 - tax)            // m em %
-precoFinalUn(item)    = preco(item, mMax(item))                            // preço proposto
-precoReservaUn(item)  = preco(item, mMin(item))                            // PISO — menor valor que compensa
-lucroUn(item, m)      = custoUn * m/100                                    // lucro incide sobre o custo
+preco(item, mk)       = custoUn * (1 + over + mk/100) / (1 - tax)           // mk = MARKUP em %
+precoFinalUn(item)    = preco(item, mkAlvo(item))                           // preço proposto
+precoReservaUn(item)  = preco(item, mkMin(item))                            // PISO — menor valor que compensa
+lucroUn(item, mk)     = custoUn * mk/100                                    // markup incide sobre o CUSTO
 impostoUn(item)       = precoFinalUn * tax
-folgaUn(item)         = precoFinalUn - precoReservaUn                      // espaço de negociação
+folgaUn(item)         = precoFinalUn - precoReservaUn                       // espaço de negociação
+
+// MARGEM é derivada — nunca é campo de entrada:
+margemUn(item, mk)    = lucroUn(item, mk) / preco(item, mk) * 100           // % da VENDA
 ```
 > **Por que divisão e não soma:** transporte, garantia e lucro incidem sobre o **custo**; os tributos
 > incidem sobre a **venda**. Dividir por `(1 − tax)` embute o imposto que vai cair sobre o próprio preço.
 > Esse texto aparece na UI (memória de cálculo e modal de ajuda) e deve ser preservado.
+
+> **Markup × margem — regra central desta versão.** O operador ajusta **markup** (acréscimo sobre o
+> custo); ele **não tem teto** e passa de 100% com frequência. A **margem** (% da venda) é sempre
+> **calculada e exibida como leitura**, nunca editável. Não usar as palavras "margem mínima/máxima"
+> em controles — são "markup mínimo (reserva)" e "markup alvo (proposta)".
+>
+> **Escala automática do slider (implementar assim):**
+> `softMax(v) = max(100, ceil(max(v,0) * 1.5 / 50) * 50)`
+> O slider usa `min=0, max=softMax(valorAtual), step=1`, então sempre sobra ~50% de curso à direita e
+> o usuário nunca bate no fim da régua. Valores acima da régua entram pelo campo numérico ao lado
+> (que é a fonte da verdade e não tem `max`).
 
 ### Melhor fornecedor
 `bestSup(item)` = entre os fornecedores com `cost > 0`, o de menor `custoUn`. Se o escolhido não é o melhor
@@ -99,7 +113,8 @@ reserva        = Σ (precoReservaUn × qty)
 folga          = valorCotado − reserva
 lucroTotal     = Σ (lucroUn(mMax) × qty)
 lucroPct       = lucroTotal / valorCotado          // "% da venda"
-margemMedia    = lucroTotal / capital              // "lucro sobre o capital"
+margemMedia    = lucroTotal / valorCotado          // margem real — % da venda
+markupMedio    = lucroTotal / capital              // markup médio — linha de apoio do mesmo card
 economia       = Σ ((custoUn − custoUnDoMelhor) × qty) para itens cujo escolhido ≠ melhor
 pendencias     = nº de itens com desc vazia OU cost do escolhido ≤ 0
 ```
@@ -136,7 +151,7 @@ sem quebra — não remova.
 | Capital necessário | R$ | "com frete e extras" |
 | Transporte | R$ | "8,0% do custo" (+ " · garantia R$ X" se > 0) |
 | Impostos embutidos | R$ | "X% da venda" |
-| Margem média | % (700, `#0b6d52`) | "lucro sobre o capital" |
+| Margem média | % da venda (700, `#0b6d52`) | "markup médio X%" |
 
 **Regra de conteúdo:** este painel e a barra inferior **não repetem dados**. Topo = composição do custo;
 rodapé = resultado da negociação.
@@ -155,7 +170,9 @@ impostos e o cálculo". À direita, quando `economia > 0`: botão verde
    "falta preço do fornecedor".
 3. Grupo de métricas (`flex:1 1 460px`, wrap, alinhado à direita), cada uma rótulo micro + valor mono
    `nowrap`: Qtd. (input 66px), Custo un. (92px, `#6f6c7d`), **Preço un.** (100px, 700/15px, rótulo roxo),
-   Lucro (118px, `#0b6d52`, com o % em 11px `#8fb3a7`), Total (116px).
+   **Lucro** (124px, `#0b6d52`, com segunda linha "margem X%" em 500/10.5px `#8fb3a7`),
+   **Total** (116px, com segunda linha "markup X%" em 500/10.5px `#a9a5bd`).
+   As duas leituras ficam empilhadas — nunca inline com o valor, senão a célula transborda.
 4. Ações 30×30: duplicar `⧉`, remover `×` (vermelho), expandir `▼/▲`.
 
 Abaixo da lista: botão tracejado full-width "+ Adicionar item — ou pressione ↵ no último item"
@@ -173,14 +190,21 @@ Botão "+ fornecedor" tracejado no topo. Nota: "O fornecedor marcado é o que en
 barato fica com o custo em verde."
 
 *Coluna B* (`flex:1 1 330px`), três cards brancos:
-- **Margem deste item** — dois sliders `0–100, step 0.5`: "Margem mínima" (âmbar `#8a6414`,
-  `accent-color:#c08a1c`) e "Margem máxima (alvo)" (roxo `#4f46b8`); no cabeçalho "mín% → máx%".
-  Rodapé do card: **Preço de reserva un.** (âmbar 700/14px) com "mínimo que compensa · R$ X no lote" e,
+- **Markup deste item** — cabeçalho "mín% → alvo%" e **dois controles híbridos**, um por nível:
+  *Markup mínimo (reserva)* em âmbar (`#8a6414`, `accent-color` igual) e *Markup alvo (proposta)* em
+  roxo (`#4f46b8`). Cada controle = **campo numérico** (72px, mono 700/13px, `min=0`, **sem max**) +
+  **slider** `min=0, max=softMax(valor), step=1` + uma linha de leitura dupla abaixo:
+  "markup X% sobre o custo" à esquerda e "margem **Y%** da venda" à direita (o valor da margem em
+  700 `#6f6c7d`). Os dois níveis se travam entre si (mínimo ≤ alvo) na própria edição.
+  Abaixo, chips **"Alvo rápido"**: 25 / 50 / 75 / 100 / 150 / 200% — aplicam o markup alvo; o chip ativo
+  fica roxo sólido (`#4f46b8`, texto branco).
+  Rodapé do card: **Preço de reserva un.** (âmbar 700/14px) com "markup mín X% · R$ Y no lote" e,
   à direita, **Folga p/ negociar** (verde) + aviso vermelho "no piso — não desça mais" quando
   `precoFinal ≤ precoReserva`.
 - **Como chegamos no preço** (oculto se `mostrarMemoria=false`) — escada com sinais `+`/`=`:
   Custo do produto, + Frete fixo, + Outros custos, **= Custo unitário**, + Transporte X% do custo,
-  + Garantia extra X% do custo, + Lucro X% do custo, + Tributos X% da venda, **= Preço final unitário**.
+  + Garantia extra X% do custo, + **Markup X% sobre o custo**, + Tributos X% da venda,
+  **= Preço final unitário**.
   Linhas fortes em 700/13px `#191823`; demais 500/12.5px `#6f6c7d`; separadores `#f1eff8`.
 - **Imposto deste item** — botão "usar imposto próprio" / "voltar ao padrão"; quando próprio, um campo
   numérico 120px com sufixo `%` e a nota "% da venda — ICMS/Simples, PIS, COFINS, IPI, ISS somados";
@@ -189,11 +213,15 @@ barato fica com o custo em verde."
 ### 4. Padrões da cotação (colapsável, ao fim da lista)
 Header clicável com título, subtítulo "valem para todos os itens que não têm regra própria" e resumo
 mono à direita ("Transporte 8,0% · Lucro 10,0%–35,0% · Tributos 10,0%").
-Corpo em duas colunas: **Sobre o custo** (sliders Transporte 0–50, Garantia extra 0–50, Lucro mínimo 0–100,
-Lucro máximo 0–100) e **Sobre a venda (tributos)** (slider Impostos (soma) 0–60). Cada slider mostra o
-rótulo à esquerda e o valor em % mono roxo à direita. Nota: "Carga tributária somada: X. Como ela incide
-sobre a venda, o preço é **custo majorado ÷ (1 − carga)**."
-*Todos os percentuais são sliders — não usar campos numéricos aqui.*
+Resumo mono à direita: "Transporte 8,0% · Markup 12,0%–45,0% · Tributos 10,0%".
+Corpo em duas colunas:
+- **Markup padrão (sobre o custo)** — os mesmos controles híbridos (campo numérico + slider com
+  `softMax`) para *Markup mínimo (reserva)* e *Markup alvo*, travados entre si.
+- **Custos adicionais** — sliders Transporte 0–50 e Garantia extra 0–50.
+- **Sobre a venda (tributos)** — slider Impostos (soma) 0–60.
+Sliders de percentual limitado mostram rótulo à esquerda e valor em % mono roxo à direita. Nota:
+"Carga tributária somada: X. Como ela incide sobre a venda, o preço é **custo majorado ÷ (1 − carga)**."
+*Só o markup usa campo numérico (por não ter teto); os demais percentuais são sliders.*
 
 ### 5. Barra fixa inferior — resultado da negociação
 Branca `rgba(255,255,255,.97)` + blur, `border-top #e4e1ef`, `box-shadow 0 -4px 18px rgba(25,24,35,.06)`,
@@ -221,7 +249,9 @@ Esc fechar painéis e modais · ? abrir esta ajuda); *Fluxo rápido* em 5 passos
   expandido por vez** (acordeão).
 - Radio do fornecedor troca o `chosen` e recalcula tudo. Remover fornecedor é bloqueado quando resta um;
   se remover o escolhido, cai no primeiro.
-- Sliders de margem se travam entre si (mín ≤ máx) na própria edição.
+- Markup: campo numérico e slider editam o mesmo valor; o `max` do slider é recalculado a cada render
+  por `softMax`. Mínimo e alvo se travam entre si (mín ≤ alvo). Valores negativos são zerados.
+- Chips de alvo rápido aplicam o markup alvo do item (e sobem o mínimo junto, se ele ficaria acima).
 - "Usar o fornecedor mais barato em tudo" aplica `bestSup` a todos os itens de uma vez.
 - Duplicar item copia fornecedores e mantém o escolhido pela posição.
 - Sem estados de loading/erro no protótipo: a persistência é "salvo automaticamente" (rascunho) e o botão
@@ -246,7 +276,7 @@ Bordas             #e7e5f0 / #e4e1ef / #dedbeb        Divisor interno #eeecf6 / 
 Texto forte        #191823      Texto médio #403c55 / #6f6c7d   Texto fraco #8a86a0 / #a9a5bd / #b9b5cc
 Primária (roxo)    #4f46b8      Hover #413a9e   Escuro #3a3390   Tint #f1effc   Borda tint #dcd8f4
 Verde (lucro)      #0b6d52 / #0d7a5c   Tint #e9f7f1   Borda #c6e9dc   Sutil #8fb3a7
-Âmbar (reserva)    #8a6414      Slider #c08a1c   Tint #fdf6e8   Borda #f3ddb8
+Âmbar (reserva/markup mín) #8a6414   Slider #c08a1c   Tint #fdf6e8   Borda #f3ddb8
 Vermelho (erro)    #a52d2d      Tint #fdefef   Borda #f5cfcf
 Overlay modal      rgba(20,19,39,.45)     Scrollbar #d9d5e8 (hover #c2bde4)
 ```
@@ -271,3 +301,17 @@ texto (`⧉ × ▲ ▼ +`) — substituir pelos ícones do design system do code
 ## Files
 - `Cotador.dc.html` — protótipo hifi completo (template + classe de lógica com as fórmulas). Abra no navegador.
 - `referencia-formulario-original.png` — captura do formulário antigo, para contexto do "antes".
+
+
+---
+
+## Changelog — markup (última alteração)
+Substituição do ajuste de "margem" por **markup**, com margem virando leitura derivada:
+1. `defaults.lucroMin/lucroMax` → `defaults.markupMin/markupAlvo`; `Item.mMin/mMax` passam a ser markup.
+2. Markup **não tem teto** — controle híbrido (campo numérico sem `max` + slider com `softMax` que cresce)
+   e chips de alvo rápido 25–200%.
+3. Toda tela que dizia "margem" como controle passou a dizer "markup"; a **margem (% da venda)** aparece
+   como leitura em: linha de leitura dupla sob cada slider, segunda linha da célula "Lucro" na lista,
+   e card "Margem média" do painel superior (com "markup médio" na linha de apoio).
+4. Escada de cálculo: "Lucro X% do custo" → "**Markup X% sobre o custo**".
+5. Célula "Lucro" alargada para 124px com o percentual empilhado (era inline e transbordava).
