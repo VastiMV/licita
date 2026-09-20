@@ -5,6 +5,18 @@
   display: block;
 }
 
+.kicker {
+  @include uppercase-label;
+  margin: 0 0 var(--space-1);
+  color: var(--color-blue);
+}
+
+.sub {
+  margin: 0 0 var(--space-4);
+  font-size: var(--font-size-sm);
+  color: var(--color-muted);
+}
+
 .cabecalho {
   display: flex;
   flex-wrap: wrap;
@@ -14,9 +26,11 @@
   margin-bottom: var(--space-4);
 }
 
-h3 {
-  @include uppercase-label;
+.tese {
+  max-width: 62ch;
   margin: 0;
+  font-size: var(--font-size-xs);
+  color: var(--color-muted);
 }
 
 h4 {

@@ -4,7 +4,6 @@ import { By } from '@angular/platform-browser';
 import { of, throwError } from 'rxjs';
 
 import { EmpresaResponse } from '../../../contracts/empresas/empresa.contracts';
-import { DocumentosService } from '../../../services/documentos/documentos.service';
 import { EmpresasService } from '../../../services/empresas/empresas.service';
 import { EmpresaModalComponent } from './empresa-modal.component';
 
@@ -37,15 +36,6 @@ const EMPRESA: EmpresaResponse = {
   atualizado_em: '2026-09-01T12:00:00Z',
 };
 
-/** No modo edição o modal monta o painel de documentos, que busca a lista e
- * o catálogo ao abrir. Sem este dublê o `DocumentosService` real iria à rede
- * — e o que se testa aqui é o formulário da empresa, não o dossiê (esse tem
- * o spec dele). */
-const DOCUMENTOS_VAZIOS = {
-  listar: () => of({ results: [], validos: 0, a_vencer: 0, vencidos: 0, pendentes: 0 }),
-  tipos: () => of([]),
-};
-
 function montar(empresa: EmpresaResponse | null, service: Record<string, unknown>) {
   TestBed.configureTestingModule({
     imports: [EmpresaModalComponent],
@@ -53,7 +43,6 @@ function montar(empresa: EmpresaResponse | null, service: Record<string, unknown
       { provide: DIALOG_DATA, useValue: empresa },
       { provide: DialogRef, useValue: { close: vi.fn() } },
       { provide: EmpresasService, useValue: service },
-      { provide: DocumentosService, useValue: DOCUMENTOS_VAZIOS },
     ],
   });
   const fixture = TestBed.createComponent(EmpresaModalComponent);

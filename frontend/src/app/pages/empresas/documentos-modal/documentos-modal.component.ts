@@ -1,5 +1,6 @@
+import { DIALOG_DATA, DialogRef } from '@angular/cdk/dialog';
 import { DatePipe } from '@angular/common';
-import { Component, OnInit, computed, inject, input, signal } from '@angular/core';
+import { Component, OnInit, computed, inject, signal } from '@angular/core';
 import { FormsModule } from '@angular/forms';
 
 import {
@@ -9,13 +10,15 @@ import {
   TOM_SITUACAO,
   TipoDocumento,
   VersaoDocumento,
-} from '../../../../contracts/documentos/documento.contracts';
-import { DocumentosService } from '../../../../services/documentos/documentos.service';
-import { ButtonComponent } from '../../../../shared/ui/button/button.component';
-import { IconComponent } from '../../../../shared/ui/icon/icon.component';
-import { SelectComponent, SelectOption } from '../../../../shared/ui/select/select.component';
-import { ToastService } from '../../../../shared/ui/toast/toast.service';
-import { UploadDropzoneComponent } from '../../../../shared/ui/upload-dropzone/upload-dropzone.component';
+} from '../../../contracts/documentos/documento.contracts';
+import { EmpresaResponse } from '../../../contracts/empresas/empresa.contracts';
+import { DocumentosService } from '../../../services/documentos/documentos.service';
+import { ModalShellComponent } from '../../../shared/overlay/modal-shell/modal-shell.component';
+import { ButtonComponent } from '../../../shared/ui/button/button.component';
+import { IconComponent } from '../../../shared/ui/icon/icon.component';
+import { SelectComponent, SelectOption } from '../../../shared/ui/select/select.component';
+import { ToastService } from '../../../shared/ui/toast/toast.service';
+import { UploadDropzoneComponent } from '../../../shared/ui/upload-dropzone/upload-dropzone.component';
 
 type Filtro = 'todos' | 'a_vencer' | 'vencidos' | 'pendentes';
 
@@ -28,7 +31,14 @@ interface Grupo {
 }
 
 /**
- * Os documentos da empresa, dentro do modal dela.
+ * O dossiê de habilitação de uma empresa — **modal próprio**, aberto pela
+ * ação "Documentos" da lista.
+ *
+ * Separado do modal de cadastro de propósito: editar o endereço da empresa e
+ * cuidar da papelada dela são duas tarefas diferentes, feitas em momentos
+ * diferentes e, quase sempre, por motivos diferentes. Juntar as duas num
+ * modal só obrigava a passar por um formulário para chegar ao que
+ * interessa, e o que interessa aqui acontece toda semana.
  *
  * **A tela não é uma pasta de arquivos, é um painel de validade.** A lista
  * é agrupada pelos quatro blocos de habilitação da Lei 14.133 e ordenada
@@ -43,21 +53,25 @@ interface Grupo {
  * arrastar, só que no lugar certo.
  */
 @Component({
-  selector: 'app-documentos-empresa',
+  selector: 'app-documentos-modal',
   imports: [
     DatePipe,
+    ModalShellComponent,
     FormsModule,
     ButtonComponent,
     IconComponent,
     SelectComponent,
     UploadDropzoneComponent,
   ],
-  templateUrl: './documentos-empresa.component.html',
-  styleUrl: './documentos-empresa.component.scss',
+  templateUrl: './documentos-modal.component.html',
+  styleUrl: './documentos-modal.component.scss',
 })
-export class DocumentosEmpresaComponent implements OnInit {
-  readonly empresaId = input.required<number>();
+export class DocumentosModalComponent implements OnInit {
+  /** A empresa inteira, e não só o id: o cabeçalho do modal mostra razão
+   * social e CNPJ — sem isso, quem abre não sabe de quem é a papelada. */
+  protected readonly empresa = inject<EmpresaResponse>(DIALOG_DATA);
 
+  private readonly dialogRef = inject(DialogRef<void>);
   private readonly service = inject(DocumentosService);
   private readonly toast = inject(ToastService);
 
@@ -128,6 +142,10 @@ export class DocumentosEmpresaComponent implements OnInit {
   ngOnInit(): void {
     this.carregar();
     this.service.tipos().subscribe({ next: (tipos) => this.tipos.set(tipos) });
+  }
+
+  protected fechar(): void {
+    this.dialogRef.close();
   }
 
   protected tomDe(documento: DocumentoResponse): string | null {
@@ -218,7 +236,7 @@ export class DocumentosEmpresaComponent implements OnInit {
     const tipo = Number(this.tipoNovo());
     if (!tipo) return;
 
-    this.service.abrirVaga(this.empresaId(), tipo, this.tituloNovo().trim()).subscribe({
+    this.service.abrirVaga(this.empresa.id, tipo, this.tituloNovo().trim()).subscribe({
       next: () => {
         this.abrindoVaga.set(false);
         this.tipoNovo.set('');
@@ -246,7 +264,7 @@ export class DocumentosEmpresaComponent implements OnInit {
     this.carregando.set(true);
     this.erro.set(null);
 
-    this.service.listar(this.empresaId()).subscribe({
+    this.service.listar(this.empresa.id).subscribe({
       next: (resposta) => {
         this.documentos.set(resposta.results);
         this.contadores.set({

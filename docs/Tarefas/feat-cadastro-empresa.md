@@ -103,7 +103,7 @@ marcado na mão, vira conta.
   extensão fora da lista; download não expõe a chave do bucket; arquivar não
   apaga.
 
-- [x] **10. Documentos no modal**
+- [x] **10. Documentos em modal próprio**
   Os três contadores, a dropzone (`shared/ui/upload-dropzone`, a única peça
   que o projeto ainda não tem — progresso real do `HttpClient`, não simulado),
   os chips de filtro, a lista agrupada por bloco com **coluna de validade** e

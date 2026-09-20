@@ -15,6 +15,7 @@ import { TabelaAcoesDirective } from '../../shared/ui/data-table/tabela-acoes.di
 import { IconComponent } from '../../shared/ui/icon/icon.component';
 import { ItemMenu, MenuComponent } from '../../shared/ui/menu/menu.component';
 import { ToastService } from '../../shared/ui/toast/toast.service';
+import { DocumentosModalComponent } from './documentos-modal/documentos-modal.component';
 import { EmpresaModalComponent } from './empresa-modal/empresa-modal.component';
 
 /** As chaves das colunas são contrato com o backend (`ORDENACOES` em
@@ -96,7 +97,10 @@ export class EmpresasPage implements OnInit {
 
   protected acoesDe(empresa: EmpresaResponse): readonly ItemMenu[] {
     const itens: ItemMenu[] = [
-      { rotulo: 'Editar', icone: 'edit', executar: () => this.editar(empresa) },
+      // Primeiro porque é o que se faz toda semana: certidão vence, o
+      // cadastro não muda.
+      { rotulo: 'Documentos', icone: 'documentos', executar: () => this.documentos(empresa) },
+      { rotulo: 'Editar cadastro', icone: 'edit', executar: () => this.editar(empresa) },
     ];
 
     if (empresa.ativa && !empresa.padrao) {
@@ -131,6 +135,16 @@ export class EmpresasPage implements OnInit {
 
   protected editar(empresa: EmpresaResponse): void {
     this.abrirModal(empresa);
+  }
+
+  /** O dossiê de habilitação, em modal próprio: editar o cadastro e cuidar
+   * da papelada são tarefas diferentes, e a papelada é a frequente. */
+  protected documentos(empresa: EmpresaResponse): void {
+    this.modal.abrir<void, EmpresaResponse>(DocumentosModalComponent, empresa).subscribe(() => {
+      // Recarrega ao fechar: o que muda lá dentro decide a situação da
+      // empresa na tabela.
+      this.carregar();
+    });
   }
 
   /** Não é exclusão, e o texto diz isso: o que sai é a oferta do CNPJ em

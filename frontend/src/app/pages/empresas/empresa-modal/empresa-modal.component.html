@@ -133,17 +133,6 @@
     }
   </form>
 
-  @if (editando) {
-    <section class="documentos">
-      <app-documentos-empresa [empresaId]="empresa!.id" />
-    </section>
-  } @else {
-    <p class="documentos-depois">
-      Os documentos de habilitação (certidões, contrato social, balanço) entram depois de cadastrar
-      — eles pertencem a uma empresa que ainda não existe.
-    </p>
-  }
-
   <span modalFooter class="obrigatorios">Campos com <em>*</em> são obrigatórios</span>
   <app-button modalFooter variant="ghost" [disabled]="salvando()" (click)="fechar()">
     Cancelar

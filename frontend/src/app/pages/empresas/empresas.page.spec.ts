@@ -6,6 +6,7 @@ import { EmpresaResponse } from '../../contracts/empresas/empresa.contracts';
 import { EmpresasService } from '../../services/empresas/empresas.service';
 import { ModalService } from '../../shared/overlay/modal.service';
 import { ToastService } from '../../shared/ui/toast/toast.service';
+import { DocumentosModalComponent } from './documentos-modal/documentos-modal.component';
 import { EmpresaModalComponent } from './empresa-modal/empresa-modal.component';
 import { EmpresasPage } from './empresas.page';
 
@@ -125,6 +126,26 @@ describe('EmpresasPage', () => {
 
     expect(celulas[1].nativeElement.textContent).toContain('11.222.333/0001-81');
     expect(celulas[2].nativeElement.textContent).toContain('São Paulo / SP');
+  });
+
+  it('documentos abre em modal próprio, separado do cadastro', () => {
+    clicarAcao(0, 'Documentos');
+
+    expect(modal.abrir).toHaveBeenCalledWith(DocumentosModalComponent, PADRAO);
+  });
+
+  it('documentos vem antes de editar — é o que se faz toda semana', () => {
+    const rotulos = abrirMenuDaLinha(0).map((botao) => botao.textContent?.trim());
+
+    expect(rotulos[0]).toContain('Documentos');
+    expect(rotulos[1]).toContain('Editar cadastro');
+  });
+
+  it('fechar o modal de documentos recarrega a lista', () => {
+    // O que muda lá dentro decide a situação da empresa na tabela.
+    clicarAcao(0, 'Documentos');
+
+    expect(service.listar).toHaveBeenCalledTimes(2);
   });
 
   it('a empresa padrão não oferece "Inativar" — a proposta ficaria sem CNPJ', () => {

@@ -110,17 +110,3 @@ textarea {
     grid-column: auto;
   }
 }
-
-.documentos {
-  margin-top: var(--space-5);
-  padding-top: var(--space-5);
-  border-top: 1px solid var(--color-border);
-}
-
-.documentos-depois {
-  margin: var(--space-5) 0 0;
-  padding-top: var(--space-5);
-  border-top: 1px solid var(--color-border);
-  font-size: var(--font-size-xs);
-  color: var(--color-muted);
-}

@@ -60,7 +60,7 @@ manifests já usam esse nome; o valor `licita` que aparecia aqui antes nunca foi
 
 - Standalone components (padrão atual do Angular), lazy-loaded por feature:
   `oportunidades/` (com os submódulos `pesquisar/` e `salvas/`), `empresas/`
-  (com o dossiê de documentos dentro do modal), `fornecedores/`,
+  (com dois modais: o cadastro e o dossiê de documentos), `fornecedores/`,
   `configuracoes/`, `filtros/`, `alertas/`, `auth/`.
   Sinaliza-se aqui a intenção; a estrutura definitiva de módulos é detalhada
   quando o harness de código for gerado.

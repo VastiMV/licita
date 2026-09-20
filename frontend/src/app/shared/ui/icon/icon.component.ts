@@ -30,6 +30,7 @@ export type IconName =
   | 'empresas'
   | 'configuracoes'
   | 'armazenamento'
+  | 'documentos'
   | 'plus'
   | 'calculadora'
   | 'copiar'

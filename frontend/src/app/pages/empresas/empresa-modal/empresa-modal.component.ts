@@ -25,7 +25,6 @@ import {
   somenteDigitos,
 } from '../../../shared/documento/documento';
 import { ButtonComponent } from '../../../shared/ui/button/button.component';
-import { DocumentosEmpresaComponent } from './documentos-empresa/documentos-empresa.component';
 import { InputTextComponent } from '../../../shared/ui/input-text/input-text.component';
 import { SelectComponent } from '../../../shared/ui/select/select.component';
 
@@ -69,11 +68,10 @@ function validarCnpj(controle: AbstractControl): ValidationErrors | null {
  * Fecha devolvendo a empresa salva (ou `undefined` se cancelaram), e é a
  * página que avisa e recarrega a lista — o modal não conhece a tabela.
  *
- * Os documentos da empresa (certidões, contrato social, balanço) ficam
- * embaixo do formulário, e **só no modo edição**: a vaga de cada documento
- * pertence a uma empresa, e no modo cadastro ela ainda não existe. Quem
- * cadastra salva primeiro e reabre para subir a papelada — que é também a
- * ordem em que a coisa acontece na vida real.
+ * Os documentos da empresa não entram aqui: têm modal próprio
+ * (`DocumentosModalComponent`), aberto pela ação "Documentos" da lista.
+ * Editar o endereço e cuidar da papelada são tarefas diferentes, feitas em
+ * momentos diferentes — e a papelada é a que acontece toda semana.
  */
 @Component({
   selector: 'app-empresa-modal',
@@ -83,7 +81,6 @@ function validarCnpj(controle: AbstractControl): ValidationErrors | null {
     ButtonComponent,
     InputTextComponent,
     SelectComponent,
-    DocumentosEmpresaComponent,
   ],
   templateUrl: './empresa-modal.component.html',
   styleUrl: './empresa-modal.component.scss',

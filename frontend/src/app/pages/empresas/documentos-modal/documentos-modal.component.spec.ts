@@ -1,3 +1,4 @@
+import { DIALOG_DATA, DialogRef } from '@angular/cdk/dialog';
 import { ComponentFixture, TestBed } from '@angular/core/testing';
 import { By } from '@angular/platform-browser';
 import { of, throwError } from 'rxjs';
@@ -6,10 +7,11 @@ import {
   DocumentoResponse,
   DocumentosResposta,
   TipoDocumento,
-} from '../../../../contracts/documentos/documento.contracts';
-import { DocumentosService } from '../../../../services/documentos/documentos.service';
-import { ToastService } from '../../../../shared/ui/toast/toast.service';
-import { DocumentosEmpresaComponent } from './documentos-empresa.component';
+} from '../../../contracts/documentos/documento.contracts';
+import { DocumentosService } from '../../../services/documentos/documentos.service';
+import { ToastService } from '../../../shared/ui/toast/toast.service';
+import { EmpresaResponse } from '../../../contracts/empresas/empresa.contracts';
+import { DocumentosModalComponent } from './documentos-modal.component';
 
 const BASE: DocumentoResponse = {
   id: 1,
@@ -107,21 +109,30 @@ function resposta(results = [BASE, VENCIDO, PENDENTE]): DocumentosResposta {
   return { results, validos: 0, a_vencer: 1, vencidos: 1, pendentes: 1 };
 }
 
-describe('DocumentosEmpresaComponent', () => {
-  let fixture: ComponentFixture<DocumentosEmpresaComponent>;
+const EMPRESA = {
+  id: 7,
+  nome: 'Inside Solutions Ltda',
+  cnpj_formatado: '11.222.333/0001-81',
+  porte_label: 'Empresa de pequeno porte (EPP)',
+  cidade_uf: 'São Paulo / SP',
+} as EmpresaResponse;
+
+describe('DocumentosModalComponent', () => {
+  let fixture: ComponentFixture<DocumentosModalComponent>;
   let service: Record<string, ReturnType<typeof vi.fn>>;
   let toast: Record<string, ReturnType<typeof vi.fn>>;
 
   function montar() {
     TestBed.configureTestingModule({
-      imports: [DocumentosEmpresaComponent],
+      imports: [DocumentosModalComponent],
       providers: [
+        { provide: DIALOG_DATA, useValue: EMPRESA },
+        { provide: DialogRef, useValue: { close: vi.fn() } },
         { provide: DocumentosService, useValue: service },
         { provide: ToastService, useValue: toast },
       ],
     });
-    fixture = TestBed.createComponent(DocumentosEmpresaComponent);
-    fixture.componentRef.setInput('empresaId', 7);
+    fixture = TestBed.createComponent(DocumentosModalComponent);
     fixture.detectChanges();
   }
 
@@ -146,6 +157,13 @@ describe('DocumentosEmpresaComponent', () => {
     fixture.debugElement
       .queryAll(By.css('.bloco h4'))
       .map((h) => h.nativeElement.textContent.trim());
+
+  it('o cabeçalho diz de quem é a papelada', () => {
+    // O modal abre por fora do cadastro: sem razão social e CNPJ no topo,
+    // quem abriu não sabe qual empresa está vendo.
+    expect(fixture.nativeElement.textContent).toContain('Inside Solutions Ltda');
+    expect(fixture.nativeElement.textContent).toContain('11.222.333/0001-81');
+  });
 
   it('agrupa pelos blocos da Lei 14.133, na ordem em que os editais pedem', () => {
     expect(blocos()).toEqual(['Habilitação jurídica', 'Fiscal, social e trabalhista']);
