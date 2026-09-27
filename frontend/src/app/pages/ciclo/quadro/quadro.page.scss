@@ -1,0 +1,281 @@
+@use 'mixins' as *;
+
+h1 {
+  font-size: var(--font-size-xl);
+  margin-bottom: var(--space-1);
+}
+
+.pagina-topo {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: var(--space-6);
+  margin-bottom: var(--space-5);
+}
+
+// Mesma cara do botão secundário (ver ButtonComponent, variante ghost) —
+// é link porque navega para outra tela.
+.btn-buscar {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-2);
+  flex: none;
+  padding: 0.5rem 0.95rem;
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-sm);
+  background: var(--color-surface);
+  color: var(--color-fg);
+  font-size: var(--font-size-sm);
+  font-weight: var(--font-weight-medium);
+  text-decoration: none;
+
+  app-icon {
+    width: 16px;
+    height: 16px;
+  }
+
+  &:hover {
+    background: var(--color-blue-soft);
+  }
+
+  &:focus-visible {
+    @include focus-ring;
+  }
+}
+
+.estado {
+  margin-top: var(--space-6);
+}
+
+.erro {
+  color: var(--color-danger);
+}
+
+.link {
+  appearance: none;
+  border: none;
+  background: none;
+  padding: 0;
+  color: var(--color-blue);
+  font: inherit;
+  text-decoration: underline;
+  cursor: pointer;
+}
+
+.tela {
+  background: var(--color-surface);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-lg);
+  box-shadow: var(--shadow-sm);
+  overflow: hidden;
+}
+
+// O que vence hoje e nesta semana — é por onde a manhã começa.
+.hoje {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(170px, 1fr));
+  gap: 1px;
+  background: var(--color-border);
+  border-bottom: 1px solid var(--color-border);
+
+  > div {
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+    padding: var(--space-4) var(--space-5);
+    background: var(--color-surface);
+  }
+
+  .k {
+    font-size: 1.5rem;
+    font-weight: 700;
+    line-height: 1.1;
+    font-variant-numeric: tabular-nums;
+    color: var(--color-fg);
+  }
+
+  .l {
+    font-size: var(--font-size-sm);
+    color: var(--color-muted);
+    line-height: 1.35;
+  }
+
+  .alerta .k {
+    color: var(--color-danger);
+  }
+
+  .aviso .k {
+    color: var(--color-warn);
+  }
+}
+
+.quadro-rolagem {
+  overflow-x: auto;
+}
+
+.quadro {
+  display: grid;
+  grid-template-columns: repeat(5, minmax(200px, 1fr));
+  gap: var(--space-3);
+  min-width: 1040px;
+  padding: var(--space-4);
+  background: var(--color-bg);
+}
+
+.coluna {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-3);
+
+  &.indisponivel .coluna-topo .n {
+    color: var(--color-muted);
+  }
+}
+
+.coluna-topo {
+  display: flex;
+  justify-content: space-between;
+  align-items: baseline;
+  gap: var(--space-2);
+  padding: 0 2px var(--space-2);
+  border-bottom: 2px solid var(--color-border);
+
+  .n {
+    font-size: var(--font-size-xs);
+    font-weight: 700;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+    color: var(--color-navy);
+  }
+
+  .c {
+    font-size: var(--font-size-xs);
+    color: var(--color-muted);
+    white-space: nowrap;
+    font-variant-numeric: tabular-nums;
+  }
+}
+
+.vazio {
+  margin: 0;
+  padding: var(--space-3);
+  border: 1px dashed var(--color-border);
+  border-radius: var(--radius-md);
+  font-size: var(--font-size-sm);
+  color: var(--color-muted);
+  text-align: center;
+}
+
+.cartao {
+  appearance: none;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  width: 100%;
+  padding: var(--space-3);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-md);
+  background: var(--color-surface);
+  color: inherit;
+  font: inherit;
+  text-align: left;
+  cursor: pointer;
+  transition:
+    border-color var(--transition-fast),
+    box-shadow var(--transition-fast);
+
+  &:hover:not(:disabled) {
+    border-color: var(--color-blue);
+    box-shadow: var(--shadow-md);
+  }
+
+  &:disabled {
+    cursor: default;
+  }
+
+  &:focus-visible {
+    @include focus-ring;
+  }
+
+  &.urgente {
+    border-color: var(--color-danger);
+  }
+
+  .org {
+    font-size: var(--font-size-xs);
+    color: var(--color-muted);
+  }
+
+  .obj {
+    font-size: var(--font-size-sm);
+    font-weight: 600;
+    color: var(--color-fg);
+    line-height: 1.3;
+    display: -webkit-box;
+    -webkit-line-clamp: 3;
+    -webkit-box-orient: vertical;
+    overflow: hidden;
+  }
+
+  .dado {
+    font-size: var(--font-size-xs);
+    color: var(--color-muted);
+    font-variant-numeric: tabular-nums;
+  }
+
+  .falta {
+    padding-top: 6px;
+    border-top: 1px solid var(--color-border);
+    font-size: var(--font-size-sm);
+    line-height: 1.4;
+
+    b {
+      margin-right: 4px;
+      font-size: var(--font-size-xs);
+      font-weight: 600;
+      letter-spacing: 0.06em;
+      text-transform: uppercase;
+      color: var(--color-warn);
+    }
+  }
+}
+
+// O selo do cartão: mesmo formato de pílula do BadgeComponent, com a cor
+// dizendo o nível — neutro, ok, aviso ou alerta.
+.selo {
+  align-self: flex-start;
+  padding: 3px 9px;
+  border-radius: var(--radius-pill);
+  font-size: var(--font-size-xs);
+  font-weight: 600;
+  background: var(--color-blue-soft);
+  color: var(--color-muted);
+
+  &[data-nivel='ok'] {
+    background: var(--color-success-bg);
+    color: var(--color-success);
+  }
+
+  &[data-nivel='aviso'] {
+    background: var(--color-warn-bg);
+    color: var(--color-warn);
+  }
+
+  &[data-nivel='alerta'] {
+    background: var(--color-danger-bg);
+    color: var(--color-danger);
+  }
+}
+
+.rodape {
+  padding: var(--space-3) var(--space-5);
+  border-top: 1px solid var(--color-border);
+  font-size: var(--font-size-sm);
+  color: var(--color-muted);
+}
+
+@include reduced-motion {
+  .cartao {
+    transition: none;
+  }
+}

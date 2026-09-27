@@ -5,13 +5,6 @@ import { ShellComponent } from './layout/shell/shell.component';
 
 const CICLO = [
   {
-    path: '',
-    titulo: 'Ciclo de Licitação',
-    descricao:
-      'O quadro com todas as licitações em andamento, uma coluna por etapa — ' +
-      'o que vence hoje e o que falta em cada uma.',
-  },
-  {
     path: 'cotador',
     titulo: 'Cotador',
     descricao: 'As licitações em cotação: salvas que já têm cotação e ainda não viraram proposta.',
@@ -74,20 +67,27 @@ export const routes: Routes = [
           },
         ],
       },
-      // O Ciclo de Licitação: o quadro e uma lista por etapa. As telas ainda
-      // não existem — cada rota troca `EtapaAConstruirPage` pela dela
-      // (docs/Tarefas/feat-ciclo.md).
+      // O Ciclo de Licitação: o quadro e uma lista por etapa. As listas ainda
+      // não existem — cada rota troca `EtapaAConstruirPage` pela dela.
       {
         path: 'ciclo',
-        children: CICLO.map(({ path, titulo, descricao }) => ({
-          path,
-          pathMatch: 'full' as const,
-          data: { titulo, descricao },
-          loadComponent: () =>
-            import('./pages/ciclo/etapa-a-construir/etapa-a-construir.page').then(
-              (m) => m.EtapaAConstruirPage,
-            ),
-        })),
+        children: [
+          {
+            path: '',
+            pathMatch: 'full',
+            loadComponent: () =>
+              import('./pages/ciclo/quadro/quadro.page').then((m) => m.QuadroPage),
+          },
+          ...CICLO.map(({ path, titulo, descricao }) => ({
+            path,
+            pathMatch: 'full' as const,
+            data: { titulo, descricao },
+            loadComponent: () =>
+              import('./pages/ciclo/etapa-a-construir/etapa-a-construir.page').then(
+                (m) => m.EtapaAConstruirPage,
+              ),
+          })),
+        ],
       },
       {
         path: 'empresas',

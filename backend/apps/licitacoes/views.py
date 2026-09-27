@@ -28,6 +28,7 @@ from apps.integracoes.clients.compras_gov import ComprasGovClientError
 from apps.integracoes.clients.pncp import PncpClient, PncpClientError
 from apps.integracoes.plataformas import identificar_plataforma, plataforma_padrao
 
+from .ciclo import montar_quadro
 from .models import OportunidadeSalva, registrar_prazos_vencidos
 from .salvas import garantir_salva
 from .serializers import (
@@ -322,3 +323,11 @@ class OportunidadeSalvaEventosView(APIView):
                 "eventos": EventoOportunidadeSalvaSerializer(eventos, many=True).data,
             }
         )
+
+
+class CicloView(APIView):
+    """`GET /api/licitacoes/ciclo/` — o quadro do Ciclo de Licitação: uma
+    coluna por etapa, com a etapa calculada (ver `ciclo.py`)."""
+
+    def get(self, request: Request) -> Response:
+        return Response(montar_quadro())

@@ -25,9 +25,7 @@ interface ItemPlano {
 
 function achatar(itens: readonly NavSubItem[]): ItemPlano[] {
   return itens.flatMap((item) =>
-    item.itens
-      ? [...(item.navega ? [item] : []), ...achatar(item.itens)]
-      : [item],
+    item.itens ? [...(item.navega ? [item] : []), ...achatar(item.itens)] : [item],
   );
 }
 
