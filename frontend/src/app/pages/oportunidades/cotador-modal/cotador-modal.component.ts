@@ -7,7 +7,6 @@ import {
   ItemCotacaoRequest,
 } from '../../../contracts/cotador/cotacao.contracts';
 import { FornecedorOpcao } from '../../../contracts/fornecedores/fornecedor.contracts';
-import { OportunidadeSalvaRequest } from '../../../contracts/licitacoes/oportunidade-salva.contracts';
 import { OportunidadeResponse } from '../../../contracts/licitacoes/oportunidade.contracts';
 import { CotadorService } from '../../../services/cotador/cotador.service';
 import { FornecedoresService } from '../../../services/fornecedores/fornecedores.service';
@@ -38,25 +37,20 @@ import {
 } from './cotador.model';
 
 /**
- * O que o modal precisa receber. Um dos dois caminhos, nunca os dois:
- *
- * - **da busca** — `itens` (do card) e `oportunidade` (o payload para
- *   salvá-la). Nada está persistido ainda.
- * - **das salvas** — `oportunidadeId`, e `itens` do snapshot para o caso de
- *   ainda não haver cotação.
+ * O que o modal precisa receber: a oportunidade **salva** que está sendo
+ * cotada, e os `itens` do snapshot dela para o caso de ainda não haver
+ * cotação. Não existe cotar direto da busca — da busca o edital só sai
+ * salvo (docs/Tarefas/feat-remover-legado.md, tarefa 6).
  */
 export interface CotadorModalData {
   readonly titulo: string;
   readonly itens: readonly OportunidadeResponse[];
-  readonly oportunidadeId: number | null;
-  readonly oportunidade: OportunidadeSalvaRequest | null;
+  readonly oportunidadeId: number;
 }
 
 /** O que o modal devolve ao fechar — `undefined` quando nada foi salvo. */
 export interface CotadorModalResultado {
   readonly cotacaoId: number;
-  /** A oportunidade acabou de entrar na lista de salvas. */
-  readonly oportunidadeCriada: boolean;
 }
 
 let proximoId = 0;
@@ -77,15 +71,12 @@ function ofertaVazia(): OfertaCotador {
 }
 
 /**
- * O Cotador — a tela de formação de preço de uma oportunidade, aberta como
- * modal a partir do card da busca ("Cotar") ou da lista de salvas ("Abrir
- * cotação").
+ * O Cotador — a tela de formação de preço de uma oportunidade salva, aberta
+ * como modal a partir da lista de salvas ("Abrir cotação").
  *
  * **Nada é persistido enquanto se mexe.** Os itens vêm preenchidos do
  * edital e a cotação vive na memória desta tela; quem abre, olha e desiste
- * não deixa rastro. É o clique em "Salvar cotação" que grava — e é ele
- * também que põe a oportunidade na lista de salvas, para a equipe voltar a
- * ela depois. Por isso não há botão separado de "salvar oportunidade".
+ * não deixa rastro. É o clique em "Salvar cotação" que grava.
  *
  * **A conta roda aqui, a gravação confere lá.** `cotador.model.ts` recalcula
  * a cada tecla; o backend refaz a mesma conta ao gravar (`formulas.py`),
@@ -172,29 +163,24 @@ export class CotadorModalComponent implements OnInit {
 
   ngOnInit(): void {
     this.titulo.set(this.dados.titulo);
-    this.carregarFornecedores();
     this.carregarCotacao();
   }
 
   // ---------- carga ----------
 
   private carregarCotacao(): void {
-    if (this.dados.oportunidadeId === null) {
-      this.montarDoEdital();
-      this.carregando.set(false);
-      return;
-    }
-
     this.cotador.carregarDaOportunidade(this.dados.oportunidadeId).subscribe({
       next: (cotacao) => {
         this.aplicar(cotacao);
         this.carregando.set(false);
+        this.carregarFornecedores(true);
       },
       // 404 = oportunidade ainda não cotada. Não é erro: é o sinal de abrir
       // em branco, com os itens do snapshot do edital.
       error: () => {
         this.montarDoEdital();
         this.carregando.set(false);
+        this.carregarFornecedores(false);
       },
     });
   }
@@ -265,8 +251,8 @@ export class CotadorModalComponent implements OnInit {
   /** Numa cotação já salva o seletor precisa listar **todos** os
    * fornecedores, inclusive inativos: o que já estava escolhido nela não
    * pode sumir da lista. */
-  private carregarFornecedores(): void {
-    this.fornecedoresService.opcoes(this.dados.oportunidadeId !== null).subscribe({
+  private carregarFornecedores(todos: boolean): void {
+    this.fornecedoresService.opcoes(todos).subscribe({
       next: (opcoes) => this.fornecedores.set(opcoes),
       // Falhar aqui não pode travar a cotação: o operador ainda consegue
       // trabalhar, só não tem o cadastro à mão.
@@ -569,15 +555,8 @@ export class CotadorModalComponent implements OnInit {
       next: (cotacao) => {
         this.salvando.set(false);
         this.cotacaoId.set(cotacao.id);
-        this.toast.sucesso(
-          cotacao.oportunidade_criada
-            ? 'Cotação salva — a oportunidade também entrou em Oportunidades / Salvas.'
-            : 'Cotação salva.',
-        );
-        this.dialogRef.close({
-          cotacaoId: cotacao.id,
-          oportunidadeCriada: !!cotacao.oportunidade_criada,
-        });
+        this.toast.sucesso('Cotação salva.');
+        this.dialogRef.close({ cotacaoId: cotacao.id });
       },
       error: () => {
         this.salvando.set(false);
@@ -588,8 +567,9 @@ export class CotadorModalComponent implements OnInit {
 
   /**
    * Exportar precisa de uma cotação gravada (a planilha é montada no
-   * servidor, a partir dela). Como salvar também põe a oportunidade na
-   * lista da equipe, o modal pergunta antes em vez de fazer isso escondido.
+   * servidor, a partir dela). Salvar a primeira cotação faz a licitação
+   * andar para a etapa de cotação, então o modal pergunta antes em vez de
+   * fazer isso escondido.
    */
   protected exportar(): void {
     const id = this.cotacaoId();
@@ -602,8 +582,7 @@ export class CotadorModalComponent implements OnInit {
       .confirmar({
         titulo: 'Exportar proposta',
         mensagem:
-          'A planilha é gerada a partir da cotação salva. Salvar agora também coloca esta ' +
-          'oportunidade na lista de salvas da equipe. Deseja continuar?',
+          'A planilha é gerada a partir da cotação salva. Deseja salvar a cotação agora?',
         confirmarLabel: 'Salvar e exportar',
       })
       .subscribe((confirmou) => {
@@ -680,10 +659,7 @@ export class CotadorModalComponent implements OnInit {
       lucro_maximo: padroes.markupAlvo,
       impostos: padroes.impostos,
       itens,
-      // Um dos dois, nunca os dois — ver `CotadorModalData`.
-      ...(this.dados.oportunidadeId !== null
-        ? { oportunidade_id: this.dados.oportunidadeId }
-        : { oportunidade: this.dados.oportunidade! }),
+      oportunidade_id: this.dados.oportunidadeId,
     };
   }
 

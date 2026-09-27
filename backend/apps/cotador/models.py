@@ -1,29 +1,15 @@
 """O Cotador — a formação de preço de uma oportunidade, item a item, com
 comparação de fornecedores.
 
-**Por que um app próprio, e não um campo novo no cotador antigo.** O de
-`apps.licitacoes` (`licitacoes.Cotacao`) responde a outra pergunta: um item,
-um fornecedor implícito, cinco alíquotas soltas e um lance de disputa. Este
-responde "de quem eu compro cada item e por quanto disputo" — vários
-fornecedores por item, margem mínima e máxima, tributo próprio por item. Os
-nomes de campo colidiriam (`itens`, `parametros`, `valor_total` significam
-coisas diferentes nos dois) e a migração de um para o outro seria uma
-reescrita, não um `AlterField`. Apps separados = tabelas separadas
-(`licitacoes_cotacao` e `cotador_cotacao`), e o antigo continua de pé até
-ser extinto.
-
-**Tabelas, não JSON.** O cotador antigo guarda item e percentual em
-`JSONField` porque a lista de tributos mudava com o regime da empresa.
-Aqui a forma é estável (item -> ofertas de fornecedor -> uma escolhida) e
+**Tabelas, não JSON.** A forma é estável (item -> ofertas de fornecedor -> uma escolhida) e
 tem uma ligação real com outro registro: a oferta aponta para o
 `Fornecedor` cadastrado. Isso é relacionamento, e num JSON viraria um id
 solto que nada garante.
 
-**Salvar a cotação é o que salva a oportunidade.** Não existe rascunho
-persistido: o modal abre com os itens da oportunidade *pesquisada* e vive na
-memória do navegador. Só quando alguém salva a cotação é que a oportunidade
-entra na lista de salvas (ver `views.CotacoesView.post`) — quem abre o
-Cotador, olha e desiste não deixa rastro.
+**Só se cota oportunidade salva.** Da busca o edital sai salvo, e o Cotador
+abre de dentro dele. Não existe rascunho persistido: o modal vive na memória
+do navegador até alguém salvar a cotação — quem abre, olha e desiste não
+deixa rastro.
 
 **Os totais são materializados e recalculados no servidor.** Ficam gravados
 porque a lista de salvas mostra o valor cotado sem reprocessar item a item —
@@ -63,9 +49,7 @@ class Cotacao(models.Model):
     oportunidade = models.OneToOneField(
         "licitacoes.OportunidadeSalva",
         verbose_name="oportunidade salva",
-        # `cotacao` já é do cotador antigo (`licitacoes.Cotacao`). Os dois
-        # convivem até o antigo ser extinto — ver docstring do módulo.
-        related_name="cotacao_cotador",
+        related_name="cotacao",
         on_delete=models.CASCADE,
     )
 
@@ -78,7 +62,7 @@ class Cotacao(models.Model):
 
     # Percentuais em pontos percentuais (8 = 8%), como aparecem nos sliders
     # da tela — ver a docstring de `formulas.py` para o porquê de não serem
-    # fração aqui (o cotador antigo usa fração).
+    # fração.
     transporte = models.DecimalField(
         "transporte (% do custo)", max_digits=6, decimal_places=2, default=PADRAO_TRANSPORTE
     )

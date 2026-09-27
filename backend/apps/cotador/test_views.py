@@ -1,8 +1,9 @@
 """Testes dos endpoints do Cotador (`/api/cotador/`).
 
-O que este arquivo mais protege é a regra de produto que o Cotador
-introduz: **salvar a cotação é o que salva a oportunidade** — quem abre o
-modal a partir da busca, mexe e desiste não deixa nada na lista da equipe.
+O que este arquivo mais protege é a regra de produto: **só se cota
+oportunidade salva.** Da busca o edital sai de um jeito só, salvo; o Cotador
+abre de dentro dele e grava com `oportunidade_id`
+(docs/Tarefas/feat-remover-legado.md, tarefa 6).
 
 Precisam de banco (`manage.py test apps.cotador`). A conta em si está em
 `test_formulas.py`, que roda sem Django.
@@ -55,66 +56,23 @@ def cotacao_payload(**overrides) -> dict:
     return {**base, **overrides}
 
 
-class SalvarCotacaoDaBuscaTests(APITestCase):
-    """O caminho "Cotar" do card de oportunidade pesquisada."""
+class SoOportunidadeSalvaTests(APITestCase):
+    """Não existe mais cotar direto da busca."""
 
     def setUp(self):
         self.user = User.objects.create_user(email="operador@empresa.com", password="x")
         self.client.force_authenticate(self.user)
 
-    def test_salvar_a_cotacao_salva_a_oportunidade_junto(self):
+    def test_payload_da_busca_e_recusado_e_nada_e_salvo(self):
         resposta = self.client.post(
             "/api/cotador/cotacoes/",
             cotacao_payload(oportunidade={"itens": [item_da_busca()]}),
             format="json",
         )
 
-        self.assertEqual(resposta.status_code, 201)
-        self.assertTrue(resposta.data["oportunidade_criada"])
-        self.assertEqual(OportunidadeSalva.objects.ativas().count(), 1)
-        self.assertEqual(Cotacao.objects.count(), 1)
-
-    def test_nao_salvar_a_cotacao_nao_deixa_nada_na_lista(self):
-        """Não há rascunho persistido: sem POST, nada existe. O teste
-        documenta a regra — não há endpoint que crie a oportunidade ao
-        *abrir* o Cotador."""
-
+        self.assertEqual(resposta.status_code, 400)
         self.assertEqual(OportunidadeSalva.objects.count(), 0)
         self.assertEqual(Cotacao.objects.count(), 0)
-
-    def test_salvar_de_novo_sobrescreve_a_mesma_cotacao(self):
-        primeira = self.client.post(
-            "/api/cotador/cotacoes/",
-            cotacao_payload(oportunidade={"itens": [item_da_busca()]}),
-            format="json",
-        )
-
-        segunda = self.client.post(
-            "/api/cotador/cotacoes/",
-            cotacao_payload(
-                oportunidade={"itens": [item_da_busca()]},
-                itens=[item_cotado(descricao="Papel A4 — outra marca")],
-            ),
-            format="json",
-        )
-
-        self.assertEqual(segunda.status_code, 200)
-        self.assertEqual(segunda.data["id"], primeira.data["id"])
-        self.assertEqual(Cotacao.objects.count(), 1)
-        self.assertEqual(OportunidadeSalva.objects.ativas().count(), 1)
-        self.assertFalse(segunda.data["oportunidade_criada"])
-
-    def test_registra_a_cotacao_no_historico_da_oportunidade(self):
-        self.client.post(
-            "/api/cotador/cotacoes/",
-            cotacao_payload(oportunidade={"itens": [item_da_busca()]}),
-            format="json",
-        )
-
-        salva = OportunidadeSalva.objects.get()
-        tipos = list(salva.eventos.values_list("tipo", flat=True))
-        self.assertIn(EventoOportunidadeSalva.Tipo.SALVA, tipos)
-        self.assertIn(EventoOportunidadeSalva.Tipo.PROPOSTA_GERADA, tipos)
 
     def test_sem_oportunidade_nenhuma_e_400(self):
         resposta = self.client.post("/api/cotador/cotacoes/", cotacao_payload(), format="json")
@@ -153,8 +111,26 @@ class CotacaoDeUmaSalvaTests(APITestCase):
         resposta = self.salvar()
 
         self.assertEqual(resposta.status_code, 201)
-        self.assertFalse(resposta.data["oportunidade_criada"])
+        self.assertNotIn("oportunidade_criada", resposta.data)
         self.assertEqual(OportunidadeSalva.objects.count(), 1)
+
+    def test_salvar_de_novo_sobrescreve_a_mesma_cotacao(self):
+        primeira = self.salvar()
+        segunda = self.salvar(itens=[item_cotado(descricao="Papel A4 — outra marca")])
+
+        self.assertEqual(segunda.status_code, 200)
+        self.assertEqual(segunda.data["id"], primeira.data["id"])
+        self.assertEqual(Cotacao.objects.count(), 1)
+
+    def test_registra_a_cotacao_no_historico_da_oportunidade(self):
+        self.salvar()
+
+        tipos = list(self.salva.eventos.values_list("tipo", flat=True))
+        self.assertIn(EventoOportunidadeSalva.Tipo.PROPOSTA_GERADA, tipos)
+
+    def test_oportunidade_removida_da_lista_nao_aceita_cotacao(self):
+        self.salva.remover()
+        self.assertEqual(self.salvar().status_code, 404)
 
     def test_sem_cotacao_o_endpoint_da_oportunidade_devolve_404(self):
         """É o sinal de que o modal abre em branco, com os itens do

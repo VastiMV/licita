@@ -43,15 +43,8 @@ describe('SidebarComponent', () => {
     // vem antes de "Salvas" (a busca é a tela inicial do app).
     const items = fixture.debugElement.queryAll(By.directive(NavItemComponent));
     const labels = items.map((item) => (item.componentInstance as NavItemComponent).label());
-    expect(labels).toEqual([
-      'Pesquisar',
-      'Salvas',
-      'Empresas',
-      'Fornecedores',
-      'Alertas',
-      'Filtros',
-      'Cotador',
-    ]);
+    // Filtros, Alertas e o cotador antigo saíram (docs/Tarefas/feat-remover-legado.md).
+    expect(labels).toEqual(['Pesquisar', 'Salvas', 'Empresas', 'Fornecedores']);
   });
 
   it('Configurações só aparece para administrador', () => {

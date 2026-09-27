@@ -1,14 +1,10 @@
 """Endpoints do Cotador.
 
-Duas entradas, um só jeito de gravar:
-
-- **da busca** — o operador clica "Cotar" num card de oportunidade
-  pesquisada. O modal abre com os itens do edital já preenchidos, mas
-  **nada é persistido**: enquanto ele mexe, a cotação existe só no
-  navegador. Ao salvar, o payload traz a oportunidade inteira
-  (`oportunidade`) e ela entra na lista de salvas junto com a cotação.
-- **das salvas** — a oportunidade já está na lista; o payload traz só o id
-  (`oportunidade_id`).
+Só se cota oportunidade **salva**: da busca o edital sai de um jeito só,
+salvo, e o Cotador abre de dentro dele. O payload traz o id
+(`oportunidade_id`). O antigo caminho "Cotar" da busca, que mandava o
+payload inteiro da oportunidade e a salvava junto, saiu
+(docs/Tarefas/feat-remover-legado.md, tarefa 6).
 
 `POST` cria **ou sobrescreve** a cotação daquela oportunidade. É idempotente
 de propósito (a cotação é um-para-um com a oportunidade, ver `models.py`), o
@@ -25,7 +21,6 @@ from rest_framework.response import Response
 from rest_framework.views import APIView
 
 from apps.licitacoes.models import EventoOportunidadeSalva, OportunidadeSalva, nome_de_usuario
-from apps.licitacoes.salvas import garantir_salva
 
 from .models import Cotacao
 from .planilha import gerar_planilha, nome_do_arquivo
@@ -42,12 +37,12 @@ def _com_relacionados(queryset):
 
 
 class CotacoesView(APIView):
-    """`POST /api/cotador/cotacoes/` — salvar a cotação (e, com ela, a
-    oportunidade)."""
+    """`POST /api/cotador/cotacoes/` — salvar a cotação de uma oportunidade
+    salva."""
 
     def post(self, request: Request) -> Response:
         dados = dict(request.data)
-        oportunidade, oportunidade_criada = self._resolver_oportunidade(dados, request)
+        oportunidade = self._resolver_oportunidade(dados)
 
         existente = Cotacao.objects.filter(oportunidade=oportunidade).first()
         serializer = CotacaoSerializer(existente, data=dados)
@@ -74,31 +69,21 @@ class CotacoesView(APIView):
         )
 
         resposta = CotacaoSerializer(_com_relacionados(Cotacao.objects).get(pk=cotacao.pk)).data
-        # O frontend precisa saber se a oportunidade acabou de entrar na
-        # lista para avisar o usuário ("salva também em Oportunidades /
-        # Salvas") — a cotação sozinha não conta essa história.
-        resposta["oportunidade_criada"] = oportunidade_criada
         return Response(resposta, status=201 if not existente else 200)
 
     @staticmethod
-    def _resolver_oportunidade(dados: dict, request) -> tuple[OportunidadeSalva, bool]:
-        """`oportunidade_id` (já salva) ou `oportunidade` (o payload da
-        busca, que é salvo agora). Um dos dois é obrigatório: cotação sem
-        edital não existe."""
+    def _resolver_oportunidade(dados: dict) -> OportunidadeSalva:
+        """A oportunidade salva que se cota. Obrigatória: cotação sem edital
+        não existe, e da busca não se cota mais."""
 
         # `dados` vem do corpo da requisição e vai direto pro serializer da
-        # cotação; as duas chaves de oportunidade não são campos dele.
+        # cotação; `oportunidade_id` não é campo dele.
         oportunidade_id = dados.pop("oportunidade_id", None)
-        payload = dados.pop("oportunidade", None)
-
-        if oportunidade_id:
-            return get_object_or_404(OportunidadeSalva.objects.ativas(), pk=oportunidade_id), False
-        if payload:
-            return garantir_salva(payload, request=request)
-
-        raise drf_serializers.ValidationError(
-            {"oportunidade": "Informe `oportunidade_id` ou o payload `oportunidade` da busca."}
-        )
+        if not oportunidade_id:
+            raise drf_serializers.ValidationError(
+                {"oportunidade_id": "Informe a oportunidade salva que está sendo cotada."}
+            )
+        return get_object_or_404(OportunidadeSalva.objects.ativas(), pk=oportunidade_id)
 
 
 class CotacaoView(APIView):

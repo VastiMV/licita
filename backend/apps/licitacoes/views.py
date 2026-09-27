@@ -28,11 +28,10 @@ from apps.integracoes.clients.compras_gov import ComprasGovClientError
 from apps.integracoes.clients.pncp import PncpClient, PncpClientError
 from apps.integracoes.plataformas import identificar_plataforma, plataforma_padrao
 
-from .models import Cotacao, OportunidadeSalva, registrar_prazos_vencidos
+from .models import OportunidadeSalva, registrar_prazos_vencidos
 from .salvas import garantir_salva
 from .serializers import (
     CompraDetalheSerializer,
-    CotacaoSerializer,
     EventoOportunidadeSalvaSerializer,
     OportunidadeSalvaSerializer,
     OportunidadeSerializer,
@@ -323,40 +322,3 @@ class OportunidadeSalvaEventosView(APIView):
                 "eventos": EventoOportunidadeSalvaSerializer(eventos, many=True).data,
             }
         )
-
-
-class OportunidadeSalvaCotacaoView(APIView):
-    """A cotação de uma oportunidade salva — o Cotador gravado.
-
-    `PUT` cria ou sobrescreve (é um-para-um, ver `Cotacao`), então o
-    frontend não precisa saber se já existia: manda o estado da tela e
-    pronto. `GET` devolve 404 quando a oportunidade ainda não foi cotada —
-    é o que diz à tela para abrir com os valores padrão.
-
-    Só oportunidades **ativas** aceitam cotação: cotar algo que a equipe já
-    tirou da lista não faz sentido, e deixaria uma cotação órfã de uma
-    oportunidade que ninguém mais vê.
-    """
-
-    def get(self, request: Request, pk: int) -> Response:
-        salva = get_object_or_404(OportunidadeSalva.objects.ativas(), pk=pk)
-        cotacao = get_object_or_404(Cotacao, oportunidade=salva)
-        return Response(CotacaoSerializer(cotacao).data)
-
-    def put(self, request: Request, pk: int) -> Response:
-        salva = get_object_or_404(OportunidadeSalva.objects.ativas(), pk=pk)
-        cotacao = Cotacao.objects.filter(oportunidade=salva).first()
-
-        serializer = CotacaoSerializer(cotacao, data=request.data, partial=False)
-        serializer.is_valid(raise_exception=True)
-        serializer.save(
-            oportunidade=salva,
-            atualizada_por=request.user if request.user.is_authenticated else None,
-        )
-
-        return Response(serializer.data, status=200 if cotacao else 201)
-
-    def delete(self, request: Request, pk: int) -> Response:
-        salva = get_object_or_404(OportunidadeSalva.objects.ativas(), pk=pk)
-        Cotacao.objects.filter(oportunidade=salva).delete()
-        return Response(status=204)

@@ -78,7 +78,4 @@ const MENU: readonly NavLink[] = [
   // O par natural: com quem eu disputo, de quem eu compro.
   { path: '/empresas', label: 'Empresas', icon: 'empresas' },
   { path: '/fornecedores', label: 'Fornecedores', icon: 'fornecedores' },
-  { path: '/alertas', label: 'Alertas', icon: 'alertas' },
-  { path: '/filtros', label: 'Filtros', icon: 'filtros' },
-  { path: '/cotador', label: 'Cotador', icon: 'cotador' },
 ];

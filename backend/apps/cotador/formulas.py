@@ -28,9 +28,8 @@ que embute o imposto que ainda vai cair sobre o próprio preço.
 
 ## Percentuais são percentuais
 
-Diferente de `apps.licitacoes.cotacao` (o cotador antigo, que usava
-fração), aqui 8 significa 8% — o mesmo número que aparece no slider da
-tela. A conversão para fração acontece só dentro das fórmulas, num lugar
+Aqui 8 significa 8% — o mesmo número que aparece no slider da tela, e não
+a fração 0,08. A conversão para fração acontece só dentro das fórmulas, num lugar
 só, o que elimina a classe inteira de bug "esqueci de dividir por 100".
 
 Tudo em `Decimal`: é dinheiro, e `float` erra centavo em soma de muitos

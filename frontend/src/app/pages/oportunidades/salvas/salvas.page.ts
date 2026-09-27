@@ -151,8 +151,6 @@ export class SalvasPage implements OnInit {
       titulo: normalizarTitulo(salva.objeto),
       itens: salva.itens,
       oportunidadeId: salva.id,
-      // Já está salva: não há payload de oportunidade a mandar.
-      oportunidade: null,
     };
 
     this.modal.abrir<unknown, CotadorModalData>(CotadorModalComponent, dados).subscribe();

@@ -180,12 +180,20 @@ class OportunidadesSalvasTests(APITestCase):
         self.assertFalse(response.data["results"][0]["expirada"])
 
     def test_busca_casa_no_objeto_e_na_descricao_dos_itens_sem_acento(self):
-        self.client.post("/api/licitacoes/salvas/", payload(), format="json")
+        # Prazo relativo a hoje: com a data fixa do `item()`, o teste passava
+        # a contar as duas como expiradas assim que o calendário a alcançava.
+        prazo = str(dt.date.today() + dt.timedelta(days=5))
+        self.client.post(
+            "/api/licitacoes/salvas/",
+            payload([item(contratacao_data_encerramento_proposta=prazo)]),
+            format="json",
+        )
         self.client.post(
             "/api/licitacoes/salvas/",
             payload(
                 [
                     item(
+                        contratacao_data_encerramento_proposta=prazo,
                         contratacao_sequencial_compra="99",
                         contratacao_objeto="Contratação de serviço de limpeza",
                         descricao_resumida="Limpeza predial",
