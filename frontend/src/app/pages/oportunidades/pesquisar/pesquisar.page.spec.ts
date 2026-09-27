@@ -426,50 +426,11 @@ describe('PesquisarPage', () => {
     expect(fixture.debugElement.query(By.css('.btn-salva'))).not.toBeNull();
   });
 
-  it('"Cotar" abre o Cotador com os itens do edital, sem salvar nada antes', () => {
-    licitacoes.buscarOportunidades.mockReturnValue(
-      of([OPORTUNIDADE_ABERTA, OPORTUNIDADE_ABERTA_2]),
-    );
-    buscar();
-
-    fixture.debugElement.query(By.css('.btn-cotar')).nativeElement.click();
-    fixture.detectChanges();
-
-    expect(modal.abrir).toHaveBeenCalledWith(
-      CotadorModalComponent,
-      expect.objectContaining({
-        oportunidadeId: null,
-        itens: [OPORTUNIDADE_ABERTA, OPORTUNIDADE_ABERTA_2],
-        oportunidade: {
-          itens: [OPORTUNIDADE_ABERTA, OPORTUNIDADE_ABERTA_2],
-          capag: DETALHE.capag,
-          plataforma: DETALHE.plataforma,
-        },
-      }),
-    );
-    // Abrir o Cotador não persiste: quem salva é o botão de dentro dele.
-    expect(salvas.salvar).not.toHaveBeenCalled();
-  });
-
-  it('salvar a cotação marca o card como salvo — a oportunidade foi junto', () => {
-    licitacoes.buscarOportunidades.mockReturnValue(of([OPORTUNIDADE_ABERTA]));
-    modal.abrir.mockReturnValue(of({ cotacaoId: 1, oportunidadeCriada: true }));
-    buscar();
-
-    fixture.debugElement.query(By.css('.btn-cotar')).nativeElement.click();
-    fixture.detectChanges();
-
-    expect(fixture.debugElement.query(By.css('.btn-salvar'))).toBeNull();
-    expect(fixture.debugElement.query(By.css('.btn-salva'))).not.toBeNull();
-  });
-
-  it('fechar o Cotador sem salvar deixa o card como estava', () => {
+  it('o card da busca não tem "Cotar" — da busca o edital só sai salvo', () => {
     licitacoes.buscarOportunidades.mockReturnValue(of([OPORTUNIDADE_ABERTA]));
     buscar();
 
-    fixture.debugElement.query(By.css('.btn-cotar')).nativeElement.click();
-    fixture.detectChanges();
-
+    expect(fixture.debugElement.query(By.css('.btn-cotar'))).toBeNull();
     expect(fixture.debugElement.query(By.css('.btn-salvar'))).not.toBeNull();
   });
 

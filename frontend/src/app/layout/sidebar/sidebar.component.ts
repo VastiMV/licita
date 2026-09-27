@@ -66,19 +66,32 @@ const CONFIGURACOES: NavLink = {
 };
 
 const MENU: readonly NavLink[] = [
+  // O Ciclo de Licitação: "Visão Geral" é o quadro, e cada etapa embaixo é
+  // a lista das licitações que estão nela agora — a licitação sai de uma
+  // lista e aparece na seguinte conforme o trabalho anda.
   {
-    path: '/oportunidades',
-    label: 'Oportunidades',
-    icon: 'oportunidades',
+    path: '/ciclo',
+    label: 'Ciclo de Licitação',
+    icon: 'ciclo',
     itens: [
-      { path: '/oportunidades/pesquisar', label: 'Pesquisar', icon: 'search' },
-      { path: '/oportunidades/salvas', label: 'Salvas', icon: 'bookmark' },
+      { path: '/ciclo/visao-geral', label: 'Visão Geral', icon: 'ciclo' },
+      {
+        path: '/oportunidades',
+        label: 'Oportunidades',
+        icon: 'oportunidades',
+        itens: [
+          { path: '/oportunidades/buscar', label: 'Buscar', icon: 'search' },
+          { path: '/oportunidades/salvas', label: 'Salvas', icon: 'bookmark' },
+        ],
+      },
+      { path: '/ciclo/cotador', label: 'Cotador', icon: 'cotador' },
+      { path: '/ciclo/propostas', label: 'Propostas', icon: 'proposta' },
+      { path: '/ciclo/disputas', label: 'Disputas', icon: 'disputa' },
+      { path: '/ciclo/empenhos', label: 'Empenhos', icon: 'empenho' },
+      { path: '/ciclo/encerradas', label: 'Encerradas', icon: 'encerradas' },
     ],
   },
   // O par natural: com quem eu disputo, de quem eu compro.
   { path: '/empresas', label: 'Empresas', icon: 'empresas' },
   { path: '/fornecedores', label: 'Fornecedores', icon: 'fornecedores' },
-  { path: '/alertas', label: 'Alertas', icon: 'alertas' },
-  { path: '/filtros', label: 'Filtros', icon: 'filtros' },
-  { path: '/cotador', label: 'Cotador', icon: 'cotador' },
 ];

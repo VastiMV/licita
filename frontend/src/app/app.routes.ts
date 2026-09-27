@@ -3,6 +3,34 @@ import { Routes } from '@angular/router';
 import { authGuard } from './core/auth/auth.guard';
 import { ShellComponent } from './layout/shell/shell.component';
 
+const CICLO = [
+  {
+    path: 'cotador',
+    titulo: 'Cotador',
+    descricao: 'As licitações em cotação: salvas que já têm cotação e ainda não viraram proposta.',
+  },
+  {
+    path: 'propostas',
+    titulo: 'Propostas',
+    descricao: 'As licitações com proposta gerada, até a sessão de disputa.',
+  },
+  {
+    path: 'disputas',
+    titulo: 'Disputas',
+    descricao: 'As licitações em sessão, habilitação ou recurso, até a homologação.',
+  },
+  {
+    path: 'empenhos',
+    titulo: 'Empenhos',
+    descricao: 'As licitações ganhas: ata ou contrato, notas de empenho e pedidos ao fornecedor.',
+  },
+  {
+    path: 'encerradas',
+    titulo: 'Encerradas',
+    descricao: 'As que saíram do ciclo — descartadas, perdidas, com prazo perdido ou concluídas.',
+  },
+];
+
 export const routes: Routes = [
   // Independente de propósito — não é filha do Shell, não tem navbar/menu.
   {
@@ -18,15 +46,17 @@ export const routes: Routes = [
     canActivate: [authGuard],
     children: [
       { path: '', pathMatch: 'full', redirectTo: 'oportunidades' },
-      // "Oportunidades" é um menu de primeiro nível, não uma tela: quem abre
-      // é "Pesquisar" (a busca ao vivo, tela inicial do app) ou "Salvas" (a
-      // lista que a equipe montou a partir dela).
+      // "Oportunidades" é um grupo do Ciclo de Licitação, não uma tela: quem
+      // abre é "Buscar" (a busca ao vivo, tela inicial do app) ou "Salvas"
+      // (a lista que a equipe montou a partir dela).
       {
         path: 'oportunidades',
         children: [
-          { path: '', pathMatch: 'full', redirectTo: 'pesquisar' },
+          { path: '', pathMatch: 'full', redirectTo: 'buscar' },
+          // O endereço antigo continua valendo para quem guardou o link.
+          { path: 'pesquisar', redirectTo: 'buscar' },
           {
-            path: 'pesquisar',
+            path: 'buscar',
             loadComponent: () =>
               import('./pages/oportunidades/pesquisar/pesquisar.page').then((m) => m.PesquisarPage),
           },
@@ -35,6 +65,28 @@ export const routes: Routes = [
             loadComponent: () =>
               import('./pages/oportunidades/salvas/salvas.page').then((m) => m.SalvasPage),
           },
+        ],
+      },
+      // O Ciclo de Licitação: o quadro e uma lista por etapa. As listas ainda
+      // não existem — cada rota troca `EtapaAConstruirPage` pela dela.
+      {
+        path: 'ciclo',
+        children: [
+          { path: '', pathMatch: 'full', redirectTo: 'visao-geral' },
+          {
+            path: 'visao-geral',
+            loadComponent: () =>
+              import('./pages/ciclo/quadro/quadro.page').then((m) => m.QuadroPage),
+          },
+          ...CICLO.map(({ path, titulo, descricao }) => ({
+            path,
+            pathMatch: 'full' as const,
+            data: { titulo, descricao },
+            loadComponent: () =>
+              import('./pages/ciclo/etapa-a-construir/etapa-a-construir.page').then(
+                (m) => m.EtapaAConstruirPage,
+              ),
+          })),
         ],
       },
       {
@@ -62,19 +114,7 @@ export const routes: Routes = [
           },
         ],
       },
-      {
-        path: 'cotador',
-        loadComponent: () => import('./pages/cotador/cotador.page').then((m) => m.CotadorPage),
-      },
-      {
-        path: 'filtros',
-        loadComponent: () => import('./pages/filtros/filtros.page').then((m) => m.FiltrosPage),
-      },
-      {
-        path: 'alertas',
-        loadComponent: () => import('./pages/alertas/alertas.page').then((m) => m.AlertasPage),
-      },
     ],
   },
-  { path: '**', redirectTo: 'oportunidades/pesquisar' },
+  { path: '**', redirectTo: 'oportunidades/buscar' },
 ];

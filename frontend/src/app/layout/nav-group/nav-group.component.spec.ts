@@ -6,7 +6,7 @@ import { NavItemComponent } from '../nav-item/nav-item.component';
 import { NavGroupComponent } from './nav-group.component';
 
 const ITENS = [
-  { path: '/oportunidades/pesquisar', label: 'Pesquisar', icon: 'search' as const },
+  { path: '/oportunidades/buscar', label: 'Buscar', icon: 'search' as const },
   { path: '/oportunidades/salvas', label: 'Salvas', icon: 'bookmark' as const },
 ];
 
@@ -35,7 +35,7 @@ describe('NavGroupComponent', () => {
     expect(
       fixture.debugElement.query(By.css('.grupo-cabecalho')).nativeElement.textContent,
     ).toContain('Oportunidades');
-    expect(labels()).toEqual(['Pesquisar', 'Salvas']);
+    expect(labels()).toEqual(['Buscar', 'Salvas']);
   });
 
   it('o cabeçalho abre e fecha o grupo (e anuncia o estado)', () => {
@@ -51,7 +51,7 @@ describe('NavGroupComponent', () => {
     fixture.detectChanges();
 
     expect(cabecalho.nativeElement.getAttribute('aria-expanded')).toBe('true');
-    expect(labels()).toEqual(['Pesquisar', 'Salvas']);
+    expect(labels()).toEqual(['Buscar', 'Salvas']);
   });
 
   it('recolhida (trilho de ícones), os filhos viram itens soltos — nenhum módulo some', () => {
@@ -59,10 +59,38 @@ describe('NavGroupComponent', () => {
     fixture.detectChanges();
 
     expect(fixture.debugElement.query(By.css('.grupo-cabecalho'))).toBeNull();
-    expect(labels()).toEqual(['Pesquisar', 'Salvas']);
+    expect(labels()).toEqual(['Buscar', 'Salvas']);
     const itens = fixture.debugElement.queryAll(By.directive(NavItemComponent));
     expect(itens.every((item) => (item.componentInstance as NavItemComponent).compact())).toBe(
       true,
     );
+  });
+
+  describe('com subgrupo (o Ciclo de Licitação)', () => {
+    beforeEach(() => {
+      fixture.componentRef.setInput('label', 'Ciclo de Licitação');
+      fixture.componentRef.setInput('icon', 'ciclo');
+      fixture.componentRef.setInput('itens', [
+        { path: '/ciclo/visao-geral', label: 'Visão Geral', icon: 'ciclo' },
+        { path: '/oportunidades', label: 'Oportunidades', icon: 'oportunidades', itens: ITENS },
+        { path: '/ciclo/cotador', label: 'Cotador', icon: 'cotador' },
+      ]);
+      fixture.detectChanges();
+    });
+
+    it('o pai não é link — só abre e fecha', () => {
+      expect(fixture.debugElement.query(By.css('.grupo-cabecalho')).name).toBe('button');
+    });
+
+    it('o filho com itens vira subgrupo, com os netos dentro', () => {
+      expect(labels()).toEqual(['Visão Geral', 'Buscar', 'Salvas', 'Cotador']);
+    });
+
+    it('recolhida, o subgrupo se achata e só ficam os itens que navegam', () => {
+      fixture.componentRef.setInput('compact', true);
+      fixture.detectChanges();
+
+      expect(labels()).toEqual(['Visão Geral', 'Buscar', 'Salvas', 'Cotador']);
+    });
   });
 });

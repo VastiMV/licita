@@ -34,7 +34,12 @@ export type IconName =
   | 'plus'
   | 'calculadora'
   | 'copiar'
-  | 'spreadsheet';
+  | 'spreadsheet'
+  | 'ciclo'
+  | 'proposta'
+  | 'disputa'
+  | 'empenho'
+  | 'encerradas';
 
 /**
  * Catálogo de ícones inline (SVG) do projeto — único lugar que sabe

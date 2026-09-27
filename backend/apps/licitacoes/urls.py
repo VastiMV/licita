@@ -1,8 +1,8 @@
 from django.urls import path
 
 from .views import (
+    CicloView,
     CompraDetalheView,
-    OportunidadeSalvaCotacaoView,
     OportunidadeSalvaEventosView,
     OportunidadeSalvaView,
     OportunidadesSalvasChavesView,
@@ -13,6 +13,7 @@ from .views import (
 
 urlpatterns = [
     path("oportunidades/", OportunidadesView.as_view(), name="licitacoes-oportunidades"),
+    path("ciclo/", CicloView.as_view(), name="licitacoes-ciclo"),
     path(
         "compras/<str:cnpj>/<int:ano>/<int:sequencial>/detalhe/",
         CompraDetalheView.as_view(),
@@ -28,11 +29,6 @@ urlpatterns = [
         name="licitacoes-salvas-expiradas",
     ),
     path("salvas/<int:pk>/", OportunidadeSalvaView.as_view(), name="licitacoes-salva"),
-    path(
-        "salvas/<int:pk>/cotacao/",
-        OportunidadeSalvaCotacaoView.as_view(),
-        name="licitacoes-salva-cotacao",
-    ),
     path(
         "salvas/<int:pk>/eventos/",
         OportunidadeSalvaEventosView.as_view(),

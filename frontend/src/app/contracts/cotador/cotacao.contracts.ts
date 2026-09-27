@@ -2,11 +2,6 @@
  * Contratos do Cotador — a formação de preço de uma oportunidade, item a
  * item, com comparação de fornecedores. Ver `apps/cotador/` no backend.
  *
- * Não confundir com `contracts/licitacoes/cotacao.contracts.ts`: aquele é o
- * cotador antigo (um fornecedor implícito, cinco alíquotas, lance de
- * disputa), que continua no menu até ser extinto. Os dois convivem em
- * tabelas separadas.
- *
  * Quatro coisas do domínio aparecem no formato:
  *
  * - **Percentual é percentual** (45 = 45%), não fração — é o número do
@@ -22,8 +17,6 @@
  *   para não perder centavo no `double` do JSON; a tela converte na borda
  *   (ver `numero()` em `cotador.model.ts`).
  */
-
-import type { OportunidadeSalvaRequest } from '../licitacoes/oportunidade-salva.contracts';
 
 export interface OfertaRequest {
   /** Id do fornecedor cadastrado. Nulo = digitado à mão nesta cotação. */
@@ -61,11 +54,8 @@ export interface PadroesCotacao {
 export interface CotacaoRequest extends PadroesCotacao {
   readonly titulo: string;
   readonly itens: readonly ItemCotacaoRequest[];
-  /** Quando a cotação nasce de uma oportunidade **pesquisada**: o payload
-   * dela vai junto e ela entra na lista de salvas ao salvar a cotação. */
-  readonly oportunidade?: OportunidadeSalvaRequest;
-  /** Quando a oportunidade já está salva (o caminho "Abrir cotação"). */
-  readonly oportunidade_id?: number;
+  /** A oportunidade salva que se cota — da busca o edital só sai salvo. */
+  readonly oportunidade_id: number;
 }
 
 export interface OfertaResponse extends Omit<OfertaRequest, 'custo_produto' | 'frete' | 'outros'> {
@@ -147,7 +137,4 @@ export interface CotacaoResponse {
   readonly atualizada_por_nome: string | null;
   readonly criada_em: string;
   readonly atualizada_em: string;
-  /** Só no POST: a oportunidade acabou de entrar na lista de salvas. É o
-   * que o aviso ao usuário precisa saber. */
-  readonly oportunidade_criada?: boolean;
 }

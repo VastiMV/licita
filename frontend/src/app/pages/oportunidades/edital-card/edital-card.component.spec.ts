@@ -67,9 +67,7 @@ const DETALHE_CARREGADO: DetalheEstado = {
     [salva]="salva()"
     [salvando]="salvando()"
     [podeSalvar]="podeSalvar()"
-    [podeCotar]="podeCotar()"
     (salvar)="salvarPedido.set(true)"
-    (cotar)="cotarPedido.set(true)"
     (baixarEdital)="baixarEdital.set(true)"
   />`,
 })
@@ -79,9 +77,7 @@ class HostComponent {
   readonly salva = signal(false);
   readonly salvando = signal(false);
   readonly podeSalvar = signal(true);
-  readonly podeCotar = signal(true);
   readonly salvarPedido = signal(false);
-  readonly cotarPedido = signal(false);
   readonly baixarEdital = signal(false);
 }
 
@@ -241,16 +237,7 @@ describe('EditalCardComponent', () => {
     expect(botao.nativeElement.textContent).toContain('Salvando');
   });
 
-  it('"Cotar" só avisa o pai — quem abre o Cotador é a página', () => {
-    clicarBotao('.btn-cotar');
-
-    expect(host.cotarPedido()).toBe(true);
-  });
-
-  it('`podeCotar` desligado tira o botão (modal de visualização de uma salva)', () => {
-    host.podeCotar.set(false);
-    fixture.detectChanges();
-
+  it('não tem "Cotar" — cotar é de dentro da oportunidade salva', () => {
     expect(fixture.debugElement.query(By.css('.btn-cotar'))).toBeNull();
   });
 
@@ -307,8 +294,6 @@ describe('EditalCardComponent', () => {
     fixture.detectChanges();
 
     expect(fixture.debugElement.query(By.css('.btn-salvar'))).toBeNull();
-    // Cotar também sai: não há mais proposta a formar para este edital.
-    expect(fixture.debugElement.query(By.css('.btn-cotar'))).toBeNull();
     expect(texto()).toContain('Encerrada');
   });
 

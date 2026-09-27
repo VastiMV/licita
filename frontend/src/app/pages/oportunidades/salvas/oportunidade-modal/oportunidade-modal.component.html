@@ -13,9 +13,9 @@
     [detalhe]="detalhe()"
     [salva]="true"
     [podeSalvar]="false"
-    [podeCotar]="false"
     (baixarEdital)="baixarEdital()"
   />
 
   <app-button modalFooter variant="ghost" (click)="fechar()">Fechar</app-button>
+  <app-button modalFooter (click)="iniciarCotacao()">Iniciar cotação</app-button>
 </app-modal-shell>

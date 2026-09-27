@@ -172,7 +172,7 @@ describe('SalvasPage', () => {
 
     expect(modal.abrir).toHaveBeenCalledWith(
       CotadorModalComponent,
-      expect.objectContaining({ oportunidadeId: SALVA.id, oportunidade: null }),
+      expect.objectContaining({ oportunidadeId: SALVA.id }),
     );
   });
 

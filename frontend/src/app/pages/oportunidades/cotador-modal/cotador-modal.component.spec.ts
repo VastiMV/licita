@@ -57,18 +57,12 @@ const FORNECEDOR: FornecedorOpcao = {
   prazo_entrega_dias: 10,
 };
 
-const DA_BUSCA: CotadorModalData = {
-  titulo: 'Aquisição de papel',
-  itens: [ITEM_DO_EDITAL],
-  oportunidadeId: null,
-  oportunidade: { itens: [ITEM_DO_EDITAL], capag: null, plataforma: null },
-};
-
-const DA_SALVA: CotadorModalData = {
+/** A oportunidade salva que se cota — o modal só abre a partir dela. Se
+ * já tem cotação ou não, quem diz é o `carregar` passado a `montar`. */
+const DADOS: CotadorModalData = {
   titulo: 'Aquisição de papel',
   itens: [ITEM_DO_EDITAL],
   oportunidadeId: 7,
-  oportunidade: null,
 };
 
 /** A resposta de uma cotação já gravada — o caminho "Abrir cotação". */
@@ -130,9 +124,7 @@ function montar(
   // tipado — sem eles o TS trata cada chamada como tupla vazia.
   const cotador = {
     carregarDaOportunidade: vi.fn((_id: number) => carregar),
-    salvar: vi.fn((_payload: CotacaoRequest) =>
-      of({ ...COTACAO_SALVA, oportunidade_criada: true }),
-    ),
+    salvar: vi.fn((_payload: CotacaoRequest) => of(COTACAO_SALVA)),
     exportar: vi.fn((_id: number) => of({ conteudo: new Blob(['x']), nome: 'proposta.xlsx' })),
   };
   const fornecedores = { opcoes: vi.fn((_todos?: boolean) => of([FORNECEDOR])) };
@@ -190,11 +182,11 @@ function precificar(fixture: ComponentFixture<CotadorModalComponent>, custo = '2
 describe('CotadorModalComponent', () => {
   afterEach(() => TestBed.resetTestingModule());
 
-  describe('abertura pela busca', () => {
+  describe('abertura de uma salva ainda não cotada', () => {
     it('nasce com os itens do edital preenchidos — o operador só amarra o fornecedor', () => {
-      const { fixture, cotador } = montar(DA_BUSCA);
+      const { fixture, cotador } = montar(DADOS);
 
-      expect(cotador.carregarDaOportunidade).not.toHaveBeenCalled();
+      expect(cotador.carregarDaOportunidade).toHaveBeenCalledWith(7);
       expect(interno(fixture).itens()).toHaveLength(1);
       // A descrição é campo editável, então está no `value` — não no texto.
       const descricao = fixture.debugElement.query(By.css('.item-descricao input'));
@@ -202,46 +194,46 @@ describe('CotadorModalComponent', () => {
     });
 
     it('não persiste nada só por abrir', () => {
-      const { cotador } = montar(DA_BUSCA);
+      const { cotador } = montar(DADOS);
 
       expect(cotador.salvar).not.toHaveBeenCalled();
     });
 
     it('avisa que ainda não está salva', () => {
-      const { fixture } = montar(DA_BUSCA);
+      const { fixture } = montar(DADOS);
 
       expect(fixture.nativeElement.textContent).toContain('Ainda não salva');
     });
 
     it('o seletor de fornecedor traz só os disponíveis numa cotação nova', () => {
-      const { fornecedores } = montar(DA_BUSCA);
+      const { fornecedores } = montar(DADOS);
 
       expect(fornecedores.opcoes).toHaveBeenCalledWith(false);
     });
 
-    it('salvar manda o payload da oportunidade junto — é o que a põe na lista', () => {
-      const { fixture, cotador } = montar(DA_BUSCA);
+    it('salvar manda só o id da oportunidade — não há mais payload da busca', () => {
+      const { fixture, cotador } = montar(DADOS);
       precificar(fixture);
 
       interno(fixture).salvar();
 
-      expect(cotador.salvar).toHaveBeenCalledWith(
-        expect.objectContaining({ oportunidade: DA_BUSCA.oportunidade }),
-      );
+      const payload = cotador.salvar.mock.calls[0][0] as unknown as Record<string, unknown>;
+      expect(payload['oportunidade_id']).toBe(7);
+      expect(payload['oportunidade']).toBeUndefined();
     });
 
-    it('depois de salvar, avisa que a oportunidade também entrou nas salvas', () => {
-      const { fixture, toast, dialogRef } = montar(DA_BUSCA);
+    it('depois de salvar, avisa e fecha devolvendo a cotação', () => {
+      const { fixture, toast, dialogRef } = montar(DADOS);
       precificar(fixture);
 
       interno(fixture).salvar();
 
-      expect(toast.sucesso).toHaveBeenCalledWith(expect.stringContaining('Oportunidades / Salvas'));
-      expect(dialogRef.close).toHaveBeenCalledWith({ cotacaoId: 15, oportunidadeCriada: true });
+      expect(toast.sucesso).toHaveBeenCalledWith('Cotação salva.');
+      expect(dialogRef.close).toHaveBeenCalledWith({ cotacaoId: 15 });
     });
 
     it('falha ao salvar não fecha o modal — o trabalho não pode sumir', () => {
-      const { fixture, cotador, toast, dialogRef } = montar(DA_BUSCA);
+      const { fixture, cotador, toast, dialogRef } = montar(DADOS);
       cotador.salvar.mockReturnValue(throwError(() => new Error('500')));
       precificar(fixture);
 
@@ -254,19 +246,19 @@ describe('CotadorModalComponent', () => {
 
   describe('o estimado do edital na linha do item', () => {
     it('mostra o unitário estimado junto da descrição', () => {
-      const { fixture } = montar(DA_BUSCA);
+      const { fixture } = montar(DADOS);
 
       expect(fixture.nativeElement.textContent).toContain('Estimado R$ 30,00/un');
     });
 
     it('item ainda sem preço não é comparado com o estimado', () => {
-      const { fixture } = montar(DA_BUSCA);
+      const { fixture } = montar(DADOS);
 
       expect(fixture.nativeElement.textContent).not.toContain('do estimado');
     });
 
     it('proposta abaixo do estimado aparece como folga', () => {
-      const { fixture } = montar(DA_BUSCA);
+      const { fixture } = montar(DADOS);
       precificar(fixture, '15,00');
 
       const chip = fixture.debugElement.query(By.css('.chip-abaixo'));
@@ -276,7 +268,7 @@ describe('CotadorModalComponent', () => {
     });
 
     it('proposta acima do estimado aparece como alerta', () => {
-      const { fixture } = montar(DA_BUSCA);
+      const { fixture } = montar(DADOS);
       precificar(fixture);
 
       const chip = fixture.debugElement.query(By.css('.chip-acima'));
@@ -285,7 +277,7 @@ describe('CotadorModalComponent', () => {
     });
 
     it('item criado à mão não inventa estimado', () => {
-      const { fixture } = montar(DA_BUSCA);
+      const { fixture } = montar(DADOS);
 
       interno(fixture).adicionarItem();
       fixture.detectChanges();
@@ -296,7 +288,7 @@ describe('CotadorModalComponent', () => {
     });
 
     it('a cotação gravada também mostra o estimado que veio do edital', () => {
-      const { fixture } = montar(DA_SALVA, of(COTACAO_SALVA));
+      const { fixture } = montar(DADOS, of(COTACAO_SALVA));
 
       expect(fixture.nativeElement.textContent).toContain('Estimado R$ 30,00/un');
     });
@@ -312,13 +304,13 @@ describe('CotadorModalComponent', () => {
     }
 
     it('o item abre com o markup padrão da cotação', () => {
-      const { fixture } = montar(DA_BUSCA);
+      const { fixture } = montar(DADOS);
 
       expect(campos(fixture).map((campo) => campo.value)).toEqual(['12', '45']);
     });
 
     it('markup acima de 100% é aceito — o campo não tem teto', () => {
-      const { fixture } = montar(DA_BUSCA);
+      const { fixture } = montar(DADOS);
       precificar(fixture);
 
       interno(fixture).alterarMarkupAlvo(interno(fixture).itens()[0], '250');
@@ -329,7 +321,7 @@ describe('CotadorModalComponent', () => {
     });
 
     it('a régua do slider cresce junto, em vez de travar o valor', () => {
-      const { fixture } = montar(DA_BUSCA);
+      const { fixture } = montar(DADOS);
       const regua = () =>
         fixture.debugElement.queryAll(By.css('.item-detalhe .markup input[type=range]'))[1]
           .nativeElement as HTMLInputElement;
@@ -343,7 +335,7 @@ describe('CotadorModalComponent', () => {
     });
 
     it('baixar o alvo abaixo do mínimo arrasta o mínimo junto', () => {
-      const { fixture } = montar(DA_BUSCA);
+      const { fixture } = montar(DADOS);
 
       interno(fixture).alterarMarkupAlvo(interno(fixture).itens()[0], '5');
       fixture.detectChanges();
@@ -352,7 +344,7 @@ describe('CotadorModalComponent', () => {
     });
 
     it('subir o mínimo acima do alvo empurra o alvo', () => {
-      const { fixture } = montar(DA_BUSCA);
+      const { fixture } = montar(DADOS);
 
       interno(fixture).alterarMarkupMinimo(interno(fixture).itens()[0], '80');
       fixture.detectChanges();
@@ -361,7 +353,7 @@ describe('CotadorModalComponent', () => {
     });
 
     it('markup negativo é zerado', () => {
-      const { fixture } = montar(DA_BUSCA);
+      const { fixture } = montar(DADOS);
 
       interno(fixture).alterarMarkupMinimo(interno(fixture).itens()[0], '-40');
       fixture.detectChanges();
@@ -370,7 +362,7 @@ describe('CotadorModalComponent', () => {
     });
 
     it('o chip de alvo rápido aplica o markup e fica marcado', () => {
-      const { fixture } = montar(DA_BUSCA);
+      const { fixture } = montar(DADOS);
       const chips = () => fixture.debugElement.queryAll(By.css('.alvo'));
 
       expect(chips()).toHaveLength(6);
@@ -384,7 +376,7 @@ describe('CotadorModalComponent', () => {
     });
 
     it('a linha do item mostra margem (da venda) ao lado do lucro e markup ao lado do total', () => {
-      const { fixture } = montar(DA_BUSCA);
+      const { fixture } = montar(DADOS);
       precificar(fixture);
 
       const notas = fixture.debugElement
@@ -397,7 +389,7 @@ describe('CotadorModalComponent', () => {
     });
 
     it('o resumo dos padrões fala em markup, não em lucro', () => {
-      const { fixture } = montar(DA_BUSCA);
+      const { fixture } = montar(DADOS);
 
       const resumo = fixture.debugElement.query(By.css('.padroes-resumo'));
       expect(resumo.nativeElement.textContent).toContain('Markup 12%–45%');
@@ -406,7 +398,7 @@ describe('CotadorModalComponent', () => {
 
   describe('abertura por uma oportunidade salva', () => {
     it('carrega a cotação gravada e aplica os padrões e itens dela', () => {
-      const { fixture, cotador } = montar(DA_SALVA, of(COTACAO_SALVA));
+      const { fixture, cotador } = montar(DADOS, of(COTACAO_SALVA));
 
       expect(cotador.carregarDaOportunidade).toHaveBeenCalledWith(7);
       expect(fixture.nativeElement.textContent).toContain('Cotação salva');
@@ -414,32 +406,23 @@ describe('CotadorModalComponent', () => {
     });
 
     it('404 abre em branco com os itens do snapshot — não é erro para o usuário', () => {
-      const { fixture, toast } = montar(DA_SALVA);
+      const { fixture, toast } = montar(DADOS);
 
       expect(interno(fixture).itens()).toHaveLength(1);
       expect(toast.erro).not.toHaveBeenCalled();
     });
 
     it('numa cotação salva o seletor lista todos, para não sumir o já escolhido', () => {
-      const { fornecedores } = montar(DA_SALVA, of(COTACAO_SALVA));
+      const { fornecedores } = montar(DADOS, of(COTACAO_SALVA));
 
       expect(fornecedores.opcoes).toHaveBeenCalledWith(true);
     });
 
-    it('salvar manda o id da oportunidade, sem repetir o payload dela', () => {
-      const { fixture, cotador } = montar(DA_SALVA, of(COTACAO_SALVA));
-
-      interno(fixture).salvar();
-
-      const payload = cotador.salvar.mock.calls[0][0] as unknown as Record<string, unknown>;
-      expect(payload['oportunidade_id']).toBe(7);
-      expect(payload['oportunidade']).toBeUndefined();
-    });
   });
 
   describe('conta e comparação', () => {
     it('o total responde à digitação do custo, sem ir ao servidor', () => {
-      const { fixture, cotador } = montar(DA_BUSCA);
+      const { fixture, cotador } = montar(DADOS);
 
       precificar(fixture);
 
@@ -449,13 +432,13 @@ describe('CotadorModalComponent', () => {
     });
 
     it('item sem preço conta como pendência', () => {
-      const { fixture } = montar(DA_BUSCA);
+      const { fixture } = montar(DADOS);
 
       expect(interno(fixture).totais().pendencias).toBe(1);
     });
 
     it('"usar o mais barato em tudo" troca o fornecedor escolhido de todos os itens', () => {
-      const { fixture } = montar(DA_BUSCA);
+      const { fixture } = montar(DADOS);
       const api = interno(fixture);
       precificar(fixture, '30,00');
 
@@ -472,7 +455,7 @@ describe('CotadorModalComponent', () => {
     });
 
     it('vincular um fornecedor do cadastro copia o nome dele para a oferta', () => {
-      const { fixture, cotador } = montar(DA_BUSCA);
+      const { fixture, cotador } = montar(DADOS);
       const api = interno(fixture);
       precificar(fixture);
       const item = api.itens()[0];
@@ -491,7 +474,7 @@ describe('CotadorModalComponent', () => {
     });
 
     it('adicionar, duplicar e remover item mexem só na lista local', () => {
-      const { fixture, cotador } = montar(DA_BUSCA);
+      const { fixture, cotador } = montar(DADOS);
       const api = interno(fixture);
 
       api.adicionarItem();
@@ -509,7 +492,7 @@ describe('CotadorModalComponent', () => {
     });
 
     it('imposto próprio do item vai como número; sem ele, vai nulo (usa o padrão)', () => {
-      const { fixture, cotador } = montar(DA_BUSCA);
+      const { fixture, cotador } = montar(DADOS);
       const api = interno(fixture);
       precificar(fixture);
 
@@ -532,7 +515,7 @@ describe('CotadorModalComponent', () => {
 
   describe('exportar', () => {
     it('cotação já salva exporta direto', () => {
-      const { fixture, cotador, modal } = montar(DA_SALVA, of(COTACAO_SALVA));
+      const { fixture, cotador, modal } = montar(DADOS, of(COTACAO_SALVA));
 
       interno(fixture).exportar();
 
@@ -540,8 +523,8 @@ describe('CotadorModalComponent', () => {
       expect(cotador.exportar).toHaveBeenCalledWith(15);
     });
 
-    it('cotação não salva pergunta antes — exportar implicaria salvar a oportunidade', () => {
-      const { fixture, cotador, modal } = montar(DA_BUSCA);
+    it('cotação não salva pergunta antes — exportar implica salvar a cotação', () => {
+      const { fixture, cotador, modal } = montar(DADOS);
       precificar(fixture);
 
       interno(fixture).exportar();
@@ -552,7 +535,7 @@ describe('CotadorModalComponent', () => {
     });
 
     it('recusar a confirmação não salva nem exporta', () => {
-      const { fixture, cotador, modal } = montar(DA_BUSCA);
+      const { fixture, cotador, modal } = montar(DADOS);
       modal.confirmar.mockReturnValue(of(false));
       precificar(fixture);
 
