@@ -133,6 +133,12 @@ class Empresa(models.Model):
         blank=True,
         on_delete=models.SET_NULL,
     )
+    criado_por_nome = models.CharField(
+        "cadastrada por (nome)",
+        max_length=150,
+        blank=True,
+        help_text="Gravado junto com o autor: o nome continua aqui se o usuário for excluído.",
+    )
     criado_em = models.DateTimeField("cadastrada em", auto_now_add=True)
     atualizado_em = models.DateTimeField("atualizada em", auto_now=True)
 

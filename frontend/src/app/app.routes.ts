@@ -99,7 +99,7 @@ export const routes: Routes = [
           import('./pages/fornecedores/fornecedores.page').then((m) => m.FornecedoresPage),
       },
       // Configurações é menu de primeiro nível com filhos, como
-      // Oportunidades — hoje só "Armazenamento", e só para administrador
+      // Oportunidades — "Armazenamento" e "Usuários", só para o super usuário
       // (quem barra de verdade é o backend, com 403).
       {
         path: 'configuracoes',
@@ -111,6 +111,11 @@ export const routes: Routes = [
               import('./pages/configuracoes/armazenamento/armazenamento.page').then(
                 (m) => m.ArmazenamentoPage,
               ),
+          },
+          {
+            path: 'usuarios',
+            loadComponent: () =>
+              import('./pages/configuracoes/usuarios/usuarios.page').then((m) => m.UsuariosPage),
           },
         ],
       },

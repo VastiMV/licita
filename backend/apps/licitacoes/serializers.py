@@ -162,9 +162,7 @@ class OportunidadeSalvaSerializer(serializers.ModelSerializer):
         return obj.expirada()
 
     def get_salva_por(self, obj: OportunidadeSalva) -> str | None:
-        if not obj.salva_por:
-            return None
-        return obj.salva_por.nome or obj.salva_por.email
+        return obj.salva_por_nome or None
 
 
 class OportunidadeSalvaCriacaoSerializer(serializers.Serializer):
@@ -272,6 +270,4 @@ class EventoOportunidadeSalvaSerializer(serializers.ModelSerializer):
         fields = ["id", "tipo", "tipo_label", "descricao", "autor", "dados", "ocorrido_em"]
 
     def get_autor(self, obj: EventoOportunidadeSalva) -> str | None:
-        if not obj.autor:
-            return None
-        return obj.autor.nome or obj.autor.email
+        return obj.autor_nome or None

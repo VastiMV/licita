@@ -6,3 +6,8 @@ class AccountsConfig(AppConfig):
     name = "apps.accounts"
     label = "accounts"
     verbose_name = "Contas"
+
+    def ready(self) -> None:
+        from .autoria import conectar
+
+        conectar()

@@ -1,0 +1,54 @@
+<app-modal-shell
+  [titulo]="editando ? usuario!.nome || usuario!.email : 'Cadastrar usuário'"
+  (fechar)="fechar()"
+>
+  <p class="kicker">{{ editando ? 'Editar usuário' : 'Novo usuário' }}</p>
+
+  <form [formGroup]="form" (ngSubmit)="salvar()" novalidate>
+    <app-input-text
+      label="Nome *"
+      formControlName="nome"
+      placeholder="Como aparece no histórico"
+      [error]="erroDe('nome')"
+    />
+    <app-input-text
+      label="E-mail *"
+      type="email"
+      formControlName="email"
+      placeholder="nome@empresa.com.br"
+      [error]="erroDe('email')"
+    />
+    <app-input-text
+      [label]="editando ? 'Nova senha' : 'Senha *'"
+      type="password"
+      formControlName="senha"
+      [placeholder]="editando ? 'Em branco mantém a atual' : ''"
+      [error]="erroDe('senha')"
+    />
+
+    <div class="superusuario">
+      <app-checkbox label="Super usuário" formControlName="is_superuser" />
+      <p class="ajuda">
+        @if (ehEu) {
+          Você não pode tirar de si mesmo o super usuário — outro super usuário é quem faz.
+        } @else {
+          Acessa Configurações: o armazenamento e esta tela de usuários.
+        }
+      </p>
+      @if (erroDe('is_superuser'); as mensagem) {
+        <p class="erro">{{ mensagem }}</p>
+      }
+    </div>
+
+    @if (erroGeral(); as mensagem) {
+      <p class="erro">{{ mensagem }}</p>
+    }
+  </form>
+
+  <app-button modalFooter variant="ghost" [disabled]="salvando()" (click)="fechar()">
+    Cancelar
+  </app-button>
+  <app-button modalFooter [disabled]="salvando()" (click)="salvar()">
+    {{ salvando() ? 'Salvando…' : editando ? 'Salvar alterações' : 'Cadastrar usuário' }}
+  </app-button>
+</app-modal-shell>

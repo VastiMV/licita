@@ -32,7 +32,7 @@ class PermissaoTests(APITestCase):
 
 class ConfiguracaoTests(APITestCase):
     def setUp(self):
-        self.admin = User.objects.create_user(email="admin@x.com", password="x", is_staff=True)
+        self.admin = User.objects.create_user(email="admin@x.com", password="x", is_superuser=True)
         self.client.force_authenticate(self.admin)
         self.raiz = tempfile.mkdtemp()
 
@@ -122,7 +122,7 @@ class ConfiguracaoTests(APITestCase):
 class TesteDeConexaoTests(APITestCase):
     def setUp(self):
         self.client.force_authenticate(
-            User.objects.create_user(email="admin@x.com", password="x", is_staff=True)
+            User.objects.create_user(email="admin@x.com", password="x", is_superuser=True)
         )
         self.raiz = tempfile.mkdtemp()
 

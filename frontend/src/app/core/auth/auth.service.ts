@@ -20,10 +20,13 @@ import { decodeJwtPayload } from './jwt';
 export interface UsuarioClaims {
   readonly email?: string;
   readonly nome?: string;
-  /** Administrador (`is_staff` no backend). Hoje só decide se a tela de
-   * armazenamento aparece no menu — quem realmente barra é o backend, que
-   * responde 403 de qualquer jeito. */
-  readonly is_staff?: boolean;
+  /** Id do usuário (claim padrão do simplejwt) — a tela de Usuários o usa
+   * para não oferecer "Excluir" na própria linha. */
+  readonly user_id?: number;
+  /** Super usuário. Decide se Configurações (armazenamento e usuários)
+   * aparece no menu — quem realmente barra é o backend, que responde 403 de
+   * qualquer jeito. */
+  readonly is_superuser?: boolean;
 }
 
 /**
@@ -49,8 +52,8 @@ export class AuthService {
   });
 
   /** Não oferecer no menu o que o backend vai recusar. Nunca é isto que
-   * protege a rota — ver `apps/armazenamento/views.py`. */
-  readonly ehAdmin = computed(() => this.usuario()?.is_staff === true);
+   * protege a rota — ver `apps/accounts/permissions.py`. */
+  readonly ehSuperusuario = computed(() => this.usuario()?.is_superuser === true);
 
   getAccessToken(): string | null {
     return this.accessToken();

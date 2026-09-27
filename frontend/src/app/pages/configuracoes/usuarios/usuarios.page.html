@@ -1,0 +1,34 @@
+<div class="pagina-topo">
+  <div>
+    <h1>Usuários</h1>
+    <p class="muted">
+      Quem acessa o produto. O super usuário é o único que vê Configurações: o armazenamento e esta
+      tela. Excluir um usuário não apaga o que ele fez — o nome dele continua no histórico.
+    </p>
+  </div>
+  <app-button (click)="adicionar()">
+    <app-icon name="plus" />
+    Adicionar usuário
+  </app-button>
+</div>
+
+@if (erro()) {
+  <p class="erro">Não foi possível carregar os usuários agora.</p>
+}
+
+<app-data-table
+  [colunas]="colunas"
+  [linhas]="linhas()"
+  [total]="total()"
+  [estado]="estado()"
+  [carregando]="carregando()"
+  [chaveDe]="chaveDe"
+  rotuloBusca="Buscar"
+  placeholderBusca="Busca por nome ou e-mail…"
+  mensagemVazia="Nenhum usuário encontrado."
+  (estadoMudou)="aoMudarEstado($event)"
+>
+  <ng-template appTabelaAcoes let-usuario>
+    <app-menu [itens]="acoesDe(usuario)" [descricao]="'Ações de ' + usuario.nome" />
+  </ng-template>
+</app-data-table>
