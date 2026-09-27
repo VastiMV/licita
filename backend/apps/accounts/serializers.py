@@ -94,3 +94,11 @@ class UsuarioSerializer(serializers.ModelSerializer):
             usuario.set_password(senha)
             usuario.save(update_fields=["password"])
         return usuario
+
+
+class PerfilSerializer(UsuarioSerializer):
+    """O próprio usuário editando o perfil: o mesmo cadastro, mas o super
+    usuário não é dele para mudar — só aparece."""
+
+    class Meta(UsuarioSerializer.Meta):
+        read_only_fields = ["id", "criado_em", "is_superuser"]

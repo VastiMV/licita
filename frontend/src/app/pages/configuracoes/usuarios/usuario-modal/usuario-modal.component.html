@@ -1,8 +1,12 @@
 <app-modal-shell
-  [titulo]="editando ? usuario!.nome || usuario!.email : 'Cadastrar usuário'"
+  [titulo]="
+    perfil ? 'Meu perfil' : editando ? usuario!.nome || usuario!.email : 'Cadastrar usuário'
+  "
   (fechar)="fechar()"
 >
-  <p class="kicker">{{ editando ? 'Editar usuário' : 'Novo usuário' }}</p>
+  <p class="kicker">
+    {{ perfil ? 'Editar perfil' : editando ? 'Editar usuário' : 'Novo usuário' }}
+  </p>
 
   <form [formGroup]="form" (ngSubmit)="salvar()" novalidate>
     <app-input-text
@@ -26,19 +30,21 @@
       [error]="erroDe('senha')"
     />
 
-    <div class="superusuario">
-      <app-checkbox label="Super usuário" formControlName="is_superuser" />
-      <p class="ajuda">
-        @if (ehEu) {
-          Você não pode tirar de si mesmo o super usuário — outro super usuário é quem faz.
-        } @else {
-          Acessa Configurações: o armazenamento e esta tela de usuários.
+    @if (!perfil) {
+      <div class="superusuario">
+        <app-checkbox label="Super usuário" formControlName="is_superuser" />
+        <p class="ajuda">
+          @if (ehEu) {
+            Você não pode tirar de si mesmo o super usuário — outro super usuário é quem faz.
+          } @else {
+            Acessa Configurações: o armazenamento e esta tela de usuários.
+          }
+        </p>
+        @if (erroDe('is_superuser'); as mensagem) {
+          <p class="erro">{{ mensagem }}</p>
         }
-      </p>
-      @if (erroDe('is_superuser'); as mensagem) {
-        <p class="erro">{{ mensagem }}</p>
-      }
-    </div>
+      </div>
+    }
 
     @if (erroGeral(); as mensagem) {
       <p class="erro">{{ mensagem }}</p>

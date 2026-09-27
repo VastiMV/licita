@@ -39,3 +39,10 @@ nome fica.
 - [x] **4. Tela de Usuários**
   `pages/configuracoes/usuarios`, com o modal. Na própria linha não há
   "Excluir", e o super usuário vem travado no modal.
+
+- [x] **5. Editar perfil**
+  O "Editar perfil" do menu de conta abre o mesmo modal, sem o super usuário,
+  gravando em `GET/PUT /api/usuarios/eu/` — qualquer usuário logado, sobre si
+  mesmo. O super usuário não muda por ali (`PerfilSerializer`). Depois de
+  salvar, o token é renovado para o menu mostrar o nome novo.
+  *Teste:* `PerfilTests` e o spec do `ProfileMenuComponent`.

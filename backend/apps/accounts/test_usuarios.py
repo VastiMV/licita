@@ -111,3 +111,30 @@ class HistoricoSobreviveTests(APITestCase):
         fornecedor.refresh_from_db()
         self.assertIsNone(fornecedor.criado_por)
         self.assertEqual(fornecedor.criado_por_nome, "Autor")
+
+
+class PerfilTests(APITestCase):
+    def setUp(self):
+        self.eu = User.objects.create_user(email="comum@x.com", password=SENHA, nome="Comum")
+        self.client.force_authenticate(self.eu)
+
+    def test_quem_nao_e_super_usuario_edita_o_proprio_perfil(self):
+        resposta = self.client.put(
+            "/api/usuarios/eu/",
+            {"nome": "Novo Nome", "email": "comum@x.com", "senha": "outra-senha-forte-2"},
+        )
+
+        self.assertEqual(resposta.status_code, 200, resposta.data)
+        self.eu.refresh_from_db()
+        self.assertEqual(self.eu.nome, "Novo Nome")
+        self.assertTrue(self.eu.check_password("outra-senha-forte-2"))
+
+    def test_nao_vira_super_usuario_pelo_perfil(self):
+        self.client.put(
+            "/api/usuarios/eu/",
+            {"nome": "Comum", "email": "comum@x.com", "is_superuser": True},
+        )
+
+        self.eu.refresh_from_db()
+        self.assertFalse(self.eu.is_superuser)
+        self.assertFalse(self.eu.is_staff)

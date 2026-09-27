@@ -9,13 +9,14 @@ from __future__ import annotations
 from django.db.models import Q
 from django.shortcuts import get_object_or_404
 from rest_framework.pagination import PageNumberPagination
+from rest_framework.permissions import IsAuthenticated
 from rest_framework.request import Request
 from rest_framework.response import Response
 from rest_framework.views import APIView
 
 from .models import User
 from .permissions import EhSuperusuario
-from .serializers import UsuarioSerializer
+from .serializers import PerfilSerializer, UsuarioSerializer
 
 
 class UsuariosPaginacao(PageNumberPagination):
@@ -88,3 +89,22 @@ class UsuarioView(APIView):
         # `*_nome` ao lado de cada FK de autor), e a FK cai para nulo.
         usuario.delete()
         return Response(status=204)
+
+
+class PerfilView(APIView):
+    """`GET/PUT /api/usuarios/eu/` — o "Editar perfil" do menu de conta.
+
+    Qualquer usuário logado, sobre si mesmo. Nome, e-mail e senha; o super
+    usuário vem na resposta mas não muda por aqui (`PerfilSerializer`).
+    """
+
+    permission_classes = [IsAuthenticated]
+
+    def get(self, request: Request) -> Response:
+        return Response(PerfilSerializer(request.user).data)
+
+    def put(self, request: Request) -> Response:
+        serializer = PerfilSerializer(request.user, data=request.data, context={"request": request})
+        serializer.is_valid(raise_exception=True)
+        serializer.save()
+        return Response(serializer.data)

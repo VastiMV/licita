@@ -3,9 +3,12 @@ import { HttpTestingController, provideHttpClientTesting } from '@angular/common
 import { ComponentFixture, TestBed } from '@angular/core/testing';
 import { By } from '@angular/platform-browser';
 import { Router, provideRouter } from '@angular/router';
+import { of } from 'rxjs';
 
 import { ENDPOINTS } from '../../core/api/endpoints';
 import { AuthService } from '../../core/auth/auth.service';
+import { UsuarioModalComponent } from '../../pages/configuracoes/usuarios/usuario-modal/usuario-modal.component';
+import { ModalService } from '../../shared/overlay/modal.service';
 import { ProfileMenuComponent } from './profile-menu.component';
 
 describe('ProfileMenuComponent', () => {
@@ -69,11 +72,20 @@ describe('ProfileMenuComponent', () => {
     expect(navigateSpy).toHaveBeenCalledWith('/login');
   });
 
-  it('editar perfil aparece desabilitado', () => {
+  it('editar perfil busca o próprio cadastro e abre o modal sem o super usuário', () => {
+    const modal = TestBed.inject(ModalService);
+    const abrir = vi.spyOn(modal, 'abrir').mockReturnValue(of(undefined));
     fixture.debugElement.query(By.css('.trigger')).nativeElement.click();
     fixture.detectChanges();
 
-    const item = fixture.debugElement.query(By.css('.dropdown-item:not(.danger)'));
-    expect(item.nativeElement.disabled).toBe(true);
+    fixture.debugElement.query(By.css('.dropdown-item:not(.danger)')).nativeElement.click();
+    const eu = { id: 3, nome: 'Fulano', email: 'f@x.com', is_superuser: false, criado_em: '' };
+    httpMock.expectOne(`/api/${ENDPOINTS.usuarios.perfil}`).flush(eu);
+
+    expect(abrir).toHaveBeenCalledWith(UsuarioModalComponent, {
+      usuario: eu,
+      ehEu: true,
+      perfil: true,
+    });
   });
 });

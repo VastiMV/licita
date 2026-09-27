@@ -17,6 +17,9 @@ export interface UsuarioModalDados {
   readonly usuario: UsuarioResponse | null;
   /** O próprio usuário logado: não pode tirar de si o super usuário. */
   readonly ehEu: boolean;
+  /** "Editar perfil" do menu de conta: o mesmo formulário, sem o super
+   * usuário, gravando em `usuarios/eu/`. */
+  readonly perfil?: boolean;
 }
 
 /**
@@ -44,6 +47,7 @@ export class UsuarioModalComponent {
   private readonly dados = inject<UsuarioModalDados>(DIALOG_DATA);
   protected readonly usuario = this.dados.usuario;
   protected readonly ehEu = this.dados.ehEu;
+  protected readonly perfil = this.dados.perfil ?? false;
 
   protected readonly salvando = signal(false);
   protected readonly erroGeral = signal<string | null>(null);
@@ -83,9 +87,11 @@ export class UsuarioModalComponent {
     // `getRawValue`: o super usuário desabilitado (a própria linha) ainda
     // precisa ir — o `PUT` manda o registro inteiro.
     const payload: UsuarioRequest = this.form.getRawValue();
-    const requisicao = this.usuario
-      ? this.service.atualizar(this.usuario.id, payload)
-      : this.service.criar(payload);
+    const requisicao = this.perfil
+      ? this.service.atualizarPerfil(payload)
+      : this.usuario
+        ? this.service.atualizar(this.usuario.id, payload)
+        : this.service.criar(payload);
 
     requisicao.subscribe({
       next: (salvo) => {

@@ -109,4 +109,16 @@ describe('UsuarioModalComponent', () => {
 
     expect(fixture.nativeElement.textContent).toContain('Já existe um usuário com este e-mail.');
   });
+
+  it('no perfil não há super usuário e grava em usuarios/eu', () => {
+    const { fixture } = montar({ usuario: EXISTENTE, ehEu: true, perfil: true });
+    const service = TestBed.inject(UsuariosService) as never as {
+      atualizarPerfil: ReturnType<typeof vi.fn>;
+    };
+    service.atualizarPerfil = vi.fn(() => of(EXISTENTE));
+
+    expect(fixture.nativeElement.querySelector('app-checkbox')).toBeNull();
+    salvar(fixture);
+    expect(service.atualizarPerfil).toHaveBeenCalled();
+  });
 });
