@@ -4,6 +4,7 @@ import { RouterLink } from '@angular/router';
 import {
   CartaoCiclo,
   ColunaCiclo,
+  NivelAlertaCiclo,
   QuadroCiclo,
 } from '../../../contracts/licitacoes/ciclo.contracts';
 import { CicloService } from '../../../services/licitacoes/ciclo.service';
@@ -18,6 +19,18 @@ import {
   formatarMoeda,
   normalizarTitulo,
 } from '../../oportunidades/edital-card/edital-card.utils';
+import { OportunidadeModalComponent } from '../../oportunidades/salvas/oportunidade-modal/oportunidade-modal.component';
+
+/** Um card do resumo: número, legenda e o nível que pinta a borda. */
+interface Indicador {
+  readonly valor: number;
+  readonly legenda: string;
+  readonly nivel: NivelAlertaCiclo;
+}
+
+/** Verde quando não há nada a fazer; senão o nível que o número pede. */
+const nivelSe = (valor: number, nivel: NivelAlertaCiclo): NivelAlertaCiclo =>
+  valor > 0 ? nivel : 'ok';
 
 /** "R$ 214 mil" — o topo da coluna só precisa da ordem de grandeza. */
 export function formatarMil(valor: number): string {
@@ -33,11 +46,10 @@ export function formatarMil(valor: number): string {
  * arrasta — o cartão muda de coluna quando o trabalho anda (a etapa é
  * calculada no backend, ver `apps/licitacoes/ciclo.py`).
  *
- * Abrir um cartão abre a tela de trabalho da etapa em que ele está. Hoje só
- * o Cotador existe: Oportunidade e Cotação abrem o mesmo
- * `CotadorModalComponent` das Salvas, e fechar (salvando ou não) recarrega
- * o quadro — salvar a primeira cotação é justamente o que move o cartão.
- * Proposta, Disputa e Empenho aparecem vazias até as telas delas chegarem.
+ * Abrir um cartão abre a tela da etapa em que ele está, reaproveitando os
+ * modais que já existem: Oportunidade abre o visualizador da oportunidade
+ * salva, Cotação abre o Cotador. Fechar recarrega o quadro. Proposta,
+ * Disputa e Empenho aparecem vazias até as telas delas chegarem.
  */
 @Component({
   selector: 'app-quadro-page',
@@ -67,6 +79,49 @@ export class QuadroPage implements OnInit {
       month: '2-digit',
       year: 'numeric',
     });
+  });
+
+  /** Os quatro cards do resumo do dia. */
+  protected readonly indicadores = computed<readonly Indicador[]>(() => {
+    const q = this.quadro();
+    if (!q) return [];
+    const r = q.resumo;
+    return [
+      {
+        valor: r.prazo_ate_amanha,
+        legenda: 'com prazo de proposta até amanhã',
+        nivel: nivelSe(r.prazo_ate_amanha, 'alerta'),
+      },
+      {
+        valor: r.prazo_nesta_semana,
+        legenda: 'com prazo de proposta nesta semana',
+        nivel: nivelSe(r.prazo_nesta_semana, 'aviso'),
+      },
+      {
+        valor: r.salvas_sem_cotacao,
+        legenda: `salvas há mais de ${q.dias_sem_cotacao} dias sem cotação`,
+        nivel: nivelSe(r.salvas_sem_cotacao, 'aviso'),
+      },
+      {
+        valor: r.cotacoes_com_pendencia,
+        legenda: 'cotações com item sem preço',
+        nivel: nivelSe(r.cotacoes_com_pendencia, 'aviso'),
+      },
+    ];
+  });
+
+  /** Os dois cards menores: o que já saiu do ciclo. */
+  protected readonly encerradas = computed<readonly Indicador[]>(() => {
+    const e = this.quadro()?.encerradas;
+    if (!e) return [];
+    return [
+      {
+        valor: e.vencidas,
+        legenda: 'vencidas — prazo de proposta perdido',
+        nivel: nivelSe(e.vencidas, 'aviso'),
+      },
+      { valor: e.concluidas, legenda: 'encerradas por completo', nivel: 'neutro' },
+    ];
   });
 
   protected readonly formatarMil = formatarMil;
@@ -111,11 +166,17 @@ export class QuadroPage implements OnInit {
   }
 
   protected abrir(cartao: CartaoCiclo): void {
-    if (cartao.etapa !== 'oportunidade' && cartao.etapa !== 'cotacao') return;
+    if (cartao.etapa === 'oportunidade' && cartao.salva) {
+      this.modal.abrir(OportunidadeModalComponent, cartao.salva).subscribe(() => this.carregar());
+      return;
+    }
+    if (cartao.etapa !== 'cotacao') return;
 
+    // A cotação já existe: o Cotador carrega a dela pelo id da oportunidade,
+    // e os itens do snapshot não são usados.
     const dados: CotadorModalData = {
       titulo: normalizarTitulo(cartao.objeto),
-      itens: cartao.itens,
+      itens: [],
       oportunidadeId: cartao.id,
     };
     // Salvando ou não, volta para o quadro atualizado.

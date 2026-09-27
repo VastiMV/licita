@@ -27,6 +27,7 @@ from dataclasses import dataclass
 from django.utils import timezone
 
 from .models import OportunidadeSalva
+from .serializers import OportunidadeSalvaSerializer
 
 # Padrão até existir Configurações › Parâmetros (ver docstring do módulo).
 DIAS_SEM_COTACAO = 2
@@ -116,9 +117,10 @@ def _cartao(salva: OportunidadeSalva, etapa: str, hoje: dt.date) -> dict:
             float(salva.valor_total_estimado) if salva.valor_total_estimado is not None else None
         ),
         "cotacao_id": cotacao.pk if cotacao else None,
-        # O snapshot do edital só vai quando ainda não há cotação: é com ele
-        # que o Cotador abre preenchido. Com cotação, o Cotador carrega a dela.
-        "itens": salva.itens if etapa == "oportunidade" else [],
+        # Na etapa Oportunidade o cartão abre o visualizador da salva, que
+        # precisa do registro inteiro (o snapshot do edital). Com cotação, o
+        # Cotador carrega a dele pelo id.
+        "salva": OportunidadeSalvaSerializer(salva).data if etapa == "oportunidade" else None,
         "valor_cotado": valor_cotado,
         "pendencias": pendencias,
         "alerta": {"nivel": alerta.nivel, "texto": alerta.texto},
@@ -179,6 +181,8 @@ def montar_quadro(hoje: dt.date | None = None) -> dict:
             }
             for chave, rotulo in ETAPAS
         ],
-        "encerradas": encerradas,
+        # Hoje só existe "vencida" (prazo de proposta perdido). Concluídas,
+        # perdidas e descartadas chegam com as etapas que as produzem.
+        "encerradas": {"vencidas": encerradas, "concluidas": 0},
         "dias_sem_cotacao": DIAS_SEM_COTACAO,
     }

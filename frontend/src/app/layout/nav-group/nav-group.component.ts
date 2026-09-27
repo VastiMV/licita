@@ -1,5 +1,4 @@
 import { Component, computed, input, signal } from '@angular/core';
-import { RouterLink, RouterLinkActive } from '@angular/router';
 
 import { IconComponent, IconName } from '../../shared/ui/icon/icon.component';
 import { NavItemComponent } from '../nav-item/nav-item.component';
@@ -11,9 +10,6 @@ export interface NavSubItem {
   readonly label: string;
   readonly icon: IconName;
   readonly itens?: readonly NavSubItem[];
-  /** O próprio grupo é uma tela (o quadro do Ciclo): o rótulo navega e só
-   * a seta abre e fecha. Sem isto, o cabeçalho inteiro abre e fecha. */
-  readonly navega?: boolean;
 }
 
 /** Um item do trilho de ícones — os grupos achatados. */
@@ -24,17 +20,14 @@ interface ItemPlano {
 }
 
 function achatar(itens: readonly NavSubItem[]): ItemPlano[] {
-  return itens.flatMap((item) =>
-    item.itens ? [...(item.navega ? [item] : []), ...achatar(item.itens)] : [item],
-  );
+  return itens.flatMap((item) => (item.itens ? achatar(item.itens) : [item]));
 }
 
 /**
  * Item de menu que agrupa outros ("Oportunidades" → "Buscar" / "Salvas").
- * Por padrão o pai não é link: ele abre e fecha o grupo — quem navega são os
- * filhos. Com `navega`, o rótulo do pai também é uma tela ("Ciclo de
- * Licitação" abre o quadro) e só a seta abre e fecha. Grupos se aninham: um
- * filho com `itens` vira um subgrupo.
+ * O pai não é link: ele abre e fecha o grupo — quem navega são os filhos.
+ * Grupos se aninham: um filho com `itens` vira um subgrupo ("Ciclo de
+ * Licitação" → "Oportunidades" → "Buscar").
  *
  * Com a Sidebar recolhida (trilho de ícones) o grupo desaparece e os filhos
  * viram itens soltos, cada um com o próprio ícone e tooltip: esconder um
@@ -43,7 +36,7 @@ function achatar(itens: readonly NavSubItem[]): ItemPlano[] {
  */
 @Component({
   selector: 'app-nav-group',
-  imports: [IconComponent, NavItemComponent, RouterLink, RouterLinkActive],
+  imports: [IconComponent, NavItemComponent],
   templateUrl: './nav-group.component.html',
   styleUrl: './nav-group.component.scss',
 })
@@ -51,8 +44,6 @@ export class NavGroupComponent {
   readonly label = input.required<string>();
   readonly icon = input.required<IconName>();
   readonly itens = input.required<readonly NavSubItem[]>();
-  readonly path = input<string | null>(null);
-  readonly navega = input(false);
 
   /** Modo ícone-só (Sidebar recolhida em desktop). */
   readonly compact = input(false);
@@ -62,17 +53,7 @@ export class NavGroupComponent {
   protected readonly aberto = signal(true);
 
   /** Trilho de ícones: o grupo some e ficam só os itens que navegam. */
-  protected readonly planos = computed(() =>
-    achatar([
-      {
-        path: this.path() ?? '',
-        label: this.label(),
-        icon: this.icon(),
-        itens: this.itens(),
-        navega: this.navega(),
-      },
-    ]),
-  );
+  protected readonly planos = computed(() => achatar(this.itens()));
 
   protected alternar(): void {
     this.aberto.update((valor) => !valor);

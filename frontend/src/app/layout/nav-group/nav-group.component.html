@@ -4,52 +4,22 @@
     <app-nav-item [path]="item.path" [label]="item.label" [icon]="item.icon" [compact]="true" />
   }
 } @else {
-  @if (navega() && path(); as destino) {
-    <!-- O pai é uma tela: o rótulo navega, a seta abre e fecha. -->
-    <div class="grupo-cabecalho grupo-cabecalho-link">
-      <a
-        class="grupo-link"
-        [routerLink]="destino"
-        routerLinkActive="active"
-        [routerLinkActiveOptions]="{ exact: true }"
-      >
-        <app-icon [name]="icon()" />
-        <span class="label">{{ label() }}</span>
-      </a>
-      <button
-        type="button"
-        class="grupo-alternar"
-        [attr.aria-expanded]="aberto()"
-        [attr.aria-label]="(aberto() ? 'Recolher ' : 'Expandir ') + label()"
-        (click)="alternar()"
-      >
-        <app-icon [name]="aberto() ? 'chevron-up' : 'chevron-down'" class="grupo-seta" />
-      </button>
-    </div>
-  } @else {
-    <button
-      type="button"
-      class="grupo-cabecalho"
-      [attr.aria-expanded]="aberto()"
-      (click)="alternar()"
-    >
-      <app-icon [name]="icon()" />
-      <span class="label">{{ label() }}</span>
-      <app-icon [name]="aberto() ? 'chevron-up' : 'chevron-down'" class="grupo-seta" />
-    </button>
-  }
+  <button
+    type="button"
+    class="grupo-cabecalho"
+    [attr.aria-expanded]="aberto()"
+    (click)="alternar()"
+  >
+    <app-icon [name]="icon()" />
+    <span class="label">{{ label() }}</span>
+    <app-icon [name]="aberto() ? 'chevron-up' : 'chevron-down'" class="grupo-seta" />
+  </button>
 
   @if (aberto()) {
     <div class="grupo-itens">
       @for (item of itens(); track item.path) {
         @if (item.itens; as filhos) {
-          <app-nav-group
-            [label]="item.label"
-            [icon]="item.icon"
-            [itens]="filhos"
-            [path]="item.path"
-            [navega]="!!item.navega"
-          />
+          <app-nav-group [label]="item.label" [icon]="item.icon" [itens]="filhos" />
         } @else {
           <app-nav-item [path]="item.path" [label]="item.label" [icon]="item.icon" />
         }

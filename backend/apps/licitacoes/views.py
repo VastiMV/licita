@@ -227,8 +227,10 @@ class OportunidadesSalvasView(APIView):
         # não haver task periódica.
         registrar_prazos_vencidos()
 
+        # Só a etapa Oportunidade: com cotação, a licitação está no Cotador.
         salvas = (
             OportunidadeSalva.objects.ativas()
+            .sem_cotacao()
             .select_related("salva_por")
             .buscar(request.query_params.get("busca", ""))
             .order_by(_ordenacao(request.query_params.get("ordering")))
@@ -242,7 +244,9 @@ class OportunidadesSalvasView(APIView):
         # Contagem do conjunto inteiro, não da página nem da busca em curso:
         # é o número do aviso "N oportunidades sem prazo para proposta" e o
         # que o link de apagar do aviso vai remover.
-        resposta.data["expiradas"] = OportunidadeSalva.objects.ativas().expiradas().count()
+        resposta.data["expiradas"] = (
+            OportunidadeSalva.objects.ativas().sem_cotacao().expiradas().count()
+        )
         return resposta
 
     def post(self, request: Request) -> Response:
@@ -271,7 +275,7 @@ class OportunidadesSalvasExpiradasView(APIView):
     ao abrir."""
 
     def delete(self, request: Request) -> Response:
-        expiradas = list(OportunidadeSalva.objects.ativas().expiradas())
+        expiradas = list(OportunidadeSalva.objects.ativas().sem_cotacao().expiradas())
         for salva in expiradas:
             salva.remover(por=request.user)
         return Response({"removidas": len(expiradas)})

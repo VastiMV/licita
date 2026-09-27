@@ -11,10 +11,9 @@ interface NavLink {
   readonly path: string;
   readonly label: string;
   readonly icon: IconName;
-  /** Item de primeiro nível que agrupa outros (ver `NavGroupComponent`). */
+  /** Item de primeiro nível que agrupa outros (ver `NavGroupComponent`) —
+   * o pai não é link, quem navega são os filhos. */
   readonly itens?: readonly NavSubItem[];
-  /** O próprio grupo é uma tela (ver `NavSubItem.navega`). */
-  readonly navega?: boolean;
 }
 
 /**
@@ -67,16 +66,15 @@ const CONFIGURACOES: NavLink = {
 };
 
 const MENU: readonly NavLink[] = [
-  // O Ciclo de Licitação é o grupo e é tela: o rótulo abre o quadro, e cada
-  // etapa embaixo é a lista das licitações que estão nela agora — a
-  // licitação sai de uma lista e aparece na seguinte conforme o trabalho
-  // anda (ver docs/Tarefas/feat-ciclo.md).
+  // O Ciclo de Licitação: "Visão Geral" é o quadro, e cada etapa embaixo é
+  // a lista das licitações que estão nela agora — a licitação sai de uma
+  // lista e aparece na seguinte conforme o trabalho anda.
   {
     path: '/ciclo',
     label: 'Ciclo de Licitação',
     icon: 'ciclo',
-    navega: true,
     itens: [
+      { path: '/ciclo/visao-geral', label: 'Visão Geral', icon: 'ciclo' },
       {
         path: '/oportunidades',
         label: 'Oportunidades',

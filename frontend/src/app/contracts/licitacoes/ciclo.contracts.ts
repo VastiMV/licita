@@ -4,7 +4,7 @@
  * ninguém escolhe etapa nem arrasta cartão.
  */
 
-import { OportunidadeResponse } from './oportunidade.contracts';
+import { OportunidadeSalvaResponse } from './oportunidade-salva.contracts';
 
 export type EtapaCiclo = 'oportunidade' | 'cotacao' | 'proposta' | 'disputa' | 'empenho';
 
@@ -26,9 +26,9 @@ export interface CartaoCiclo {
   readonly alerta: { readonly nivel: NivelAlertaCiclo; readonly texto: string };
   /** A primeira coisa que falta para a licitação andar. */
   readonly falta: string;
-  /** O snapshot do edital — só na etapa Oportunidade, para o Cotador abrir
-   * preenchido. */
-  readonly itens: readonly OportunidadeResponse[];
+  /** A salva inteira — só na etapa Oportunidade, para o cartão abrir o
+   * visualizador da oportunidade salva. */
+  readonly salva: OportunidadeSalvaResponse | null;
 }
 
 export interface ColunaCiclo {
@@ -49,8 +49,8 @@ export interface QuadroCiclo {
     readonly cotacoes_com_pendencia: number;
   };
   readonly colunas: readonly ColunaCiclo[];
-  /** Fora do quadro: prazo perdido (e, quando existirem, perdidas,
-   * descartadas e concluídas). */
-  readonly encerradas: number;
+  /** Fora do quadro. `vencidas` = prazo de proposta perdido; `concluidas`
+   * fica em zero até existirem as etapas que concluem uma licitação. */
+  readonly encerradas: { readonly vencidas: number; readonly concluidas: number };
   readonly dias_sem_cotacao: number;
 }

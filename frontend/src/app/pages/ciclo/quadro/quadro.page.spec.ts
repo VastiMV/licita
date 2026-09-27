@@ -7,6 +7,7 @@ import { CartaoCiclo, QuadroCiclo } from '../../../contracts/licitacoes/ciclo.co
 import { CicloService } from '../../../services/licitacoes/ciclo.service';
 import { ModalService } from '../../../shared/overlay/modal.service';
 import { CotadorModalComponent } from '../../oportunidades/cotador-modal/cotador-modal.component';
+import { OportunidadeModalComponent } from '../../oportunidades/salvas/oportunidade-modal/oportunidade-modal.component';
 import { QuadroPage, formatarMil } from './quadro.page';
 
 const CARTAO: CartaoCiclo = {
@@ -23,7 +24,7 @@ const CARTAO: CartaoCiclo = {
   pendencias: null,
   alerta: { nivel: 'aviso', texto: 'salva há 3 dias, sem cotação' },
   falta: 'cotar para saber se dá',
-  itens: [],
+  salva: { id: 7, objeto: 'Copos descartáveis 180 ml' } as unknown as CartaoCiclo['salva'],
 };
 
 const EM_COTACAO: CartaoCiclo = {
@@ -36,6 +37,7 @@ const EM_COTACAO: CartaoCiclo = {
   pendencias: 0,
   alerta: { nivel: 'ok', texto: 'cotação completa' },
   falta: 'gerar a proposta',
+  salva: null,
 };
 
 function quadro(): QuadroCiclo {
@@ -66,7 +68,7 @@ function quadro(): QuadroCiclo {
       { etapa: 'disputa', rotulo: 'Disputa', disponivel: false, total_estimado: 0, cartoes: [] },
       { etapa: 'empenho', rotulo: 'Empenho', disponivel: false, total_estimado: 0, cartoes: [] },
     ],
-    encerradas: 3,
+    encerradas: { vencidas: 3, concluidas: 0 },
     dias_sem_cotacao: 2,
   };
 }
@@ -113,9 +115,26 @@ describe('QuadroPage', () => {
     expect(texto()).toContain('Ainda não disponível.');
   });
 
-  it('mostra o resumo do dia e quantas ficaram em Encerradas', () => {
+  it('resumo do dia com a borda pelo nível: verde quando zerado, amarelo quando pede atenção', () => {
     expect(texto()).toContain('salvas há mais de 2 dias sem cotação');
-    expect(texto()).toContain('Fora do quadro, em Encerradas: 3');
+    const niveis = fixture.debugElement
+      .queryAll(By.css('.indicador:not(.pequeno)'))
+      .map((i) => i.nativeElement.getAttribute('data-nivel'));
+    expect(niveis).toEqual(['ok', 'aviso', 'aviso', 'ok']);
+  });
+
+  it('as encerradas viram dois cards menores no fim do resumo, e não rodapé', () => {
+    const pequenos = fixture.debugElement.queryAll(By.css('.indicador.pequeno'));
+    expect(pequenos).toHaveLength(2);
+    expect(pequenos[0].nativeElement.textContent).toContain('3');
+    expect(pequenos[0].nativeElement.textContent).toContain('vencidas');
+    expect(fixture.debugElement.query(By.css('.rodape'))).toBeNull();
+  });
+
+  it('cartão em Oportunidade abre o visualizador da oportunidade salva, não o Cotador', () => {
+    cartoes()[0].nativeElement.click();
+
+    expect(modal.abrir).toHaveBeenCalledWith(OportunidadeModalComponent, CARTAO.salva);
   });
 
   it('"Buscar" leva para a busca de oportunidades', () => {

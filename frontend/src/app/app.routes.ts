@@ -72,9 +72,9 @@ export const routes: Routes = [
       {
         path: 'ciclo',
         children: [
+          { path: '', pathMatch: 'full', redirectTo: 'visao-geral' },
           {
-            path: '',
-            pathMatch: 'full',
+            path: 'visao-geral',
             loadComponent: () =>
               import('./pages/ciclo/quadro/quadro.page').then((m) => m.QuadroPage),
           },

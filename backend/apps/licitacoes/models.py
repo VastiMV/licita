@@ -41,6 +41,13 @@ class OportunidadeSalvaQuerySet(models.QuerySet):
 
         return self.filter(removida_em__isnull=True)
 
+    def sem_cotacao(self) -> "OportunidadeSalvaQuerySet":
+        """As que ainda estão na etapa Oportunidade do Ciclo de Licitação.
+        Com cotação salva, a licitação passou para a etapa Cotação e sai da
+        lista de Salvas (ver `ciclo.py`)."""
+
+        return self.filter(cotacao__isnull=True)
+
     def expiradas(self, hoje: dt.date | None = None) -> "OportunidadeSalvaQuerySet":
         """Prazo de proposta já vencido. Sem data de encerramento = não expira
         (o PNCP nem sempre publica a data; sem ela não dá pra afirmar que

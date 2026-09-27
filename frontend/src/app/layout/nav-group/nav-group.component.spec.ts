@@ -66,38 +66,31 @@ describe('NavGroupComponent', () => {
     );
   });
 
-  describe('grupo que é tela, com subgrupo (o Ciclo de Licitação)', () => {
+  describe('com subgrupo (o Ciclo de Licitação)', () => {
     beforeEach(() => {
       fixture.componentRef.setInput('label', 'Ciclo de Licitação');
       fixture.componentRef.setInput('icon', 'ciclo');
-      fixture.componentRef.setInput('path', '/ciclo');
-      fixture.componentRef.setInput('navega', true);
       fixture.componentRef.setInput('itens', [
+        { path: '/ciclo/visao-geral', label: 'Visão Geral', icon: 'ciclo' },
         { path: '/oportunidades', label: 'Oportunidades', icon: 'oportunidades', itens: ITENS },
         { path: '/ciclo/cotador', label: 'Cotador', icon: 'cotador' },
       ]);
       fixture.detectChanges();
     });
 
-    it('o rótulo do pai é link para o quadro, e a seta é quem abre e fecha', () => {
-      const link = fixture.debugElement.query(By.css('a.grupo-link'));
-      expect(link.nativeElement.getAttribute('href')).toBe('/ciclo');
-
-      fixture.debugElement.query(By.css('.grupo-alternar')).nativeElement.click();
-      fixture.detectChanges();
-
-      expect(labels()).toEqual([]);
+    it('o pai não é link — só abre e fecha', () => {
+      expect(fixture.debugElement.query(By.css('.grupo-cabecalho')).name).toBe('button');
     });
 
     it('o filho com itens vira subgrupo, com os netos dentro', () => {
-      expect(labels()).toEqual(['Buscar', 'Salvas', 'Cotador']);
+      expect(labels()).toEqual(['Visão Geral', 'Buscar', 'Salvas', 'Cotador']);
     });
 
-    it('recolhida, o pai vira item e o subgrupo se achata', () => {
+    it('recolhida, o subgrupo se achata e só ficam os itens que navegam', () => {
       fixture.componentRef.setInput('compact', true);
       fixture.detectChanges();
 
-      expect(labels()).toEqual(['Ciclo de Licitação', 'Buscar', 'Salvas', 'Cotador']);
+      expect(labels()).toEqual(['Visão Geral', 'Buscar', 'Salvas', 'Cotador']);
     });
   });
 });

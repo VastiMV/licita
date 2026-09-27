@@ -41,14 +41,13 @@ describe('SidebarComponent', () => {
       .map((grupo) => (grupo.componentInstance as NavGroupComponent).label());
     expect(grupos).toEqual(['Ciclo de Licitação', 'Oportunidades']);
 
-    // "Ciclo de Licitação" é link (o quadro); Oportunidades é subgrupo, com
-    // "Buscar" antes de "Salvas" (a busca é a tela inicial do app).
-    const ciclo = fixture.debugElement.query(By.css('a.grupo-link'));
-    expect(ciclo.nativeElement.getAttribute('href')).toBe('/ciclo');
+    // "Visão Geral" é o quadro; Oportunidades é subgrupo, com "Buscar"
+    // antes de "Salvas" (a busca é a tela inicial do app).
 
     const items = fixture.debugElement.queryAll(By.directive(NavItemComponent));
     const labels = items.map((item) => (item.componentInstance as NavItemComponent).label());
     expect(labels).toEqual([
+      'Visão Geral',
       'Buscar',
       'Salvas',
       'Cotador',
@@ -82,7 +81,8 @@ describe('SidebarComponent', () => {
       .queryAll(By.directive(NavItemComponent))
       .map((item) => (item.componentInstance as NavItemComponent).path());
 
-    expect(rotas.slice(0, 7)).toEqual([
+    expect(rotas.slice(0, 8)).toEqual([
+      '/ciclo/visao-geral',
       '/oportunidades/buscar',
       '/oportunidades/salvas',
       '/ciclo/cotador',
@@ -123,7 +123,7 @@ describe('SidebarComponent', () => {
     state.mobileOpen.set(true);
     fixture.detectChanges();
 
-    fixture.debugElement.query(By.css('.grupo-alternar')).nativeElement.click();
+    fixture.debugElement.query(By.css('.grupo-cabecalho')).nativeElement.click();
 
     expect(state.mobileOpen()).toBe(true);
   });

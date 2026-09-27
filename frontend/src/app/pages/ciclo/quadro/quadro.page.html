@@ -14,31 +14,27 @@
 @if (carregando() && !quadro()) {
   <p class="muted estado">Carregando o quadro…</p>
 } @else if (erro()) {
-  <p class="estado erro">
+  <p class="estado falha">
     Não foi possível carregar o quadro agora.
     <button type="button" class="link" (click)="carregar()">Tentar de novo</button>
   </p>
 } @else if (quadro(); as q) {
-  <section class="tela">
-    <div class="hoje">
-      <div [class.alerta]="q.resumo.prazo_ate_amanha > 0">
-        <span class="k">{{ q.resumo.prazo_ate_amanha }}</span>
-        <span class="l">com prazo de proposta até amanhã</span>
+  <div class="resumo">
+    @for (indicador of indicadores(); track indicador.legenda) {
+      <div class="indicador" [attr.data-nivel]="indicador.nivel">
+        <span class="k">{{ indicador.valor }}</span>
+        <span class="l">{{ indicador.legenda }}</span>
       </div>
-      <div class="neutro">
-        <span class="k">{{ q.resumo.prazo_nesta_semana }}</span>
-        <span class="l">com prazo de proposta nesta semana</span>
+    }
+    @for (indicador of encerradas(); track indicador.legenda) {
+      <div class="indicador pequeno" [attr.data-nivel]="indicador.nivel">
+        <span class="k">{{ indicador.valor }}</span>
+        <span class="l">{{ indicador.legenda }}</span>
       </div>
-      <div [class.aviso]="q.resumo.salvas_sem_cotacao > 0">
-        <span class="k">{{ q.resumo.salvas_sem_cotacao }}</span>
-        <span class="l">salvas há mais de {{ q.dias_sem_cotacao }} dias sem cotação</span>
-      </div>
-      <div [class.aviso]="q.resumo.cotacoes_com_pendencia > 0">
-        <span class="k">{{ q.resumo.cotacoes_com_pendencia }}</span>
-        <span class="l">cotações com item sem preço</span>
-      </div>
-    </div>
+    }
+  </div>
 
+  <section class="tela">
     <div class="quadro-rolagem">
       <div class="quadro">
         @for (coluna of q.colunas; track coluna.etapa) {
@@ -52,38 +48,35 @@
               }
             </div>
 
-            @if (!coluna.disponivel) {
-              <p class="vazio">Ainda não disponível.</p>
-            } @else if (coluna.cartoes.length === 0) {
-              <p class="vazio">Nenhuma licitação nesta etapa.</p>
-            }
+            <div class="coluna-cartoes">
+              @if (!coluna.disponivel) {
+                <p class="vazio">Ainda não disponível.</p>
+              } @else if (coluna.cartoes.length === 0) {
+                <p class="vazio">Nenhuma licitação nesta etapa.</p>
+              }
 
-            @for (cartao of coluna.cartoes; track cartao.id) {
-              <button
-                type="button"
-                class="cartao"
-                [class.urgente]="cartao.alerta.nivel === 'alerta'"
-                [disabled]="!abre(coluna)"
-                (click)="abrir(cartao)"
-                [attr.title]="cartao.objeto"
-              >
-                <span class="org">{{ local(cartao) }}</span>
-                <span class="obj">{{ titulo(cartao.objeto) }}</span>
-                <span class="dado">{{ dado(cartao) }}</span>
-                <span class="selo" [attr.data-nivel]="cartao.alerta.nivel">{{
-                  cartao.alerta.texto
-                }}</span>
-                <span class="falta"><b>Falta</b>{{ cartao.falta }}</span>
-              </button>
-            }
+              @for (cartao of coluna.cartoes; track cartao.id) {
+                <button
+                  type="button"
+                  class="cartao"
+                  [attr.data-nivel]="cartao.alerta.nivel"
+                  [disabled]="!abre(coluna)"
+                  (click)="abrir(cartao)"
+                  [attr.title]="cartao.objeto"
+                >
+                  <span class="org">{{ local(cartao) }}</span>
+                  <span class="obj">{{ titulo(cartao.objeto) }}</span>
+                  <span class="dado">{{ dado(cartao) }}</span>
+                  <span class="selo" [attr.data-nivel]="cartao.alerta.nivel">{{
+                    cartao.alerta.texto
+                  }}</span>
+                  <span class="falta"><b>Falta</b>{{ cartao.falta }}</span>
+                </button>
+              }
+            </div>
           </div>
         }
       </div>
-    </div>
-
-    <div class="rodape">
-      Fora do quadro, em Encerradas: {{ q.encerradas }}
-      {{ q.encerradas === 1 ? 'licitação' : 'licitações' }} com prazo de proposta vencido.
     </div>
   </section>
 }

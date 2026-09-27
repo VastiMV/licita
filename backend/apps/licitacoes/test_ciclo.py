@@ -91,13 +91,13 @@ class CicloTests(APITestCase):
         quadro = self.quadro()
 
         self.assertEqual(self.coluna(quadro, "oportunidade")["cartoes"], [])
-        self.assertEqual(quadro["encerradas"], 1)
+        self.assertEqual(quadro["encerradas"], {"vencidas": 1, "concluidas": 0})
 
     def test_removida_da_lista_nao_aparece(self):
         self.salva("1").remover()
         quadro = self.quadro()
         self.assertEqual(sum(len(c["cartoes"]) for c in quadro["colunas"]), 0)
-        self.assertEqual(quadro["encerradas"], 0)
+        self.assertEqual(quadro["encerradas"]["vencidas"], 0)
 
     def test_salva_antiga_sem_cotacao_acende_o_aviso(self):
         salva = self.salva("1")
@@ -132,3 +132,21 @@ class CicloTests(APITestCase):
     def test_exige_autenticacao(self):
         self.client.force_authenticate(None)
         self.assertEqual(self.client.get("/api/licitacoes/ciclo/").status_code, 401)
+
+    def test_cartao_de_oportunidade_traz_a_salva_para_o_visualizador(self):
+        salva = self.salva("1")
+        self.cotar(self.salva("2"))
+
+        quadro = self.quadro()
+
+        cartao = self.coluna(quadro, "oportunidade")["cartoes"][0]
+        self.assertEqual(cartao["salva"]["id"], salva.pk)
+        self.assertIsNone(self.coluna(quadro, "cotacao")["cartoes"][0]["salva"])
+
+    def test_com_cotacao_sai_da_lista_de_salvas(self):
+        fica = self.salva("1")
+        self.cotar(self.salva("2"))
+
+        resposta = self.client.get("/api/licitacoes/salvas/")
+
+        self.assertEqual([s["id"] for s in resposta.data["results"]], [fica.pk])
