@@ -26,12 +26,6 @@
         <span class="l">{{ indicador.legenda }}</span>
       </div>
     }
-    @for (indicador of encerradas(); track indicador.legenda) {
-      <div class="indicador pequeno" [attr.data-nivel]="indicador.nivel">
-        <span class="k">{{ indicador.valor }}</span>
-        <span class="l">{{ indicador.legenda }}</span>
-      </div>
-    }
   </div>
 
   <section class="tela">
@@ -56,22 +50,52 @@
               }
 
               @for (cartao of coluna.cartoes; track cartao.id) {
-                <button
-                  type="button"
-                  class="cartao"
-                  [attr.data-nivel]="cartao.alerta.nivel"
-                  [disabled]="!abre(coluna)"
-                  (click)="abrir(cartao)"
-                  [attr.title]="cartao.objeto"
-                >
-                  <span class="org">{{ local(cartao) }}</span>
-                  <span class="obj">{{ titulo(cartao.objeto) }}</span>
-                  <span class="dado">{{ dado(cartao) }}</span>
-                  <span class="selo" [attr.data-nivel]="cartao.alerta.nivel">{{
-                    cartao.alerta.texto
-                  }}</span>
-                  <span class="falta"><b>Falta</b>{{ cartao.falta }}</span>
-                </button>
+                <article class="cartao" [attr.data-nivel]="cartao.alerta.nivel">
+                  <button
+                    type="button"
+                    class="cartao-abrir"
+                    (click)="abrir(cartao)"
+                    [attr.title]="cartao.objeto"
+                  >
+                    <span class="org">{{ local(cartao) }}</span>
+                    <span class="obj">{{ titulo(cartao.objeto) }}</span>
+                    <span class="dado">{{ dado(cartao) }}</span>
+                    <span class="selo" [attr.data-nivel]="cartao.alerta.nivel">{{
+                      cartao.alerta.texto
+                    }}</span>
+                  </button>
+
+                  <div class="falta">
+                    <b>Falta</b>
+                    <ul>
+                      @for (falta of faltasVisiveis(cartao); track falta) {
+                        <li>{{ falta }}</li>
+                      }
+                      @if (faltasOcultas(cartao) > 0) {
+                        <li class="mais">+{{ faltasOcultas(cartao) }}</li>
+                      }
+                    </ul>
+                  </div>
+
+                  <div class="acoes">
+                    @if (cartao.etapa === 'oportunidade') {
+                      <button type="button" class="acao" (click)="cotar(cartao)">
+                        <app-icon name="calculadora" />
+                        Iniciar cotação
+                      </button>
+                    } @else if (cartao.etapa === 'cotacao') {
+                      <button
+                        type="button"
+                        class="acao"
+                        disabled
+                        title="A tela de Proposta ainda não existe"
+                      >
+                        <app-icon name="proposta" />
+                        Gerar proposta
+                      </button>
+                    }
+                  </div>
+                </article>
               }
             </div>
           </div>
@@ -79,4 +103,13 @@
       </div>
     </div>
   </section>
+
+  <div class="resumo encerradas">
+    @for (indicador of encerradas(); track indicador.legenda) {
+      <div class="indicador pequeno" [attr.data-nivel]="indicador.nivel">
+        <span class="k">{{ indicador.valor }}</span>
+        <span class="l">{{ indicador.legenda }}</span>
+      </div>
+    }
+  </div>
 }

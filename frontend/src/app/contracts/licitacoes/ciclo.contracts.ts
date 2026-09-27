@@ -24,8 +24,9 @@ export interface CartaoCiclo {
   readonly valor_cotado: number | null;
   readonly pendencias: number | null;
   readonly alerta: { readonly nivel: NivelAlertaCiclo; readonly texto: string };
-  /** A primeira coisa que falta para a licitação andar. */
-  readonly falta: string;
+  /** O que falta para a licitação andar, do mais grave para o menos —
+   * concreto ("preço de fornecedor nos itens 3 e 4"). */
+  readonly faltas: readonly string[];
   /** A salva inteira — só na etapa Oportunidade, para o cartão abrir o
    * visualizador da oportunidade salva. */
   readonly salva: OportunidadeSalvaResponse | null;

@@ -72,6 +72,68 @@ def _dias(de: dt.date, ate: dt.date) -> int:
     return (ate - de).days
 
 
+def _itens(numeros: list[str]) -> str:
+    """"item 3", "itens 3 e 4", "itens 1, 2 e 5"."""
+
+    if len(numeros) == 1:
+        return f"item {numeros[0]}"
+    return f"itens {', '.join(numeros[:-1])} e {numeros[-1]}"
+
+
+def _faltas_da_cotacao(cotacao) -> tuple[list[str], Alerta]:
+    """O que falta, item a item, para a cotação virar proposta — e o selo.
+
+    Três conferências, da mais grave para a menos grave:
+
+    - **reserva acima do estimado** (vermelho): nem no piso o item fica
+      abaixo do que o órgão estimou — entrar nele é prejuízo certo;
+    - **sem preço de fornecedor** (amarelo): o item ainda não tem custo;
+    - **preço acima do estimado** (amarelo): dá para entrar, mas o lance vai
+      ter de descer até perto da reserva.
+
+    O sistema não trava nada: é o que o cartão mostra como "falta".
+    """
+
+    from apps.cotador import formulas
+
+    itens = list(cotacao.itens.all())
+    calculados = [formulas.calcular_item(i, cotacao.padroes) for i in cotacao.para_calculo()]
+
+    sem_preco, acima, reserva_acima = [], [], []
+    for posicao, (item, calc) in enumerate(zip(itens, calculados), start=1):
+        numero = item.numero_item or str(posicao)
+        if calc.incompleto:
+            sem_preco.append(numero)
+            continue
+        referencia = item.valor_referencia
+        if not referencia:
+            continue
+        if calc.preco_reserva_unitario > referencia:
+            reserva_acima.append(numero)
+        elif calc.preco_final_unitario > referencia:
+            acima.append(numero)
+
+    faltas = []
+    if reserva_acima:
+        faltas.append(f"{_itens(reserva_acima)}: reserva acima do estimado — tirar ou entrar assim mesmo")
+    if sem_preco:
+        faltas.append(f"preço de fornecedor no {_itens(sem_preco)}")
+    if acima:
+        faltas.append(f"{_itens(acima)}: preço acima do estimado — rever markup")
+
+    if reserva_acima:
+        alerta = Alerta("alerta", "reserva acima do estimado")
+    elif sem_preco:
+        n = len(sem_preco)
+        alerta = Alerta("aviso", f"{n} ite{'ns' if n > 1 else 'm'} sem preço")
+    elif acima:
+        alerta = Alerta("aviso", "preço acima do estimado")
+    else:
+        alerta = Alerta("ok", "cotação completa")
+        faltas.append("gerar a proposta")
+    return faltas, alerta
+
+
 def _cartao(salva: OportunidadeSalva, etapa: str, hoje: dt.date) -> dict:
     prazo = salva.data_encerramento_proposta
     cotacao = _cotacao_de(salva)
@@ -84,20 +146,15 @@ def _cartao(salva: OportunidadeSalva, etapa: str, hoje: dt.date) -> dict:
             alerta = Alerta("neutro", "salva hoje")
         else:
             alerta = Alerta("neutro", f"salva há {dias_salva} dia{'s' if dias_salva > 1 else ''}")
-        falta = "cotar para saber se dá"
+        faltas = ["iniciar a cotação para saber se dá"]
+        if not salva.itens:
+            faltas.append("edital salvo sem itens — conferir no PNCP")
         valor_cotado = None
         pendencias = None
     else:
-        totais = cotacao.totais()
-        pendencias = totais.pendencias
+        pendencias = cotacao.totais().pendencias
         valor_cotado = float(cotacao.valor_cotado)
-        if pendencias:
-            plural = "ns" if pendencias > 1 else "m"
-            alerta = Alerta("aviso", f"{pendencias} ite{plural} sem preço de fornecedor")
-            falta = "preço de fornecedor nos itens pendentes"
-        else:
-            alerta = Alerta("ok", "cotação completa")
-            falta = "gerar a proposta"
+        faltas, alerta = _faltas_da_cotacao(cotacao)
 
     if prazo and etapa != "encerrada":
         restantes = _dias(hoje, prazo)
@@ -124,7 +181,8 @@ def _cartao(salva: OportunidadeSalva, etapa: str, hoje: dt.date) -> dict:
         "valor_cotado": valor_cotado,
         "pendencias": pendencias,
         "alerta": {"nivel": alerta.nivel, "texto": alerta.texto},
-        "falta": falta,
+        # Em ordem de gravidade; o cartão mostra as primeiras.
+        "faltas": faltas,
     }
 
 

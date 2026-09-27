@@ -13,9 +13,16 @@ import {
 import { TabelaAcoesDirective } from '../../../shared/ui/data-table/tabela-acoes.directive';
 import { ItemMenu, MenuComponent } from '../../../shared/ui/menu/menu.component';
 import { ToastService } from '../../../shared/ui/toast/toast.service';
-import { CotadorModalComponent, CotadorModalData } from '../cotador-modal/cotador-modal.component';
+import {
+  CotadorModalComponent,
+  CotadorModalData,
+  CotadorModalResultado,
+} from '../cotador-modal/cotador-modal.component';
 import { formatarData, formatarMoeda, normalizarTitulo } from '../edital-card/edital-card.utils';
-import { OportunidadeModalComponent } from './oportunidade-modal/oportunidade-modal.component';
+import {
+  OportunidadeModalComponent,
+  OportunidadeModalResultado,
+} from './oportunidade-modal/oportunidade-modal.component';
 
 /** Quantos caracteres do município cabem sem esticar a coluna. O nome é
  * cortado (com reticências) e a UF vem sempre depois — a sigla é o que não
@@ -134,7 +141,14 @@ export class SalvasPage implements OnInit {
   }
 
   protected visualizar(salva: OportunidadeSalvaResponse): void {
-    this.modal.abrir(OportunidadeModalComponent, salva).subscribe();
+    this.modal
+      .abrir<OportunidadeModalResultado, OportunidadeSalvaResponse>(
+        OportunidadeModalComponent,
+        salva,
+      )
+      .subscribe((resultado) => {
+        if (resultado === 'cotar') this.cotar(salva);
+      });
   }
 
   /**
@@ -153,7 +167,12 @@ export class SalvasPage implements OnInit {
       oportunidadeId: salva.id,
     };
 
-    this.modal.abrir<unknown, CotadorModalData>(CotadorModalComponent, dados).subscribe();
+    // Salvou a cotação: a licitação passou para a etapa Cotação e sai daqui.
+    this.modal
+      .abrir<CotadorModalResultado, CotadorModalData>(CotadorModalComponent, dados)
+      .subscribe((resultado) => {
+        if (resultado) this.carregar();
+      });
   }
 
   protected excluir(salva: OportunidadeSalvaResponse): void {

@@ -19,7 +19,14 @@ import { DetalheEstado, EditalCard } from '../../edital-card/edital-card.model';
  * tempo** — documentos publicados depois, plataforma de origem, selo CAPAG —
  * é consultado ao abrir, no `CompraDetalheView` (cacheado no backend, ver
  * `services.detalhar_compra_cacheada`), e entra no card assim que chega.
+ *
+ * Visualizar não é beco sem saída: "Iniciar cotação" fecha o modal
+ * devolvendo `'cotar'`, e quem abriu (Salvas ou o quadro do Ciclo) abre o
+ * Cotador — o modal não conhece o Cotador.
  */
+/** `'cotar'` quando a pessoa pediu para iniciar a cotação. */
+export type OportunidadeModalResultado = 'cotar' | undefined;
+
 @Component({
   selector: 'app-oportunidade-modal',
   imports: [ModalShellComponent, EditalCardComponent, ButtonComponent],
@@ -27,7 +34,7 @@ import { DetalheEstado, EditalCard } from '../../edital-card/edital-card.model';
   styleUrl: './oportunidade-modal.component.scss',
 })
 export class OportunidadeModalComponent implements OnInit {
-  private readonly dialogRef = inject(DialogRef<void>);
+  private readonly dialogRef = inject(DialogRef<OportunidadeModalResultado>);
   private readonly licitacoes = inject(LicitacoesService);
 
   protected readonly salva = inject<OportunidadeSalvaResponse>(DIALOG_DATA);
@@ -46,6 +53,10 @@ export class OportunidadeModalComponent implements OnInit {
 
   protected fechar(): void {
     this.dialogRef.close();
+  }
+
+  protected iniciarCotacao(): void {
+    this.dialogRef.close('cotar');
   }
 
   protected baixarEdital(): void {

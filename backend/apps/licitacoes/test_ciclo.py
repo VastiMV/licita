@@ -63,14 +63,15 @@ class CicloTests(APITestCase):
         salva = self.salva("1")
         self.assertEqual(len(self.coluna(self.quadro(), "oportunidade")["cartoes"]), 1)
 
-        self.cotar(salva)
+        # Estimado folgado: a conta fecha e só falta gerar a proposta.
+        self.cotar(salva, itens=[item_cotado(valor_referencia="50.00")])
 
         quadro = self.quadro()
         self.assertEqual(self.coluna(quadro, "oportunidade")["cartoes"], [])
         cartao = self.coluna(quadro, "cotacao")["cartoes"][0]
         self.assertEqual(cartao["id"], salva.pk)
         self.assertIsNotNone(cartao["cotacao_id"])
-        self.assertEqual(cartao["falta"], "gerar a proposta")
+        self.assertEqual(cartao["faltas"], ["gerar a proposta"])
 
     def test_cotacao_com_item_sem_preco_aponta_a_pendencia(self):
         salva = self.salva("1")
@@ -82,7 +83,7 @@ class CicloTests(APITestCase):
 
         self.assertEqual(cartao["pendencias"], 1)
         self.assertEqual(cartao["alerta"]["nivel"], "aviso")
-        self.assertEqual(cartao["falta"], "preço de fornecedor nos itens pendentes")
+        self.assertEqual(cartao["faltas"], ["preço de fornecedor no item 1"])
         self.assertEqual(quadro["resumo"]["cotacoes_com_pendencia"], 1)
 
     def test_prazo_vencido_sai_do_quadro_e_conta_como_encerrada(self):
@@ -150,3 +151,20 @@ class CicloTests(APITestCase):
         resposta = self.client.get("/api/licitacoes/salvas/")
 
         self.assertEqual([s["id"] for s in resposta.data["results"]], [fica.pk])
+
+    def test_reserva_acima_do_estimado_e_problema_e_diz_qual_item(self):
+        salva = self.salva("1")
+        caro = item_cotado(valor_referencia="10.00")  # custo 24,90 + frete
+        self.cotar(salva, itens=[caro])
+
+        cartao = self.coluna(self.quadro(), "cotacao")["cartoes"][0]
+
+        self.assertEqual(cartao["alerta"]["nivel"], "alerta")
+        self.assertTrue(cartao["faltas"][0].startswith("item 1: reserva acima do estimado"))
+
+    def test_oportunidade_pede_para_iniciar_a_cotacao(self):
+        self.salva("1", itens=[{"numero_item": 1}])
+
+        cartao = self.coluna(self.quadro(), "oportunidade")["cartoes"][0]
+
+        self.assertEqual(cartao["faltas"], ["iniciar a cotação para saber se dá"])

@@ -23,8 +23,12 @@ const CARTAO: CartaoCiclo = {
   valor_cotado: null,
   pendencias: null,
   alerta: { nivel: 'aviso', texto: 'salva há 3 dias, sem cotação' },
-  falta: 'cotar para saber se dá',
-  salva: { id: 7, objeto: 'Copos descartáveis 180 ml' } as unknown as CartaoCiclo['salva'],
+  faltas: ['iniciar a cotação para saber se dá'],
+  salva: {
+    id: 7,
+    objeto: 'Copos descartáveis 180 ml',
+    itens: [{ numero_item: 1 }],
+  } as unknown as CartaoCiclo['salva'],
 };
 
 const EM_COTACAO: CartaoCiclo = {
@@ -36,7 +40,12 @@ const EM_COTACAO: CartaoCiclo = {
   valor_cotado: 131900,
   pendencias: 0,
   alerta: { nivel: 'ok', texto: 'cotação completa' },
-  falta: 'gerar a proposta',
+  faltas: [
+    'item 3: reserva acima do estimado',
+    'preço de fornecedor nos itens 4 e 5',
+    'item 6: preço acima do estimado',
+    'gerar a proposta',
+  ],
   salva: null,
 };
 
@@ -96,7 +105,8 @@ describe('QuadroPage', () => {
   });
 
   const texto = () => fixture.nativeElement.textContent as string;
-  const cartoes = () => fixture.debugElement.queryAll(By.css('.cartao'));
+  const cartoes = () => fixture.debugElement.queryAll(By.css('.cartao-abrir'));
+  const acoes = () => fixture.debugElement.queryAll(By.css('.acao'));
 
   it('mostra as cinco colunas, com os cartões na coluna da etapa', () => {
     const nomes = fixture.debugElement
@@ -107,7 +117,7 @@ describe('QuadroPage', () => {
     expect(cartoes()).toHaveLength(2);
     expect(texto()).toContain('UASG 985412 · Araraquara/SP');
     expect(texto()).toContain('salva há 3 dias, sem cotação');
-    expect(texto()).toContain('cotar para saber se dá');
+    expect(texto()).toContain('iniciar a cotação para saber se dá');
   });
 
   it('etapa sem tela aparece vazia, avisando que ainda não está disponível', () => {
@@ -128,7 +138,47 @@ describe('QuadroPage', () => {
     expect(pequenos).toHaveLength(2);
     expect(pequenos[0].nativeElement.textContent).toContain('3');
     expect(pequenos[0].nativeElement.textContent).toContain('vencidas');
+    // Embaixo do quadro, não junto do resumo do dia.
+    expect(pequenos[0].parent?.nativeElement.classList).toContain('encerradas');
     expect(fixture.debugElement.query(By.css('.rodape'))).toBeNull();
+  });
+
+  it('o cartão mostra o que falta, no máximo três, e o resto vira "+N"', () => {
+    const faltas = fixture.debugElement
+      .queryAll(By.css('.cartao'))[1]
+      .queryAll(By.css('.falta li'))
+      .map((li) => li.nativeElement.textContent.trim());
+    expect(faltas).toEqual([
+      'item 3: reserva acima do estimado',
+      'preço de fornecedor nos itens 4 e 5',
+      'item 6: preço acima do estimado',
+      '+1',
+    ]);
+  });
+
+  it('"Iniciar cotação" na Oportunidade abre o Cotador com os itens do edital', () => {
+    acoes()[0].nativeElement.click();
+
+    expect(modal.abrir).toHaveBeenCalledWith(
+      CotadorModalComponent,
+      expect.objectContaining({ oportunidadeId: 7, itens: [{ numero_item: 1 }] }),
+    );
+  });
+
+  it('"Iniciar cotação" dentro do visualizador também abre o Cotador', () => {
+    cartoes()[0].nativeElement.click();
+    fechou.next('cotar');
+
+    expect(modal.abrir).toHaveBeenLastCalledWith(
+      CotadorModalComponent,
+      expect.objectContaining({ oportunidadeId: 7 }),
+    );
+  });
+
+  it('"Gerar proposta" aparece na Cotação, desabilitado até a tela existir', () => {
+    const gerar = acoes()[1];
+    expect(gerar.nativeElement.textContent).toContain('Gerar proposta');
+    expect(gerar.nativeElement.disabled).toBe(true);
   });
 
   it('cartão em Oportunidade abre o visualizador da oportunidade salva, não o Cotador', () => {

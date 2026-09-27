@@ -3,7 +3,6 @@ import { RouterLink } from '@angular/router';
 
 import {
   CartaoCiclo,
-  ColunaCiclo,
   NivelAlertaCiclo,
   QuadroCiclo,
 } from '../../../contracts/licitacoes/ciclo.contracts';
@@ -19,7 +18,14 @@ import {
   formatarMoeda,
   normalizarTitulo,
 } from '../../oportunidades/edital-card/edital-card.utils';
-import { OportunidadeModalComponent } from '../../oportunidades/salvas/oportunidade-modal/oportunidade-modal.component';
+import {
+  OportunidadeModalComponent,
+  OportunidadeModalResultado,
+} from '../../oportunidades/salvas/oportunidade-modal/oportunidade-modal.component';
+import { OportunidadeSalvaResponse } from '../../../contracts/licitacoes/oportunidade-salva.contracts';
+
+/** Quantas faltas o cartão mostra; o resto vira "+N". */
+const MAX_FALTAS = 3;
 
 /** Um card do resumo: número, legenda e o nível que pinta a borda. */
 interface Indicador {
@@ -46,10 +52,12 @@ export function formatarMil(valor: number): string {
  * arrasta — o cartão muda de coluna quando o trabalho anda (a etapa é
  * calculada no backend, ver `apps/licitacoes/ciclo.py`).
  *
- * Abrir um cartão abre a tela da etapa em que ele está, reaproveitando os
- * modais que já existem: Oportunidade abre o visualizador da oportunidade
- * salva, Cotação abre o Cotador. Fechar recarrega o quadro. Proposta,
- * Disputa e Empenho aparecem vazias até as telas delas chegarem.
+ * O quadro existe para mostrar o que falta: cada cartão lista, em concreto,
+ * o que impede a licitação de andar, e traz o botão que a leva à etapa
+ * seguinte. Tudo reaproveita os modais que já existem — Oportunidade abre o
+ * visualizador da salva (que tem "Iniciar cotação"), Cotação abre o
+ * Cotador. Fechar recarrega o quadro. "Gerar proposta" aparece desabilitado
+ * até a tela de Proposta existir.
  */
 @Component({
   selector: 'app-quadro-page',
@@ -160,26 +168,41 @@ export class QuadroPage implements OnInit {
     return [prazo && `propostas até ${prazo}`, valor].filter(Boolean).join(' · ');
   }
 
-  /** Só as etapas com tela abrem alguma coisa. */
-  protected abre(coluna: ColunaCiclo): boolean {
-    return coluna.disponivel;
+  protected faltasVisiveis(cartao: CartaoCiclo): readonly string[] {
+    return cartao.faltas.slice(0, MAX_FALTAS);
   }
 
+  protected faltasOcultas(cartao: CartaoCiclo): number {
+    return Math.max(cartao.faltas.length - MAX_FALTAS, 0);
+  }
+
+  /** Clique no cartão: a tela da etapa em que ele está. */
   protected abrir(cartao: CartaoCiclo): void {
     if (cartao.etapa === 'oportunidade' && cartao.salva) {
-      this.modal.abrir(OportunidadeModalComponent, cartao.salva).subscribe(() => this.carregar());
+      this.modal
+        .abrir<OportunidadeModalResultado, OportunidadeSalvaResponse>(
+          OportunidadeModalComponent,
+          cartao.salva,
+        )
+        .subscribe((resultado) => {
+          if (resultado === 'cotar') this.cotar(cartao);
+          else this.carregar();
+        });
       return;
     }
-    if (cartao.etapa !== 'cotacao') return;
+    if (cartao.etapa === 'cotacao') this.cotar(cartao);
+  }
 
-    // A cotação já existe: o Cotador carrega a dela pelo id da oportunidade,
-    // e os itens do snapshot não são usados.
+  /** Abre o Cotador: em branco, com os itens do edital, na etapa
+   * Oportunidade; com a cotação salva, na etapa Cotação. Salvando ou não,
+   * volta para o quadro atualizado — salvar a primeira cotação é o que move
+   * o cartão de coluna. */
+  protected cotar(cartao: CartaoCiclo): void {
     const dados: CotadorModalData = {
       titulo: normalizarTitulo(cartao.objeto),
-      itens: [],
+      itens: cartao.salva?.itens ?? [],
       oportunidadeId: cartao.id,
     };
-    // Salvando ou não, volta para o quadro atualizado.
     this.modal
       .abrir<unknown, CotadorModalData>(CotadorModalComponent, dados)
       .subscribe(() => this.carregar());
