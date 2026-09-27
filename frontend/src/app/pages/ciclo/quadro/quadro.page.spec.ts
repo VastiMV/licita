@@ -4,7 +4,10 @@ import { provideRouter } from '@angular/router';
 import { Subject, of, throwError } from 'rxjs';
 
 import { CartaoCiclo, QuadroCiclo } from '../../../contracts/licitacoes/ciclo.contracts';
+import { CotadorService } from '../../../services/cotador/cotador.service';
 import { CicloService } from '../../../services/licitacoes/ciclo.service';
+import { OportunidadesSalvasService } from '../../../services/licitacoes/oportunidades-salvas.service';
+import { ToastService } from '../../../shared/ui/toast/toast.service';
 import { ModalService } from '../../../shared/overlay/modal.service';
 import { CotadorModalComponent } from '../../oportunidades/cotador-modal/cotador-modal.component';
 import { OportunidadeModalComponent } from '../../oportunidades/salvas/oportunidade-modal/oportunidade-modal.component';
@@ -85,19 +88,26 @@ function quadro(): QuadroCiclo {
 describe('QuadroPage', () => {
   let fixture: ComponentFixture<QuadroPage>;
   let ciclo: { quadro: ReturnType<typeof vi.fn> };
-  let modal: { abrir: ReturnType<typeof vi.fn> };
+  let modal: { abrir: ReturnType<typeof vi.fn>; confirmar: ReturnType<typeof vi.fn> };
+  let salvas: { remover: ReturnType<typeof vi.fn> };
+  let cotador: { remover: ReturnType<typeof vi.fn> };
   let fechou: Subject<unknown>;
 
   beforeEach(() => {
     fechou = new Subject();
     ciclo = { quadro: vi.fn(() => of(quadro())) };
-    modal = { abrir: vi.fn(() => fechou) };
+    modal = { abrir: vi.fn(() => fechou), confirmar: vi.fn(() => of(true)) };
+    salvas = { remover: vi.fn(() => of(undefined)) };
+    cotador = { remover: vi.fn(() => of(undefined)) };
     TestBed.configureTestingModule({
       imports: [QuadroPage],
       providers: [
         provideRouter([]),
         { provide: CicloService, useValue: ciclo },
         { provide: ModalService, useValue: modal },
+        { provide: OportunidadesSalvasService, useValue: salvas },
+        { provide: CotadorService, useValue: cotador },
+        { provide: ToastService, useValue: { sucesso: vi.fn(), erro: vi.fn() } },
       ],
     });
     fixture = TestBed.createComponent(QuadroPage);
@@ -222,5 +232,30 @@ describe('QuadroPage', () => {
   it('formatarMil resume o valor da coluna', () => {
     expect(formatarMil(214_000)).toBe('R$ 214 mil');
     expect(formatarMil(1_250_000)).toBe('R$ 1,3 mi');
+  });
+
+  const lixeiras = () => fixture.debugElement.queryAll(By.css('.acao-excluir'));
+
+  it('excluir a cotação apaga só a cotação — a licitação volta para Oportunidade', () => {
+    lixeiras()[1].nativeElement.click();
+
+    expect(cotador.remover).toHaveBeenCalledWith(15);
+    expect(salvas.remover).not.toHaveBeenCalled();
+    expect(ciclo.quadro).toHaveBeenCalledTimes(2);
+  });
+
+  it('excluir a oportunidade tira a salva do ciclo', () => {
+    lixeiras()[0].nativeElement.click();
+
+    expect(salvas.remover).toHaveBeenCalledWith(7);
+    expect(cotador.remover).not.toHaveBeenCalled();
+  });
+
+  it('recusar a confirmação não apaga nada', () => {
+    modal.confirmar.mockReturnValue(of(false));
+
+    lixeiras()[1].nativeElement.click();
+
+    expect(cotador.remover).not.toHaveBeenCalled();
   });
 });

@@ -6,9 +6,12 @@ import {
   NivelAlertaCiclo,
   QuadroCiclo,
 } from '../../../contracts/licitacoes/ciclo.contracts';
+import { CotadorService } from '../../../services/cotador/cotador.service';
 import { CicloService } from '../../../services/licitacoes/ciclo.service';
+import { OportunidadesSalvasService } from '../../../services/licitacoes/oportunidades-salvas.service';
 import { ModalService } from '../../../shared/overlay/modal.service';
 import { IconComponent } from '../../../shared/ui/icon/icon.component';
+import { ToastService } from '../../../shared/ui/toast/toast.service';
 import {
   CotadorModalComponent,
   CotadorModalData,
@@ -68,6 +71,9 @@ export function formatarMil(valor: number): string {
 export class QuadroPage implements OnInit {
   private readonly ciclo = inject(CicloService);
   private readonly modal = inject(ModalService);
+  private readonly salvas = inject(OportunidadesSalvasService);
+  private readonly cotador = inject(CotadorService);
+  private readonly toast = inject(ToastService);
 
   protected readonly quadro = signal<QuadroCiclo | null>(null);
   protected readonly carregando = signal(true);
@@ -206,5 +212,56 @@ export class QuadroPage implements OnInit {
     this.modal
       .abrir<unknown, CotadorModalData>(CotadorModalComponent, dados)
       .subscribe(() => this.carregar());
+  }
+
+  /**
+   * Volta um degrau: apagar a cotação devolve a licitação para Oportunidade
+   * (a salva continua); excluir a salva tira a licitação do ciclo de vez.
+   */
+  protected excluir(cartao: CartaoCiclo): void {
+    const emCotacao = cartao.etapa === 'cotacao' && cartao.cotacao_id !== null;
+    const titulo = normalizarTitulo(cartao.objeto);
+
+    this.modal
+      .confirmar(
+        emCotacao
+          ? {
+              titulo: 'Excluir cotação',
+              mensagem:
+                `A cotação de "${titulo}" será apagada e a licitação volta para ` +
+                'Oportunidade. A oportunidade salva continua. Deseja continuar?',
+              confirmarLabel: 'Excluir cotação',
+              variantConfirmar: 'danger',
+            }
+          : {
+              titulo: 'Excluir oportunidade salva',
+              mensagem:
+                `"${titulo}" sai do Ciclo de Licitação e da lista de toda a equipe. ` +
+                'Esta ação não poderá ser desfeita. Deseja continuar?',
+              confirmarLabel: 'Excluir',
+              variantConfirmar: 'danger',
+            },
+      )
+      .subscribe((confirmou) => {
+        if (!confirmou) return;
+
+        const pedido = emCotacao
+          ? this.cotador.remover(cartao.cotacao_id!)
+          : this.salvas.remover(cartao.id);
+        pedido.subscribe({
+          next: () => {
+            this.toast.sucesso(
+              emCotacao ? 'Cotação excluída — voltou para Oportunidade.' : 'Oportunidade excluída.',
+            );
+            this.carregar();
+          },
+          error: () =>
+            this.toast.erro(
+              emCotacao
+                ? 'Não foi possível excluir a cotação agora.'
+                : 'Não foi possível excluir a oportunidade agora.',
+            ),
+        });
+      });
   }
 }

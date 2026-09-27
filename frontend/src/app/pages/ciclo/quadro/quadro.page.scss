@@ -309,11 +309,35 @@ h1 {
 
 .acoes {
   display: flex;
-  justify-content: flex-end;
+  justify-content: space-between;
+  align-items: center;
+  gap: var(--space-2);
   padding: 0 var(--space-3) var(--space-3);
+}
 
-  &:empty {
-    display: none;
+// Discreta: é a ação de voltar um degrau, não a principal do cartão.
+.acao-excluir {
+  appearance: none;
+  display: inline-flex;
+  padding: 0.3rem;
+  border: none;
+  border-radius: var(--radius-sm);
+  background: none;
+  color: var(--color-muted);
+  cursor: pointer;
+
+  app-icon {
+    width: 16px;
+    height: 16px;
+  }
+
+  &:hover {
+    background: var(--color-danger-bg);
+    color: var(--color-danger);
+  }
+
+  &:focus-visible {
+    @include focus-ring;
   }
 }
 
