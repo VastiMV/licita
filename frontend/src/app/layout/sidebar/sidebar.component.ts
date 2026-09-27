@@ -11,9 +11,10 @@ interface NavLink {
   readonly path: string;
   readonly label: string;
   readonly icon: IconName;
-  /** Item de primeiro nível que agrupa outros (ver `NavGroupComponent`) —
-   * o pai não é link, quem navega são os filhos. */
+  /** Item de primeiro nível que agrupa outros (ver `NavGroupComponent`). */
   readonly itens?: readonly NavSubItem[];
+  /** O próprio grupo é uma tela (ver `NavSubItem.navega`). */
+  readonly navega?: boolean;
 }
 
 /**
@@ -66,13 +67,30 @@ const CONFIGURACOES: NavLink = {
 };
 
 const MENU: readonly NavLink[] = [
+  // O Ciclo de Licitação é o grupo e é tela: o rótulo abre o quadro, e cada
+  // etapa embaixo é a lista das licitações que estão nela agora — a
+  // licitação sai de uma lista e aparece na seguinte conforme o trabalho
+  // anda (ver docs/Tarefas/feat-ciclo.md).
   {
-    path: '/oportunidades',
-    label: 'Oportunidades',
-    icon: 'oportunidades',
+    path: '/ciclo',
+    label: 'Ciclo de Licitação',
+    icon: 'ciclo',
+    navega: true,
     itens: [
-      { path: '/oportunidades/pesquisar', label: 'Pesquisar', icon: 'search' },
-      { path: '/oportunidades/salvas', label: 'Salvas', icon: 'bookmark' },
+      {
+        path: '/oportunidades',
+        label: 'Oportunidades',
+        icon: 'oportunidades',
+        itens: [
+          { path: '/oportunidades/buscar', label: 'Buscar', icon: 'search' },
+          { path: '/oportunidades/salvas', label: 'Salvas', icon: 'bookmark' },
+        ],
+      },
+      { path: '/ciclo/cotador', label: 'Cotador', icon: 'cotador' },
+      { path: '/ciclo/propostas', label: 'Propostas', icon: 'proposta' },
+      { path: '/ciclo/disputas', label: 'Disputas', icon: 'disputa' },
+      { path: '/ciclo/empenhos', label: 'Empenhos', icon: 'empenho' },
+      { path: '/ciclo/encerradas', label: 'Encerradas', icon: 'encerradas' },
     ],
   },
   // O par natural: com quem eu disputo, de quem eu compro.

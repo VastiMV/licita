@@ -1,24 +1,58 @@
 @if (compact()) {
   <!-- Trilho de ícones: sem o pai, os filhos ficam acessíveis por tooltip. -->
-  @for (item of itens(); track item.path) {
+  @for (item of planos(); track item.path) {
     <app-nav-item [path]="item.path" [label]="item.label" [icon]="item.icon" [compact]="true" />
   }
 } @else {
-  <button
-    type="button"
-    class="grupo-cabecalho"
-    [attr.aria-expanded]="aberto()"
-    (click)="alternar()"
-  >
-    <app-icon [name]="icon()" />
-    <span class="label">{{ label() }}</span>
-    <app-icon [name]="aberto() ? 'chevron-up' : 'chevron-down'" class="grupo-seta" />
-  </button>
+  @if (navega() && path(); as destino) {
+    <!-- O pai é uma tela: o rótulo navega, a seta abre e fecha. -->
+    <div class="grupo-cabecalho grupo-cabecalho-link">
+      <a
+        class="grupo-link"
+        [routerLink]="destino"
+        routerLinkActive="active"
+        [routerLinkActiveOptions]="{ exact: true }"
+      >
+        <app-icon [name]="icon()" />
+        <span class="label">{{ label() }}</span>
+      </a>
+      <button
+        type="button"
+        class="grupo-alternar"
+        [attr.aria-expanded]="aberto()"
+        [attr.aria-label]="(aberto() ? 'Recolher ' : 'Expandir ') + label()"
+        (click)="alternar()"
+      >
+        <app-icon [name]="aberto() ? 'chevron-up' : 'chevron-down'" class="grupo-seta" />
+      </button>
+    </div>
+  } @else {
+    <button
+      type="button"
+      class="grupo-cabecalho"
+      [attr.aria-expanded]="aberto()"
+      (click)="alternar()"
+    >
+      <app-icon [name]="icon()" />
+      <span class="label">{{ label() }}</span>
+      <app-icon [name]="aberto() ? 'chevron-up' : 'chevron-down'" class="grupo-seta" />
+    </button>
+  }
 
   @if (aberto()) {
     <div class="grupo-itens">
       @for (item of itens(); track item.path) {
-        <app-nav-item [path]="item.path" [label]="item.label" [icon]="item.icon" />
+        @if (item.itens; as filhos) {
+          <app-nav-group
+            [label]="item.label"
+            [icon]="item.icon"
+            [itens]="filhos"
+            [path]="item.path"
+            [navega]="!!item.navega"
+          />
+        } @else {
+          <app-nav-item [path]="item.path" [label]="item.label" [icon]="item.icon" />
+        }
       }
     </div>
   }

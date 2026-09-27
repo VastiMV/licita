@@ -33,18 +33,32 @@ describe('SidebarComponent', () => {
     fixture.detectChanges();
   });
 
-  it('mostra a marca e os itens de menu, com Oportunidades como grupo', () => {
+  it('mostra a marca e o Ciclo de Licitação com Oportunidades e as etapas dentro', () => {
     expect(fixture.debugElement.query(By.directive(BrandComponent))).toBeTruthy();
 
-    const grupo = fixture.debugElement.query(By.directive(NavGroupComponent));
-    expect((grupo.componentInstance as NavGroupComponent).label()).toBe('Oportunidades');
+    const grupos = fixture.debugElement
+      .queryAll(By.directive(NavGroupComponent))
+      .map((grupo) => (grupo.componentInstance as NavGroupComponent).label());
+    expect(grupos).toEqual(['Ciclo de Licitação', 'Oportunidades']);
 
-    // Os filhos do grupo são itens como os de primeiro nível — "Pesquisar"
-    // vem antes de "Salvas" (a busca é a tela inicial do app).
+    // "Ciclo de Licitação" é link (o quadro); Oportunidades é subgrupo, com
+    // "Buscar" antes de "Salvas" (a busca é a tela inicial do app).
+    const ciclo = fixture.debugElement.query(By.css('a.grupo-link'));
+    expect(ciclo.nativeElement.getAttribute('href')).toBe('/ciclo');
+
     const items = fixture.debugElement.queryAll(By.directive(NavItemComponent));
     const labels = items.map((item) => (item.componentInstance as NavItemComponent).label());
-    // Filtros, Alertas e o cotador antigo saíram (docs/Tarefas/feat-remover-legado.md).
-    expect(labels).toEqual(['Pesquisar', 'Salvas', 'Empresas', 'Fornecedores']);
+    expect(labels).toEqual([
+      'Buscar',
+      'Salvas',
+      'Cotador',
+      'Propostas',
+      'Disputas',
+      'Empenhos',
+      'Encerradas',
+      'Empresas',
+      'Fornecedores',
+    ]);
   });
 
   it('Configurações só aparece para administrador', () => {
@@ -55,20 +69,28 @@ describe('SidebarComponent', () => {
         .queryAll(By.directive(NavGroupComponent))
         .map((grupo) => (grupo.componentInstance as NavGroupComponent).label());
 
-    expect(rotulos()).toEqual(['Oportunidades']);
+    expect(rotulos()).toEqual(['Ciclo de Licitação', 'Oportunidades']);
 
     ehAdmin.set(true);
     fixture.detectChanges();
 
-    expect(rotulos()).toEqual(['Oportunidades', 'Configurações']);
+    expect(rotulos()).toEqual(['Ciclo de Licitação', 'Oportunidades', 'Configurações']);
   });
 
-  it('os filhos de Oportunidades apontam para as rotas do submenu', () => {
+  it('cada item do Ciclo aponta para a sua rota', () => {
     const rotas = fixture.debugElement
       .queryAll(By.directive(NavItemComponent))
       .map((item) => (item.componentInstance as NavItemComponent).path());
 
-    expect(rotas.slice(0, 2)).toEqual(['/oportunidades/pesquisar', '/oportunidades/salvas']);
+    expect(rotas.slice(0, 7)).toEqual([
+      '/oportunidades/buscar',
+      '/oportunidades/salvas',
+      '/ciclo/cotador',
+      '/ciclo/propostas',
+      '/ciclo/disputas',
+      '/ciclo/empenhos',
+      '/ciclo/encerradas',
+    ]);
   });
 
   it('o botão de colapso alterna SidebarStateService.collapsed', () => {
@@ -97,11 +119,11 @@ describe('SidebarComponent', () => {
     expect(state.mobileOpen()).toBe(false);
   });
 
-  it('abrir/fechar o grupo Oportunidades não fecha o menu mobile', () => {
+  it('abrir/fechar um grupo não fecha o menu mobile', () => {
     state.mobileOpen.set(true);
     fixture.detectChanges();
 
-    fixture.debugElement.query(By.css('.grupo-cabecalho')).nativeElement.click();
+    fixture.debugElement.query(By.css('.grupo-alternar')).nativeElement.click();
 
     expect(state.mobileOpen()).toBe(true);
   });
