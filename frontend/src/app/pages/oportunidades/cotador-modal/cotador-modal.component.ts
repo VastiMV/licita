@@ -404,6 +404,12 @@ export class CotadorModalComponent implements OnInit {
     if (this.expandido() === item.id) this.expandido.set(null);
   }
 
+  protected novoItemNoEnter(evento: KeyboardEvent, depoisDe: string): void {
+    if (evento.shiftKey) return;
+    evento.preventDefault();
+    this.adicionarItem(depoisDe);
+  }
+
   protected alterarDescricao(item: ItemCotador, valor: string): void {
     this.atualizarItem(item.id, (atual) => ({ ...atual, descricao: valor }));
   }
@@ -610,8 +616,7 @@ export class CotadorModalComponent implements OnInit {
     this.modal
       .confirmar({
         titulo: 'Exportar proposta',
-        mensagem:
-          'A planilha é gerada a partir da cotação salva. Deseja salvar a cotação agora?',
+        mensagem: 'A planilha é gerada a partir da cotação salva. Deseja salvar a cotação agora?',
         confirmarLabel: 'Salvar e exportar',
       })
       .subscribe((confirmou) => {

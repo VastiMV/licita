@@ -199,17 +199,19 @@
   }
 }
 
+// Descrição na largura toda (linha de cima); chips e métricas embaixo. As
+// métricas têm colunas de largura fixa para os valores de um item ficarem
+// alinhados com os dos outros, qualquer que seja o tamanho dos chips.
 .item-linha {
-  display: flex;
-  flex-wrap: wrap;
-  align-items: center;
-  gap: var(--space-3);
+  display: grid;
+  grid-template-columns: 26px minmax(0, 1fr);
+  align-items: start;
+  gap: var(--space-2) var(--space-3);
   padding: var(--space-3);
 }
 
 .item-indice {
-  flex: none;
-  width: 26px;
+  padding-top: 0.5rem;
   text-align: center;
   font-variant-numeric: tabular-nums;
   font-size: var(--font-size-xs);
@@ -217,14 +219,18 @@
 }
 
 .item-descricao {
-  flex: 1 1 220px;
-  min-width: 180px;
+  min-width: 0;
   display: flex;
   flex-direction: column;
   gap: var(--space-1);
 
-  input {
+  textarea {
+    display: block;
     width: 100%;
+    resize: none;
+    field-sizing: content;
+    min-height: 2.1rem;
+    line-height: 1.35;
     font: inherit;
     font-weight: var(--font-weight-semibold);
     color: var(--color-fg);
@@ -329,12 +335,20 @@ button.chip {
 }
 
 .item-metricas {
-  flex: 1 1 460px;
-  display: flex;
-  flex-wrap: wrap;
+  grid-column: 2;
+  display: grid;
+  grid-template-columns: 80px repeat(4, minmax(96px, 128px)) auto;
+  justify-content: end;
   gap: var(--space-3);
-  align-items: flex-end;
-  justify-content: flex-end;
+  align-items: end;
+}
+
+@media (max-width: 760px) {
+  .item-metricas {
+    grid-column: 1 / -1;
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+    justify-content: stretch;
+  }
 }
 
 .metrica {
@@ -342,7 +356,7 @@ button.chip {
   flex-direction: column;
   gap: 0.15rem;
   text-align: right;
-  flex: none;
+  min-width: 0;
 }
 
 .metrica-rotulo {

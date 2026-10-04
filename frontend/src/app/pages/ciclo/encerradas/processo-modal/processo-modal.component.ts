@@ -8,10 +8,7 @@ import {
 import { EncerradasService } from '../../../../services/licitacoes/encerradas.service';
 import { ModalShellComponent } from '../../../../shared/overlay/modal-shell/modal-shell.component';
 import { ButtonComponent } from '../../../../shared/ui/button/button.component';
-import {
-  formatarData,
-  formatarMoeda,
-} from '../../../oportunidades/edital-card/edital-card.utils';
+import { formatarData, formatarMoeda } from '../../../oportunidades/edital-card/edital-card.utils';
 
 /** Uma linha da linha do tempo. Salvamentos seguidos da cotação viram uma
  * linha só ("atualizada 20 vezes") — vinte linhas iguais escondem o que

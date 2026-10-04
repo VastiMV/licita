@@ -106,11 +106,11 @@ describe('SalvasPage', () => {
     fixture.detectChanges();
   }
 
-  it('carrega a lista ao abrir, mais recentes primeiro', () => {
+  it('carrega a lista ao abrir, o prazo que vence primeiro no topo', () => {
     expect(service.listar).toHaveBeenCalledWith({
       page: 1,
       page_size: 10,
-      ordering: '-criada_em',
+      ordering: 'prazo',
       busca: '',
     });
     expect(linhas()).toHaveLength(2);
@@ -121,7 +121,8 @@ describe('SalvasPage', () => {
       .queryAll(By.css('td'))
       .map((td) => td.nativeElement.textContent.trim());
 
-    expect(celulas[0]).toBe('925997');
+    // O nome da unidade vem embaixo da UASG.
+    expect(celulas[0]).toBe('925997Prefeitura de Campinas');
     expect(celulas[1]).toBe('Pregão Eletrônico');
     expect(celulas[2]).toBe('Campinas / SP');
     expect(celulas[3]).toBe('20/08/2026');
