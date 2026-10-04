@@ -17,6 +17,8 @@ export const ENDPOINTS = {
     ciclo: 'licitacoes/ciclo/',
     salvas: 'licitacoes/salvas/',
     salvasChaves: 'licitacoes/salvas/chaves/',
+    /** A lista do Cotador: as salvas na etapa Cotação. */
+    cotacoes: 'licitacoes/cotacoes/',
     /** Quem saiu do ciclo — encerramento calculado no backend. */
     encerradas: 'licitacoes/encerradas/',
     salva: (id: number) => `licitacoes/salvas/${id}/`,

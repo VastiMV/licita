@@ -208,6 +208,39 @@ class EncerradaSerializer(OportunidadeSalvaSerializer):
         return obj.removida_por_nome or None
 
 
+class EmCotacaoSerializer(OportunidadeSalvaSerializer):
+    """Uma linha do Cotador: a salva mais a cotação dela e a situação — o
+    mesmo selo e as mesmas faltas do cartão do quadro (`ciclo.py`)."""
+
+    cotacao_id = serializers.IntegerField(source="cotacao.pk", read_only=True)
+    valor_cotado = serializers.SerializerMethodField()
+    cotacao_atualizada_em = serializers.DateTimeField(
+        source="cotacao.atualizada_em", read_only=True
+    )
+    pendencias = serializers.SerializerMethodField()
+    selo = serializers.SerializerMethodField()
+
+    class Meta(OportunidadeSalvaSerializer.Meta):
+        fields = OportunidadeSalvaSerializer.Meta.fields + [
+            "cotacao_id",
+            "valor_cotado",
+            "cotacao_atualizada_em",
+            "pendencias",
+            "selo",
+        ]
+
+    def get_valor_cotado(self, obj: OportunidadeSalva) -> float:
+        return float(obj.cotacao.valor_cotado)
+
+    def get_pendencias(self, obj: OportunidadeSalva) -> int:
+        return obj.cotacao.totais().pendencias
+
+    def get_selo(self, obj: OportunidadeSalva) -> dict:
+        from .ciclo import situacao_da_cotacao
+
+        return situacao_da_cotacao(obj)
+
+
 class OportunidadeSalvaCriacaoSerializer(serializers.Serializer):
     """Payload de `POST /api/licitacoes/salvas/`: o próprio resultado da
     busca daquele edital (`itens`), mais o que o card já tinha resolvido à

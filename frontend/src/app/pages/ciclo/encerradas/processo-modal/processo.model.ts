@@ -6,7 +6,7 @@
 
 import {
   DesfechoProcesso,
-  EncerradaResponse,
+  ProcessoCabecalho,
   EtapaCiclo,
   EventoDoProcesso,
   ProcessoResponse,
@@ -278,7 +278,7 @@ function escapar(texto: string): string {
 
 export function narrar(
   processo: ProcessoResponse,
-  cabecalho: EncerradaResponse,
+  cabecalho: ProcessoCabecalho,
   i: number,
 ): Narracao {
   const etapa = ETAPAS[i];

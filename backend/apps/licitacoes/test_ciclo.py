@@ -168,3 +168,42 @@ class CicloTests(APITestCase):
         cartao = self.coluna(self.quadro(), "oportunidade")["cartoes"][0]
 
         self.assertEqual(cartao["faltas"], ["iniciar a cotação para saber se dá"])
+
+
+class EmCotacaoTests(APITestCase):
+    """A lista do Cotador (`/api/licitacoes/cotacoes/`): só a etapa Cotação."""
+
+    setUp = CicloTests.setUp
+    salva = CicloTests.salva
+    cotar = CicloTests.cotar
+
+    def lista(self, **params):
+        resposta = self.client.get("/api/licitacoes/cotacoes/", params)
+        self.assertEqual(resposta.status_code, 200)
+        return resposta.data
+
+    def test_lista_so_as_com_cotacao_e_prazo_aberto(self):
+        cotada = self.salva("1")
+        self.cotar(cotada, itens=[item_cotado(valor_referencia="50.00")])
+        self.salva("2")  # sem cotação: está em Salvas
+        vencida = self.salva("3", prazo_em_dias=-1)
+        self.cotar(vencida)  # prazo vencido: está em Encerradas
+        removida = self.salva("4")
+        self.cotar(removida)
+        removida.remover()
+
+        pagina = self.lista()
+
+        self.assertEqual([l["id"] for l in pagina["results"]], [cotada.pk])
+        linha = pagina["results"][0]
+        self.assertIsNotNone(linha["cotacao_id"])
+        self.assertEqual(linha["selo"]["nivel"], "ok")
+        self.assertEqual(linha["selo"]["faltas"], ["gerar a proposta"])
+
+    def test_prazo_mais_proximo_primeiro(self):
+        depois = self.salva("1", prazo_em_dias=20)
+        antes = self.salva("2", prazo_em_dias=5)
+        self.cotar(depois)
+        self.cotar(antes)
+
+        self.assertEqual([l["id"] for l in self.lista()["results"]], [antes.pk, depois.pk])

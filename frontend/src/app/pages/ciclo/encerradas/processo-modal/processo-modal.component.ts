@@ -3,7 +3,7 @@ import { NgTemplateOutlet } from '@angular/common';
 import { Component, OnInit, computed, inject, signal } from '@angular/core';
 
 import {
-  EncerradaResponse,
+  ProcessoCabecalho,
   ProcessoResponse,
 } from '../../../../contracts/licitacoes/encerrada.contracts';
 import { CotadorService } from '../../../../services/cotador/cotador.service';
@@ -49,7 +49,7 @@ export class ProcessoModalComponent implements OnInit {
   private readonly cotador = inject(CotadorService);
   private readonly toast = inject(ToastService);
 
-  protected readonly cab = inject<EncerradaResponse>(DIALOG_DATA);
+  protected readonly cab = inject<ProcessoCabecalho>(DIALOG_DATA);
   protected readonly processo = signal<ProcessoResponse | null>(null);
   protected readonly erro = signal(false);
   protected readonly selecionada = signal(0);

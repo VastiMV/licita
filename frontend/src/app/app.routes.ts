@@ -5,11 +5,6 @@ import { ShellComponent } from './layout/shell/shell.component';
 
 const CICLO = [
   {
-    path: 'cotador',
-    titulo: 'Cotador',
-    descricao: 'As licitações em cotação: salvas que já têm cotação e ainda não viraram proposta.',
-  },
-  {
     path: 'propostas',
     titulo: 'Propostas',
     descricao: 'As licitações com proposta gerada, até a sessão de disputa.',
@@ -72,6 +67,11 @@ export const routes: Routes = [
             path: 'visao-geral',
             loadComponent: () =>
               import('./pages/ciclo/quadro/quadro.page').then((m) => m.QuadroPage),
+          },
+          {
+            path: 'cotador',
+            loadComponent: () =>
+              import('./pages/ciclo/cotador/cotador.page').then((m) => m.CotadorPage),
           },
           {
             path: 'encerradas',

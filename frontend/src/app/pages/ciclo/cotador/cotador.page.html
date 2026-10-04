@@ -1,0 +1,26 @@
+<h1>Cotador</h1>
+<p class="muted">
+  As licitações em cotação: salvas que já têm cotação e ainda não viraram proposta. As que perdem
+  o prazo de envio de proposta saem daqui e vão para Encerradas.
+</p>
+
+@if (erro()) {
+  <p class="erro">Não foi possível carregar as cotações agora.</p>
+}
+
+<app-data-table
+  [colunas]="colunas"
+  [linhas]="linhas()"
+  [total]="total()"
+  [estado]="estado()"
+  [carregando]="carregando()"
+  [chaveDe]="chaveDe"
+  rotuloBusca="Buscar"
+  placeholderBusca="Busca na descrição e nos itens…"
+  mensagemVazia="Nenhuma licitação em cotação. Abra a cotação de uma salva (Oportunidades / Salvas)."
+  (estadoMudou)="aoMudarEstado($event)"
+>
+  <ng-template appTabelaAcoes let-linha>
+    <app-menu [itens]="acoesDe(linha)" [descricao]="'Ações da cotação ' + linha.chave" />
+  </ng-template>
+</app-data-table>

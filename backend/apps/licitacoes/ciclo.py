@@ -134,6 +134,28 @@ def _faltas_da_cotacao(cotacao) -> tuple[list[str], Alerta]:
     return faltas, alerta
 
 
+def situacao_da_cotacao(salva: OportunidadeSalva, hoje: dt.date | None = None) -> dict:
+    """O selo e as faltas de uma salva na etapa Cotação — o mesmo do cartão
+    do quadro, para a lista do Cotador não divergir dele."""
+
+    hoje = hoje or timezone.localdate()
+    faltas, alerta = _faltas_da_cotacao(salva.cotacao)
+    alerta = _alerta_do_prazo(salva.data_encerramento_proposta, alerta, hoje)
+    return {"nivel": alerta.nivel, "texto": alerta.texto, "faltas": faltas}
+
+
+def _alerta_do_prazo(prazo: dt.date | None, alerta: Alerta, hoje: dt.date) -> Alerta:
+    """Prazo de proposta até amanhã passa à frente de qualquer outro aviso
+    (menos de outro alerta)."""
+
+    if prazo:
+        restantes = _dias(hoje, prazo)
+        if restantes <= 1 and alerta.nivel != "alerta":
+            quando = "hoje" if restantes == 0 else "amanhã"
+            return Alerta("alerta", f"propostas até {quando}")
+    return alerta
+
+
 def _cartao(salva: OportunidadeSalva, etapa: str, hoje: dt.date) -> dict:
     prazo = salva.data_encerramento_proposta
     cotacao = _cotacao_de(salva)
@@ -156,11 +178,8 @@ def _cartao(salva: OportunidadeSalva, etapa: str, hoje: dt.date) -> dict:
         valor_cotado = float(cotacao.valor_cotado)
         faltas, alerta = _faltas_da_cotacao(cotacao)
 
-    if prazo and etapa != "encerrada":
-        restantes = _dias(hoje, prazo)
-        if restantes <= 1 and alerta.nivel != "alerta":
-            quando = "hoje" if restantes == 0 else "amanhã"
-            alerta = Alerta("alerta", f"propostas até {quando}")
+    if etapa != "encerrada":
+        alerta = _alerta_do_prazo(prazo, alerta, hoje)
 
     return {
         "id": salva.pk,

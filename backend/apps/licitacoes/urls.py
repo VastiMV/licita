@@ -3,6 +3,7 @@ from django.urls import path
 from .views import (
     CicloView,
     CompraDetalheView,
+    EmCotacaoView,
     EncerradasView,
     OportunidadeSalvaEventosView,
     OportunidadeSalvaView,
@@ -15,6 +16,7 @@ from .views import (
 urlpatterns = [
     path("oportunidades/", OportunidadesView.as_view(), name="licitacoes-oportunidades"),
     path("ciclo/", CicloView.as_view(), name="licitacoes-ciclo"),
+    path("cotacoes/", EmCotacaoView.as_view(), name="licitacoes-cotacoes"),
     path("encerradas/", EncerradasView.as_view(), name="licitacoes-encerradas"),
     path(
         "compras/<str:cnpj>/<int:ano>/<int:sequencial>/detalhe/",

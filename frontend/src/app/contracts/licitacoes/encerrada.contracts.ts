@@ -24,6 +24,13 @@ export interface EncerradaResponse extends OportunidadeSalvaResponse {
   readonly removida_por: string | null;
 }
 
+/** O que o modal do processo precisa de uma linha — Encerradas e Cotador
+ * abrem o mesmo modal. */
+export type ProcessoCabecalho = OportunidadeSalvaResponse & {
+  readonly cotacao_id: number | null;
+  readonly valor_cotado: number | null;
+};
+
 export interface EncerradasPagina {
   readonly count: number;
   readonly next: string | null;

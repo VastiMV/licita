@@ -34,6 +34,7 @@ from .models import OportunidadeSalva, registrar_prazos_vencidos
 from .salvas import garantir_salva
 from .serializers import (
     CompraDetalheSerializer,
+    EmCotacaoSerializer,
     EncerradaSerializer,
     EventoOportunidadeSalvaSerializer,
     OportunidadeSalvaSerializer,
@@ -309,6 +310,42 @@ class OportunidadeSalvaEventosView(APIView):
                 "eventos": EventoOportunidadeSalvaSerializer(eventos, many=True).data,
             }
         )
+
+
+# O Cotador ordena pelas mesmas colunas da Salvas, mais as da cotação.
+ORDENACOES_COTADOR = {
+    **ORDENACOES,
+    "atualizada_em": "cotacao__atualizada_em",
+    "valor_cotado": "cotacao__valor_cotado",
+}
+
+
+class EmCotacaoView(APIView):
+    """`GET /api/licitacoes/cotacoes/` — a lista do Cotador: as salvas na
+    etapa Cotação (com cotação, prazo aberto). Gerou proposta, sai daqui;
+    prazo vencido, vai para Encerradas."""
+
+    def get(self, request: Request) -> Response:
+        registrar_prazos_vencidos()
+        params = request.query_params
+
+        pedida = (params.get("ordering") or "").strip()
+        campo = ORDENACOES_COTADOR.get(pedida.lstrip("-"))
+        ordem = (f"-{campo}" if pedida.startswith("-") else campo) if campo else "data_encerramento_proposta"
+
+        lista = (
+            OportunidadeSalva.objects.ativas()
+            .filter(cotacao__isnull=False)
+            .no_prazo()
+            .buscar(params.get("busca", ""))
+            .select_related("cotacao")
+            .prefetch_related("cotacao__itens__ofertas")
+            .order_by(ordem, "id")
+        )
+
+        paginacao = OportunidadesSalvasPaginacao()
+        pagina = paginacao.paginate_queryset(lista, request, view=self)
+        return paginacao.get_paginated_response(EmCotacaoSerializer(pagina, many=True).data)
 
 
 class CicloView(APIView):
