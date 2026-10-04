@@ -29,10 +29,12 @@ from apps.integracoes.clients.pncp import PncpClient, PncpClientError
 from apps.integracoes.plataformas import identificar_plataforma, plataforma_padrao
 
 from .ciclo import montar_quadro
+from .encerradas import MOTIVOS, encerradas
 from .models import OportunidadeSalva, registrar_prazos_vencidos
 from .salvas import garantir_salva
 from .serializers import (
     CompraDetalheSerializer,
+    EncerradaSerializer,
     EventoOportunidadeSalvaSerializer,
     OportunidadeSalvaSerializer,
     OportunidadeSerializer,
@@ -227,26 +229,21 @@ class OportunidadesSalvasView(APIView):
         # não haver task periódica.
         registrar_prazos_vencidos()
 
-        # Só a etapa Oportunidade: com cotação, a licitação está no Cotador.
+        # Só a etapa Oportunidade: com cotação, a licitação está no Cotador;
+        # com o prazo vencido, está em Encerradas.
         salvas = (
             OportunidadeSalva.objects.ativas()
             .sem_cotacao()
+            .no_prazo()
             .buscar(request.query_params.get("busca", ""))
             .order_by(_ordenacao(request.query_params.get("ordering")))
         )
 
         paginacao = OportunidadesSalvasPaginacao()
         pagina = paginacao.paginate_queryset(salvas, request, view=self)
-        resposta = paginacao.get_paginated_response(
+        return paginacao.get_paginated_response(
             OportunidadeSalvaSerializer(pagina, many=True).data
         )
-        # Contagem do conjunto inteiro, não da página nem da busca em curso:
-        # é o número do aviso "N oportunidades sem prazo para proposta" e o
-        # que o link de apagar do aviso vai remover.
-        resposta.data["expiradas"] = (
-            OportunidadeSalva.objects.ativas().sem_cotacao().expiradas().count()
-        )
-        return resposta
 
     def post(self, request: Request) -> Response:
         # Idempotente (salvar de novo devolve o registro existente, sem
@@ -266,18 +263,6 @@ class OportunidadeSalvaView(APIView):
         salva = get_object_or_404(OportunidadeSalva.objects.ativas(), pk=pk)
         salva.remover(por=request.user)
         return Response(status=204)
-
-
-class OportunidadesSalvasExpiradasView(APIView):
-    """`DELETE /api/licitacoes/salvas/expiradas/` — remove de uma vez todas
-    as que perderam o prazo de proposta. É o link do aviso que a tela mostra
-    ao abrir."""
-
-    def delete(self, request: Request) -> Response:
-        expiradas = list(OportunidadeSalva.objects.ativas().sem_cotacao().expiradas())
-        for salva in expiradas:
-            salva.remover(por=request.user)
-        return Response({"removidas": len(expiradas)})
 
 
 class OportunidadesSalvasChavesView(APIView):
@@ -332,3 +317,48 @@ class CicloView(APIView):
 
     def get(self, request: Request) -> Response:
         return Response(montar_quadro())
+
+
+ORDENACOES_ENCERRADAS = {
+    "uasg": "uasg",
+    "cidade": "municipio",
+    "encerrada_em": "encerrada_em",
+    "motivo": "motivo",
+    "valor": "valor_total_estimado",
+}
+
+
+def _data(valor: str | None) -> dt.date | None:
+    try:
+        return dt.date.fromisoformat(valor) if valor else None
+    except ValueError:
+        return None
+
+
+class EncerradasView(APIView):
+    """`GET /api/licitacoes/encerradas/` — as licitações que saíram do ciclo
+    (ver `encerradas.py`), com os filtros da tela: período de encerramento
+    (`data_inicial`/`data_final`), `motivo`, `uf` e `busca` textual."""
+
+    def get(self, request: Request) -> Response:
+        registrar_prazos_vencidos()
+        params = request.query_params
+
+        lista = encerradas().select_related("cotacao").buscar(params.get("busca", ""))
+        if inicio := _data(params.get("data_inicial")):
+            lista = lista.filter(encerrada_em__gte=inicio)
+        if fim := _data(params.get("data_final")):
+            lista = lista.filter(encerrada_em__lte=fim)
+        if (motivo := params.get("motivo")) in MOTIVOS:
+            lista = lista.filter(motivo=motivo)
+        if uf := (params.get("uf") or "").strip().upper():
+            lista = lista.filter(uf=uf)
+
+        pedida = (params.get("ordering") or "").strip()
+        campo = ORDENACOES_ENCERRADAS.get(pedida.lstrip("-"))
+        ordem = (f"-{campo}" if pedida.startswith("-") else campo) if campo else "-encerrada_em"
+        lista = lista.order_by(ordem, "-id")
+
+        paginacao = OportunidadesSalvasPaginacao()
+        pagina = paginacao.paginate_queryset(lista, request, view=self)
+        return paginacao.get_paginated_response(EncerradaSerializer(pagina, many=True).data)

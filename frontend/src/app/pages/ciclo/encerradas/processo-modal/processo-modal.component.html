@@ -1,0 +1,66 @@
+<app-modal-shell titulo="Processo" largura="larga" (fechar)="fechar()">
+  <section class="cabecalho">
+    <p class="objeto">{{ processo.objeto || 'Edital sem objeto' }}</p>
+    <p class="muted">
+      {{ processo.orgao_nome }}
+      @if (processo.uasg) {
+        · UASG {{ processo.uasg }}
+      }
+      @if (processo.municipio) {
+        · {{ processo.municipio }} / {{ processo.uf }}
+      }
+    </p>
+    <dl class="dados">
+      <div>
+        <dt>Modalidade</dt>
+        <dd>{{ processo.modalidade || '—' }}</dd>
+      </div>
+      <div>
+        <dt>Prazo da proposta</dt>
+        <dd>{{ data(processo.data_encerramento_proposta) ?? '—' }}</dd>
+      </div>
+      <div>
+        <dt>Valor estimado</dt>
+        <dd>{{ moeda(processo.valor_total_estimado) ?? '—' }}</dd>
+      </div>
+      <div>
+        <dt>Valor cotado</dt>
+        <dd>{{ moeda(processo.valor_cotado) ?? '—' }}</dd>
+      </div>
+    </dl>
+  </section>
+
+  <p class="situacao" [attr.data-motivo]="processo.motivo">
+    Encerrada em {{ data(processo.encerrada_em) }} — {{ processo.motivo_label }}
+    @if (processo.removida_por) {
+      por {{ processo.removida_por }}
+    }
+  </p>
+
+  <h3>O que aconteceu</h3>
+  @if (carregando()) {
+    <p class="muted">Carregando o histórico…</p>
+  } @else if (erro()) {
+    <p class="erro">Não foi possível carregar o histórico agora.</p>
+  } @else {
+    <ol class="linha-do-tempo">
+      @for (marco of marcos(); track $index) {
+        <li [class.sistema]="marco.sistema">
+          <span class="marcador" aria-hidden="true"></span>
+          <div>
+            <p class="titulo">{{ marco.titulo }}</p>
+            <p class="descricao">{{ marco.descricao }}</p>
+            <p class="meta">{{ quando(marco.quando) }} · {{ marco.autor ?? 'Sistema' }}</p>
+          </div>
+        </li>
+      } @empty {
+        <li class="sistema"><p class="muted">Sem eventos registrados.</p></li>
+      }
+    </ol>
+  }
+
+  <app-button modalFooter variant="ghost" (click)="fechar()">Fechar</app-button>
+  @if (processo.cotacao_id !== null) {
+    <app-button modalFooter (click)="verCotacao()">Ver cotação</app-button>
+  }
+</app-modal-shell>

@@ -24,11 +24,6 @@ const CICLO = [
     titulo: 'Empenhos',
     descricao: 'As licitações ganhas: ata ou contrato, notas de empenho e pedidos ao fornecedor.',
   },
-  {
-    path: 'encerradas',
-    titulo: 'Encerradas',
-    descricao: 'As que saíram do ciclo — descartadas, perdidas, com prazo perdido ou concluídas.',
-  },
 ];
 
 export const routes: Routes = [
@@ -77,6 +72,11 @@ export const routes: Routes = [
             path: 'visao-geral',
             loadComponent: () =>
               import('./pages/ciclo/quadro/quadro.page').then((m) => m.QuadroPage),
+          },
+          {
+            path: 'encerradas',
+            loadComponent: () =>
+              import('./pages/ciclo/encerradas/encerradas.page').then((m) => m.EncerradasPage),
           },
           ...CICLO.map(({ path, titulo, descricao }) => ({
             path,

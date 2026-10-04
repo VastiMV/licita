@@ -1,0 +1,89 @@
+.cabecalho {
+  margin-bottom: var(--space-4);
+}
+
+.objeto {
+  font-weight: var(--font-weight-semibold);
+  margin-bottom: var(--space-1);
+}
+
+.dados {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+  gap: var(--space-3);
+  margin-top: var(--space-3);
+
+  dt {
+    font-size: var(--font-size-xs);
+    color: var(--color-muted);
+  }
+
+  dd {
+    margin: 0;
+    font-weight: var(--font-weight-medium);
+  }
+}
+
+.situacao {
+  padding: var(--space-3) var(--space-4);
+  border-radius: var(--radius-md);
+  background: var(--color-danger-bg);
+  color: var(--color-danger);
+  font-weight: var(--font-weight-semibold);
+  margin-bottom: var(--space-5);
+
+  &[data-motivo='descartada'] {
+    background: var(--color-warn-bg);
+    color: var(--color-warn);
+  }
+}
+
+h3 {
+  font-size: var(--font-size-md);
+  margin-bottom: var(--space-3);
+}
+
+.linha-do-tempo {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  border-left: 2px solid var(--color-border);
+
+  li {
+    position: relative;
+    display: flex;
+    gap: var(--space-3);
+    padding: 0 0 var(--space-4) var(--space-4);
+  }
+
+  .marcador {
+    position: absolute;
+    left: -7px;
+    top: 4px;
+    width: 12px;
+    height: 12px;
+    border-radius: 50%;
+    background: var(--color-blue);
+  }
+
+  .sistema .marcador {
+    background: var(--color-muted);
+  }
+
+  .titulo {
+    font-weight: var(--font-weight-semibold);
+  }
+
+  .descricao {
+    font-size: var(--font-size-sm);
+  }
+
+  .meta {
+    font-size: var(--font-size-xs);
+    color: var(--color-muted);
+  }
+}
+
+.erro {
+  color: var(--color-danger);
+}

@@ -35,7 +35,9 @@ def item(**overrides) -> dict:
         "contratacao_srp": False,
         "contratacao_situacao": "Divulgada no PNCP",
         "contratacao_data_publicacao": "2026-08-20",
-        "contratacao_data_encerramento_proposta": "2026-09-10",
+        # Relativo a hoje: prazo vencido tira a salva da lista (vai para
+        # Encerradas), então a data fixa envelhecia o teste.
+        "contratacao_data_encerramento_proposta": str(dt.date.today() + dt.timedelta(days=30)),
         "contratacao_orgao_nome": "Prefeitura de Campinas",
         "contratacao_municipio": "Campinas",
         "contratacao_uasg": "925997",
@@ -79,7 +81,7 @@ class OportunidadesSalvasTests(APITestCase):
         self.assertEqual(salva.uf, "SP")
         self.assertEqual(salva.modalidade, "Pregão Eletrônico")
         self.assertEqual(salva.data_publicacao, dt.date(2026, 8, 20))
-        self.assertEqual(salva.data_encerramento_proposta, dt.date(2026, 9, 10))
+        self.assertEqual(salva.data_encerramento_proposta, dt.date.today() + dt.timedelta(days=30))
         self.assertEqual(float(salva.valor_total_estimado), 1850.0)
         self.assertEqual(salva.salva_por, self.user)
         # Snapshot: o modal de visualização desenha o card com isto, sem
@@ -140,7 +142,7 @@ class OportunidadesSalvasTests(APITestCase):
         self.assertEqual(response.data["count"], 1)
         self.assertEqual(response.data["results"][0]["salva_por"], "Gustavo")
 
-    def test_lista_traz_expirada_calculada_e_o_total_de_expiradas(self):
+    def test_prazo_vencido_sai_da_lista_e_vai_para_encerradas(self):
         hoje = dt.date.today()
         self.client.post(
             "/api/licitacoes/salvas/",
@@ -162,10 +164,9 @@ class OportunidadesSalvasTests(APITestCase):
 
         response = self.client.get("/api/licitacoes/salvas/")
 
-        self.assertEqual(response.data["count"], 2)
-        self.assertEqual(response.data["expiradas"], 1)
-        expiradas = [linha["expirada"] for linha in response.data["results"]]
-        self.assertEqual(sorted(expiradas), [False, True])
+        self.assertEqual(response.data["count"], 1)
+        self.assertEqual(response.data["results"][0]["sequencial_compra"], "43")
+        self.assertFalse(response.data["results"][0]["expirada"])
 
     def test_sem_prazo_publicado_a_oportunidade_nunca_expira(self):
         self.client.post(
@@ -176,7 +177,7 @@ class OportunidadesSalvasTests(APITestCase):
 
         response = self.client.get("/api/licitacoes/salvas/")
 
-        self.assertEqual(response.data["expiradas"], 0)
+        self.assertEqual(response.data["count"], 1)
         self.assertFalse(response.data["results"][0]["expirada"])
 
     def test_busca_casa_no_objeto_e_na_descricao_dos_itens_sem_acento(self):
@@ -212,9 +213,6 @@ class OportunidadesSalvasTests(APITestCase):
         por_item = self.client.get("/api/licitacoes/salvas/", {"busca": "cafe"})
         self.assertEqual(por_item.data["count"], 1)
         self.assertEqual(por_item.data["results"][0]["sequencial_compra"], "42")
-
-        # A busca não mexe no aviso de expiradas — ele é sempre do total.
-        self.assertEqual(por_item.data["expiradas"], 0)
 
     def test_ordenacao_por_coluna_da_tabela_e_coluna_desconhecida_cai_no_padrao(self):
         self.client.post(
@@ -303,31 +301,6 @@ class OportunidadesSalvasTests(APITestCase):
         self.assertEqual(
             EventoOportunidadeSalva.objects.filter(oportunidade_id=segunda.data["id"]).count(), 1
         )
-
-    def test_excluir_expiradas_de_uma_vez_remove_so_as_vencidas(self):
-        hoje = dt.date.today()
-        for sequencial, prazo in (("1", hoje - dt.timedelta(days=2)), ("2", hoje + dt.timedelta(days=2))):
-            self.client.post(
-                "/api/licitacoes/salvas/",
-                payload(
-                    [
-                        item(
-                            contratacao_sequencial_compra=sequencial,
-                            contratacao_data_encerramento_proposta=str(prazo),
-                        )
-                    ]
-                ),
-                format="json",
-            )
-
-        response = self.client.delete("/api/licitacoes/salvas/expiradas/")
-
-        self.assertEqual(response.data["removidas"], 1)
-        lista = self.client.get("/api/licitacoes/salvas/")
-        self.assertEqual(lista.data["count"], 1)
-        self.assertEqual(lista.data["expiradas"], 0)
-        self.assertEqual(lista.data["results"][0]["sequencial_compra"], "2")
-
 
 class HistoricoTests(APITestCase):
     """O log — ver docs/DOMINIO.md, "Histórico da oportunidade salva". A tela

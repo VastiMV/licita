@@ -1,0 +1,209 @@
+import { Component, OnInit, inject, signal } from '@angular/core';
+import { FormBuilder, ReactiveFormsModule } from '@angular/forms';
+
+import {
+  EncerradaResponse,
+  MOTIVOS_ENCERRAMENTO,
+} from '../../../contracts/licitacoes/encerrada.contracts';
+import { UFS } from '../../../contracts/localidades/uf';
+import { EncerradasService } from '../../../services/licitacoes/encerradas.service';
+import { ModalService } from '../../../shared/overlay/modal.service';
+import { ButtonComponent } from '../../../shared/ui/button/button.component';
+import { DataTableComponent } from '../../../shared/ui/data-table/data-table.component';
+import {
+  ColunaTabela,
+  EstadoTabela,
+  TomCelula,
+  estadoInicialTabela,
+  parametroOrdenacao,
+} from '../../../shared/ui/data-table/data-table.model';
+import { TabelaAcoesDirective } from '../../../shared/ui/data-table/tabela-acoes.directive';
+import { DatePickerComponent } from '../../../shared/ui/date-picker/date-picker.component';
+import { hojeIso, somarDias } from '../../../shared/ui/date-picker/date-picker.utils';
+import { ItemMenu, MenuComponent } from '../../../shared/ui/menu/menu.component';
+import { SelectComponent } from '../../../shared/ui/select/select.component';
+import {
+  CotadorModalComponent,
+  CotadorModalData,
+  CotadorModalResultado,
+} from '../../oportunidades/cotador-modal/cotador-modal.component';
+import {
+  formatarData,
+  formatarMoeda,
+  normalizarTitulo,
+} from '../../oportunidades/edital-card/edital-card.utils';
+import { ProcessoModalComponent } from './processo-modal/processo-modal.component';
+
+/** Período que a tela abre consultando — o usuário muda antes de pesquisar. */
+const JANELA_PADRAO_DIAS = 90;
+
+const TOM_DO_MOTIVO: Record<EncerradaResponse['motivo'], TomCelula> = {
+  descartada: 'alerta',
+  prazo_oportunidade: 'perigo',
+  prazo_cotacao: 'perigo',
+};
+
+/** As chaves das colunas são contrato com `ORDENACOES_ENCERRADAS` em
+ * `apps/licitacoes/views.py`. */
+const COLUNAS: readonly ColunaTabela<EncerradaResponse>[] = [
+  {
+    chave: 'uasg',
+    titulo: 'UASG',
+    valor: (linha) => linha.uasg || '—',
+    secundario: (linha) => linha.orgao_nome || null,
+    dica: (linha) => linha.objeto || null,
+  },
+  {
+    chave: 'cidade',
+    titulo: 'Cidade',
+    valor: (linha) => [linha.municipio, linha.uf].filter(Boolean).join(' / ') || '—',
+    umaLinha: true,
+  },
+  {
+    chave: 'encerrada_em',
+    titulo: 'Encerrada em',
+    valor: (linha) => formatarData(linha.encerrada_em) ?? '—',
+    umaLinha: true,
+  },
+  {
+    chave: 'motivo',
+    titulo: 'Motivo',
+    valor: (linha) => linha.motivo_label,
+    secundario: (linha) => (linha.removida_por ? `por ${linha.removida_por}` : null),
+    tom: (linha) => TOM_DO_MOTIVO[linha.motivo],
+  },
+  {
+    chave: 'valor_cotado',
+    titulo: 'Valor cotado',
+    valor: (linha) => formatarMoeda(linha.valor_cotado) ?? '—',
+    numerica: true,
+    umaLinha: true,
+    ordenavel: false,
+  },
+  {
+    chave: 'valor',
+    titulo: 'Valor estimado',
+    valor: (linha) => formatarMoeda(linha.valor_total_estimado) ?? '—',
+    numerica: true,
+    umaLinha: true,
+  },
+];
+
+/**
+ * "Ciclo de Licitação / Encerradas" — o que saiu do ciclo: descartadas e as
+ * que perderam o prazo de proposta, com ou sem cotação. Nada aqui é apagado:
+ * a cotação continua consultável e o processo guarda o histórico inteiro.
+ */
+@Component({
+  selector: 'app-encerradas-page',
+  imports: [
+    ReactiveFormsModule,
+    DataTableComponent,
+    TabelaAcoesDirective,
+    MenuComponent,
+    DatePickerComponent,
+    SelectComponent,
+    ButtonComponent,
+  ],
+  templateUrl: './encerradas.page.html',
+  styleUrl: './encerradas.page.scss',
+})
+export class EncerradasPage implements OnInit {
+  private readonly service = inject(EncerradasService);
+  private readonly modal = inject(ModalService);
+  private readonly fb = inject(FormBuilder);
+
+  protected readonly colunas = COLUNAS;
+  protected readonly motivos = MOTIVOS_ENCERRAMENTO;
+  protected readonly ufs = UFS;
+
+  protected readonly filtros = this.fb.nonNullable.group({
+    data_inicial: somarDias(hojeIso(), -JANELA_PADRAO_DIAS),
+    data_final: hojeIso(),
+    motivo: '',
+    uf: '',
+  });
+
+  protected readonly estado = signal<EstadoTabela>(
+    estadoInicialTabela({ ordenarPor: 'encerrada_em', direcao: 'desc' }),
+  );
+  protected readonly linhas = signal<readonly EncerradaResponse[]>([]);
+  protected readonly total = signal(0);
+  protected readonly carregando = signal(false);
+  protected readonly erro = signal(false);
+
+  protected readonly chaveDe = (linha: EncerradaResponse) => linha.id;
+
+  ngOnInit(): void {
+    this.carregar();
+  }
+
+  protected pesquisar(): void {
+    this.estado.update((atual) => ({ ...atual, pagina: 1 }));
+    this.carregar();
+  }
+
+  protected aoMudarEstado(estado: EstadoTabela): void {
+    this.estado.set(estado);
+    this.carregar();
+  }
+
+  protected acoesDe(linha: EncerradaResponse): readonly ItemMenu[] {
+    const itens: ItemMenu[] = [
+      { rotulo: 'Ver processo', icone: 'eye', executar: () => this.verProcesso(linha) },
+    ];
+    if (linha.cotacao_id !== null) {
+      itens.push({ rotulo: 'Ver cotação', icone: 'calculadora', executar: () => this.verCotacao(linha) });
+    }
+    return itens;
+  }
+
+  protected verProcesso(linha: EncerradaResponse): void {
+    this.modal
+      .abrir<'cotacao', EncerradaResponse>(ProcessoModalComponent, linha)
+      .subscribe((resultado) => {
+        if (resultado === 'cotacao') this.verCotacao(linha);
+      });
+  }
+
+  protected verCotacao(linha: EncerradaResponse): void {
+    this.modal
+      .abrir<CotadorModalResultado, CotadorModalData>(CotadorModalComponent, {
+        titulo: normalizarTitulo(linha.objeto),
+        itens: linha.itens,
+        oportunidadeId: linha.id,
+      })
+      .subscribe((resultado) => {
+        if (resultado) this.carregar();
+      });
+  }
+
+  private carregar(): void {
+    const estado = this.estado();
+    const filtros = this.filtros.getRawValue();
+    this.carregando.set(true);
+    this.erro.set(false);
+
+    this.service
+      .listar({
+        page: estado.pagina,
+        page_size: estado.tamanhoPagina,
+        ordering: parametroOrdenacao(estado),
+        busca: estado.busca,
+        ...filtros,
+      })
+      .subscribe({
+        next: (pagina) => {
+          this.linhas.set(pagina.results);
+          this.total.set(pagina.count);
+          this.carregando.set(false);
+        },
+        error: () => {
+          this.carregando.set(false);
+          this.erro.set(true);
+          this.linhas.set([]);
+          this.total.set(0);
+        },
+      });
+  }
+}

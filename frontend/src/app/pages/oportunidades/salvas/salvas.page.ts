@@ -70,9 +70,6 @@ const COLUNAS: readonly ColunaTabela<OportunidadeSalvaResponse>[] = [
     titulo: 'Prazo da proposta',
     valor: (salva) => formatarData(salva.data_encerramento_proposta) ?? '—',
     umaLinha: true,
-    // Prazo vencido é o dado mais importante da linha: vira pílula vermelha
-    // (a linha inteira também fica destacada, ver `expirada` no template).
-    tom: (salva) => (salva.expirada ? 'perigo' : null),
   },
   {
     chave: 'valor',
@@ -112,13 +109,7 @@ export class SalvasPage implements OnInit {
   protected readonly carregando = signal(false);
   protected readonly erro = signal(false);
 
-  /** Quantas expiradas o último aviso anunciou. Guardado para não repetir o
-   * mesmo toast a cada troca de página/ordenação — o aviso é sobre a lista,
-   * não sobre a consulta. */
-  private ultimoAviso: number | null = null;
-
   protected readonly chaveDe = (salva: OportunidadeSalvaResponse) => salva.id;
-  protected readonly estaExpirada = (salva: OportunidadeSalvaResponse) => salva.expirada;
 
   ngOnInit(): void {
     this.carregar();
@@ -199,30 +190,6 @@ export class SalvasPage implements OnInit {
       });
   }
 
-  protected excluirExpiradas(quantidade: number): void {
-    this.modal
-      .confirmar({
-        titulo: 'Excluir oportunidades vencidas',
-        mensagem:
-          `${quantidade} oportunidade(s) sem prazo para proposta serão retiradas da lista. ` +
-          'Esta ação não poderá ser desfeita. Deseja continuar?',
-        confirmarLabel: 'Excluir',
-        variantConfirmar: 'danger',
-      })
-      .subscribe((confirmou) => {
-        if (!confirmou) return;
-
-        this.service.removerExpiradas().subscribe({
-          next: ({ removidas }) => {
-            this.toast.sucesso(`${removidas} oportunidade(s) vencida(s) excluída(s).`);
-            this.estado.update((atual) => ({ ...atual, pagina: 1 }));
-            this.carregar();
-          },
-          error: () => this.toast.erro('Não foi possível excluir as vencidas agora.'),
-        });
-      });
-  }
-
   private carregar(): void {
     const estado = this.estado();
     this.carregando.set(true);
@@ -240,7 +207,6 @@ export class SalvasPage implements OnInit {
           this.linhas.set(pagina.results);
           this.total.set(pagina.count);
           this.carregando.set(false);
-          this.avisarExpiradas(pagina.expiradas);
         },
         error: () => {
           this.carregando.set(false);
@@ -249,24 +215,6 @@ export class SalvasPage implements OnInit {
           this.total.set(0);
         },
       });
-  }
-
-  /** O aviso amarelo da tela: quantas já não dão mais para virar proposta, e
-   * o atalho para tirá-las da lista de uma vez. */
-  private avisarExpiradas(expiradas: number): void {
-    if (expiradas === 0) {
-      this.ultimoAviso = 0;
-      return;
-    }
-    if (expiradas === this.ultimoAviso) return;
-
-    this.ultimoAviso = expiradas;
-    this.toast.alerta(
-      expiradas === 1
-        ? '1 oportunidade salva não tem mais prazo para gerar proposta.'
-        : `${expiradas} oportunidades salvas não têm mais prazo para gerar proposta.`,
-      { acao: { rotulo: 'Apagar as vencidas', executar: () => this.excluirExpiradas(expiradas) } },
-    );
   }
 
   /** Excluir o último item de uma página deixaria a tabela vazia com um

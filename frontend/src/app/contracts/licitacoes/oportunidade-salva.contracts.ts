@@ -41,14 +41,12 @@ export interface OportunidadeSalvaResponse {
   readonly criada_em: string;
 }
 
-/** Resposta paginada de `GET /api/licitacoes/salvas/`. `expiradas` é do
- * conjunto inteiro (não da página nem da busca em curso): é o número do
- * aviso que a tela mostra ao abrir. */
+/** Resposta paginada de `GET /api/licitacoes/salvas/` — só as que estão no
+ * prazo; as vencidas estão em Encerradas. */
 export interface OportunidadesSalvasPagina {
   readonly count: number;
   readonly next: string | null;
   readonly previous: string | null;
-  readonly expiradas: number;
   readonly results: readonly OportunidadeSalvaResponse[];
 }
 

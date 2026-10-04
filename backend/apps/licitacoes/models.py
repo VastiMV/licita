@@ -55,6 +55,13 @@ class OportunidadeSalvaQuerySet(models.QuerySet):
 
         return self.filter(data_encerramento_proposta__lt=hoje or timezone.localdate())
 
+    def no_prazo(self, hoje: dt.date | None = None) -> "OportunidadeSalvaQuerySet":
+        """O contrário de `expiradas`: prazo aberto ou sem data publicada. Só
+        estas estão em alguma etapa do ciclo; as outras estão em Encerradas
+        (ver `encerradas.py`)."""
+
+        return self.exclude(data_encerramento_proposta__lt=hoje or timezone.localdate())
+
     def buscar(self, termo: str) -> "OportunidadeSalvaQuerySet":
         """Busca textual da tabela — casa no objeto do edital e na descrição
         dos itens, via `texto_busca` (ver `montar_texto_busca`)."""

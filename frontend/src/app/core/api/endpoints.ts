@@ -17,10 +17,10 @@ export const ENDPOINTS = {
     ciclo: 'licitacoes/ciclo/',
     salvas: 'licitacoes/salvas/',
     salvasChaves: 'licitacoes/salvas/chaves/',
-    salvasExpiradas: 'licitacoes/salvas/expiradas/',
+    /** Quem saiu do ciclo — encerramento calculado no backend. */
+    encerradas: 'licitacoes/encerradas/',
     salva: (id: number) => `licitacoes/salvas/${id}/`,
-    /** Histórico de uma salva — a tela que lê isso ainda não existe (ver
-     * docs/DOMINIO.md, "Histórico da oportunidade salva"). */
+    /** Histórico de uma salva — lido pelo modal do processo em Encerradas. */
     salvaEventos: (id: number) => `licitacoes/salvas/${id}/eventos/`,
   },
   /** Onde os arquivos ficam (`apps/armazenamento`) — driver escolhido e
