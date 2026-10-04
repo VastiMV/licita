@@ -22,8 +22,17 @@
   gap: var(--space-4);
 }
 
+.topo-identidade {
+  flex: 1;
+  min-width: 0;
+}
+
 .campo-titulo {
-  width: min(100%, 460px);
+  display: block;
+  width: 100%;
+  resize: none;
+  field-sizing: content;
+  line-height: 1.35;
   font: inherit;
   font-size: var(--font-size-md);
   font-weight: var(--font-weight-semibold);
