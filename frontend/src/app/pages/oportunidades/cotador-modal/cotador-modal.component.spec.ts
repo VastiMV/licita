@@ -195,7 +195,7 @@ describe('CotadorModalComponent', () => {
       expect(cotador.carregarDaOportunidade).toHaveBeenCalledWith(7);
       expect(interno(fixture).itens()).toHaveLength(1);
       // A descrição é campo editável, então está no `value` — não no texto.
-      const descricao = fixture.debugElement.query(By.css('.item-descricao input'));
+      const descricao = fixture.debugElement.query(By.css('.item-descricao textarea'));
       expect(descricao.nativeElement.value).toBe('Papel A4 75g — resma 500fl');
     });
 
@@ -423,7 +423,6 @@ describe('CotadorModalComponent', () => {
 
       expect(fornecedores.opcoes).toHaveBeenCalledWith(true);
     });
-
   });
 
   describe('conta e comparação', () => {
@@ -577,7 +576,10 @@ describe('CotadorModalComponent', () => {
     });
 
     it('erro que não é 404 ao carregar não abre em branco', () => {
-      const { toast, dialogRef } = montar(DADOS, throwError(() => ({ status: 500 })));
+      const { toast, dialogRef } = montar(
+        DADOS,
+        throwError(() => ({ status: 500 })),
+      );
       expect(toast.erro).toHaveBeenCalled();
       expect(dialogRef.close).toHaveBeenCalled();
     });

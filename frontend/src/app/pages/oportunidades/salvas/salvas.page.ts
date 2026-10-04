@@ -18,25 +18,16 @@ import {
   CotadorModalData,
   CotadorModalResultado,
 } from '../cotador-modal/cotador-modal.component';
-import { formatarData, formatarMoeda, normalizarTitulo } from '../edital-card/edital-card.utils';
+import {
+  cidadeComUf,
+  formatarData,
+  formatarMoeda,
+  normalizarTitulo,
+} from '../edital-card/edital-card.utils';
 import {
   OportunidadeModalComponent,
   OportunidadeModalResultado,
 } from './oportunidade-modal/oportunidade-modal.component';
-
-/** Quantos caracteres do município cabem sem esticar a coluna. O nome é
- * cortado (com reticências) e a UF vem sempre depois — a sigla é o que não
- * pode sumir de "Bom Jesus da Lapa / BA". O nome inteiro fica no `title`. */
-const MAX_MUNICIPIO = 24;
-
-function cidadeComUf(salva: OportunidadeSalvaResponse): string {
-  const municipio = salva.municipio || '—';
-  const encurtado =
-    municipio.length > MAX_MUNICIPIO
-      ? `${municipio.slice(0, MAX_MUNICIPIO - 1).trimEnd()}…`
-      : municipio;
-  return salva.uf ? `${encurtado} / ${salva.uf}` : encurtado;
-}
 
 /** As chaves das colunas são contrato com o backend (`ORDENACOES` em
  * `apps/licitacoes/views.py`) — é o que vai no `ordering` do endpoint. */
@@ -45,6 +36,7 @@ const COLUNAS: readonly ColunaTabela<OportunidadeSalvaResponse>[] = [
     chave: 'uasg',
     titulo: 'UASG',
     valor: (salva) => salva.uasg || '—',
+    secundario: (salva) => salva.orgao_nome || null,
     // O objeto saiu da tabela (gastava a largura toda), mas continua sendo
     // o que identifica a oportunidade — fica na dica da primeira coluna e
     // inteiro no modal.
@@ -101,8 +93,8 @@ export class SalvasPage implements OnInit {
   protected readonly colunas = COLUNAS;
 
   protected readonly estado = signal<EstadoTabela>(
-    // Mais recentes primeiro — mesma ordem padrão do endpoint.
-    estadoInicialTabela({ ordenarPor: 'criada_em', direcao: 'desc' }),
+    // O prazo que vence primeiro vem primeiro — é por onde o dia começa.
+    estadoInicialTabela({ ordenarPor: 'prazo', direcao: 'asc' }),
   );
   protected readonly linhas = signal<readonly OportunidadeSalvaResponse[]>([]);
   protected readonly total = signal(0);

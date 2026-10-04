@@ -163,3 +163,17 @@ export function normalizarTitulo(objeto: string | null | undefined): string {
   const minusculo = objeto.toLocaleLowerCase('pt-BR');
   return restaurarSiglas(capitalizarInicioDeFrases(minusculo));
 }
+
+/** Quantos caracteres do município cabem sem esticar a coluna. O nome é
+ * cortado (com reticências) e a UF vem sempre depois — a sigla é o que não
+ * pode sumir de "Bom Jesus da Lapa / BA". O nome inteiro fica no `title`. */
+const MAX_MUNICIPIO = 24;
+
+export function cidadeComUf(salva: { municipio: string; uf: string }): string {
+  const municipio = salva.municipio || '—';
+  const encurtado =
+    municipio.length > MAX_MUNICIPIO
+      ? `${municipio.slice(0, MAX_MUNICIPIO - 1).trimEnd()}…`
+      : municipio;
+  return salva.uf ? `${encurtado} / ${salva.uf}` : encurtado;
+}

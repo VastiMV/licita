@@ -28,6 +28,7 @@ import {
   CotadorModalResultado,
 } from '../../oportunidades/cotador-modal/cotador-modal.component';
 import {
+  cidadeComUf,
   formatarData,
   formatarMoeda,
   normalizarTitulo,
@@ -59,12 +60,13 @@ const COLUNAS: readonly ColunaTabela<EncerradaResponse>[] = [
   {
     chave: 'cidade',
     titulo: 'Cidade',
-    valor: (linha) => [linha.municipio, linha.uf].filter(Boolean).join(' / ') || '—',
+    valor: cidadeComUf,
+    dica: (linha) => [linha.municipio, linha.uf].filter(Boolean).join(' / ') || null,
     umaLinha: true,
   },
   {
     chave: 'encerrada_em',
-    titulo: 'Encerrada em',
+    titulo: 'Encerrada',
     valor: (linha) => formatarData(linha.encerrada_em) ?? '—',
     umaLinha: true,
   },
@@ -77,7 +79,7 @@ const COLUNAS: readonly ColunaTabela<EncerradaResponse>[] = [
   },
   {
     chave: 'valor_cotado',
-    titulo: 'Valor cotado',
+    titulo: 'Cotado',
     valor: (linha) => formatarMoeda(linha.valor_cotado) ?? '—',
     numerica: true,
     umaLinha: true,
@@ -85,7 +87,7 @@ const COLUNAS: readonly ColunaTabela<EncerradaResponse>[] = [
   },
   {
     chave: 'valor',
-    titulo: 'Valor estimado',
+    titulo: 'Estimado',
     valor: (linha) => formatarMoeda(linha.valor_total_estimado) ?? '—',
     numerica: true,
     umaLinha: true,

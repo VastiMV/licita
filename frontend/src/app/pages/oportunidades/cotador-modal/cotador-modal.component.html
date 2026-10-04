@@ -125,13 +125,17 @@
               <span class="item-indice">{{ indice(i) }}</span>
 
               <div class="item-descricao">
-                <input
+                <!-- textarea que cresce com o texto: a descrição do edital é longa
+                     e num input de uma linha ficava cortada. Enter ainda cria
+                     o próximo item; Shift+Enter quebra a linha. -->
+                <textarea
+                  rows="1"
                   [value]="item.descricao"
                   (input)="alterarDescricao(item, $any($event.target).value)"
-                  (keydown.enter)="adicionarItem(item.id)"
+                  (keydown.enter)="novoItemNoEnter($any($event), item.id)"
                   placeholder="ex.: Papel A4 75g — resma"
                   [attr.aria-label]="'Descrição do item ' + indice(i)"
-                />
+                ></textarea>
                 <div class="chips">
                   <button type="button" class="chip chip-fornecedor" (click)="alternar(item)">
                     <span class="ponto"></span>{{ rotuloDoFornecedor(item) }}
