@@ -156,6 +156,12 @@ class Fornecedor(models.Model):
         blank=True,
         on_delete=models.SET_NULL,
     )
+    criado_por_nome = models.CharField(
+        "cadastrado por (nome)",
+        max_length=150,
+        blank=True,
+        help_text="Gravado junto com o autor: o nome continua aqui se o usuário for excluído.",
+    )
     criado_em = models.DateTimeField("cadastrado em", auto_now_add=True)
     atualizado_em = models.DateTimeField("atualizado em", auto_now=True)
 

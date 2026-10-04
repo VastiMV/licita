@@ -30,6 +30,14 @@ export const ENDPOINTS = {
     config: 'armazenamento/config/',
     testar: 'armazenamento/testar/',
   },
+  /** Quem acessa o produto (`apps/accounts`) — só o super usuário, menos
+   * `perfil`. */
+  usuarios: {
+    lista: 'usuarios/',
+    /** O próprio perfil — qualquer usuário logado. */
+    perfil: 'usuarios/eu/',
+    detalhe: (id: number) => `usuarios/${id}/`,
+  },
   /** O dossiê de habilitação da empresa (`apps/documentos`) — certidões,
    * contrato social, balanço. Não confundir com os documentos da
    * **licitação**, que são arquivo de uma fase do processo. */

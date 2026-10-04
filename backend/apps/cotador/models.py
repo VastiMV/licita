@@ -112,6 +112,12 @@ class Cotacao(models.Model):
         blank=True,
         on_delete=models.SET_NULL,
     )
+    criada_por_nome = models.CharField(
+        "criada por (nome)",
+        max_length=150,
+        blank=True,
+        help_text="Gravado junto com o autor: o nome continua aqui se o usuário for excluído.",
+    )
     atualizada_por = models.ForeignKey(
         settings.AUTH_USER_MODEL,
         verbose_name="atualizada por",
@@ -119,6 +125,12 @@ class Cotacao(models.Model):
         null=True,
         blank=True,
         on_delete=models.SET_NULL,
+    )
+    atualizada_por_nome = models.CharField(
+        "atualizada por (nome)",
+        max_length=150,
+        blank=True,
+        help_text="Gravado junto com o autor: o nome continua aqui se o usuário for excluído.",
     )
     criada_em = models.DateTimeField("criada em", auto_now_add=True)
     atualizada_em = models.DateTimeField("atualizada em", auto_now=True)

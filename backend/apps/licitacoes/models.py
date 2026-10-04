@@ -150,6 +150,12 @@ class OportunidadeSalva(models.Model):
         null=True,
         on_delete=models.SET_NULL,
     )
+    salva_por_nome = models.CharField(
+        "salva por (nome)",
+        max_length=150,
+        blank=True,
+        help_text="Gravado junto com o autor: o nome continua aqui se o usuário for excluído.",
+    )
     criada_em = models.DateTimeField("salva em", auto_now_add=True)
 
     removida_em = models.DateTimeField("removida em", null=True, blank=True)
@@ -160,6 +166,12 @@ class OportunidadeSalva(models.Model):
         null=True,
         blank=True,
         on_delete=models.SET_NULL,
+    )
+    removida_por_nome = models.CharField(
+        "removida por (nome)",
+        max_length=150,
+        blank=True,
+        help_text="Gravado junto com o autor: o nome continua aqui se o usuário for excluído.",
     )
 
     objects = OportunidadeSalvaQuerySet.as_manager()
@@ -224,7 +236,7 @@ class OportunidadeSalva(models.Model):
 
         self.removida_em = quando or timezone.now()
         self.removida_por = por
-        self.save(update_fields=["removida_em", "removida_por"])
+        self.save(update_fields=["removida_em", "removida_por", "removida_por_nome"])
         self.registrar(
             EventoOportunidadeSalva.Tipo.REMOVIDA,
             autor=por,
@@ -308,6 +320,12 @@ class EventoOportunidadeSalva(models.Model):
         blank=True,
         on_delete=models.SET_NULL,
         help_text="Nulo = evento do sistema (ex.: prazo vencido).",
+    )
+    autor_nome = models.CharField(
+        "autor (nome)",
+        max_length=150,
+        blank=True,
+        help_text="Gravado junto com o autor: o nome continua aqui se o usuário for excluído.",
     )
     dados = models.JSONField("dados", default=dict, blank=True)
     ocorrido_em = models.DateTimeField("ocorrido em", auto_now_add=True)

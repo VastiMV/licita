@@ -30,9 +30,9 @@ interface NavLink {
  *
  * Não é usada no login: essa página é independente, sem shell nenhuma.
  *
- * "Configurações" só aparece para administrador. Isso é cortesia, não
- * segurança: quem barra de verdade é o backend (`IsAdminUser` em
- * `apps/armazenamento/views.py`) — aqui é só não oferecer o que a pessoa
+ * "Configurações" só aparece para o super usuário. Isso é cortesia, não
+ * segurança: quem barra de verdade é o backend (`EhSuperusuario` em
+ * `apps/accounts/permissions.py`) — aqui é só não oferecer o que a pessoa
  * não pode usar.
  */
 @Component({
@@ -54,7 +54,7 @@ export class SidebarComponent {
 
   protected readonly links = computed<readonly NavLink[]>(() => [
     ...MENU,
-    ...(this.auth.ehAdmin() ? [CONFIGURACOES] : []),
+    ...(this.auth.ehSuperusuario() ? [CONFIGURACOES] : []),
   ]);
 }
 
@@ -62,7 +62,10 @@ const CONFIGURACOES: NavLink = {
   path: '/configuracoes',
   label: 'Configurações',
   icon: 'configuracoes',
-  itens: [{ path: '/configuracoes/armazenamento', label: 'Armazenamento', icon: 'armazenamento' }],
+  itens: [
+    { path: '/configuracoes/armazenamento', label: 'Armazenamento', icon: 'armazenamento' },
+    { path: '/configuracoes/usuarios', label: 'Usuários', icon: 'user' },
+  ],
 };
 
 const MENU: readonly NavLink[] = [

@@ -1,20 +1,18 @@
 """Endpoints da configuração de armazenamento.
 
-Só `is_staff` mexe aqui. O produto ainda não tem papéis de acesso (ver
-`apps/accounts/models.py`), e `is_staff` é o único recorte que já existe —
-trocar por um papel de verdade depois é mudar esta linha. Configuração de
-bucket não é coisa para todo usuário logado: quem a troca redireciona para
-onde vão os documentos da empresa.
+Só o super usuário mexe aqui (`EhSuperusuario`). Configuração de bucket não
+é coisa para todo usuário logado: quem a troca redireciona para onde vão os
+documentos da empresa.
 """
 
 from __future__ import annotations
 
 from django.http import FileResponse
-from rest_framework.permissions import IsAdminUser
 from rest_framework.request import Request
 from rest_framework.response import Response
 from rest_framework.views import APIView
 
+from apps.accounts.permissions import EhSuperusuario
 from apps.tenants.atual import tenant_atual
 
 from .base import ErroArmazenamento
@@ -31,7 +29,7 @@ class DriversView(APIView):
     A tela monta o seletor e o formulário a partir disto. Driver novo
     instalado como pacote aparece aqui sem uma linha de frontend."""
 
-    permission_classes = [IsAdminUser]
+    permission_classes = [EhSuperusuario]
 
     def get(self, request: Request) -> Response:
         return Response(drivers_instalados())
@@ -40,7 +38,7 @@ class DriversView(APIView):
 class ConfigView(APIView):
     """`GET/PUT /api/armazenamento/config/`."""
 
-    permission_classes = [IsAdminUser]
+    permission_classes = [EhSuperusuario]
 
     def get(self, request: Request) -> Response:
         config = config_do_tenant(tenant_atual(request))
@@ -79,7 +77,7 @@ class TestarView(APIView):
     traduzida (ver `drivers/s3.py`) — é o texto que a tela mostra.
     """
 
-    permission_classes = [IsAdminUser]
+    permission_classes = [EhSuperusuario]
 
     def post(self, request: Request) -> Response:
         config = config_do_tenant(tenant_atual(request))

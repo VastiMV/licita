@@ -14,6 +14,7 @@ cada arquivo. Aqui é só o "como", quebrado em pedaço entregável.
 | [`documentos-processo`](feat-documentos-processo.md) | **Os documentos da licitação** — a pasta que nasce ao salvar a oportunidade e se enche sozinha ao longo do processo | `armazenamento`, `cadastro-empresa` |
 | [`proposta`](feat-proposta.md) | A proposta comercial em si (ainda sem desenho de produto) | `documentos-processo` |
 | [`remover-legado`](feat-remover-legado.md) | O que sai do produto: Filtros, a tela de Alertas de hoje, o cotador antigo e o "Cotar" direto da busca | — |
+| [`usuario`](feat-usuario.md) | Configurações → Usuários: quem acessa, e o super usuário como o único que vê Configurações | — |
 
 ## As duas famílias de documento
 
