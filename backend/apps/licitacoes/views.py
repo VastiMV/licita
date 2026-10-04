@@ -29,7 +29,7 @@ from apps.integracoes.clients.pncp import PncpClient, PncpClientError
 from apps.integracoes.plataformas import identificar_plataforma, plataforma_padrao
 
 from .ciclo import montar_quadro
-from .encerradas import MOTIVOS, encerradas
+from .encerradas import MOTIVOS, encerradas, montar_processo
 from .models import OportunidadeSalva, registrar_prazos_vencidos
 from .salvas import garantir_salva
 from .serializers import (
@@ -362,3 +362,13 @@ class EncerradasView(APIView):
         paginacao = OportunidadesSalvasPaginacao()
         pagina = paginacao.paginate_queryset(lista, request, view=self)
         return paginacao.get_paginated_response(EncerradaSerializer(pagina, many=True).data)
+
+
+class ProcessoView(APIView):
+    """`GET /api/licitacoes/salvas/<id>/processo/` — a história da salva no
+    formato do modal do processo (ver `encerradas.montar_processo`). Vale
+    também para removidas: rastreabilidade é o motivo de a remoção ser
+    lógica."""
+
+    def get(self, request: Request, pk: int) -> Response:
+        return Response(montar_processo(get_object_or_404(OportunidadeSalva, pk=pk)))

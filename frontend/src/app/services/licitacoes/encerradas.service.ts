@@ -4,7 +4,7 @@ import { Observable } from 'rxjs';
 import {
   EncerradasPagina,
   EncerradasParams,
-  HistoricoProcesso,
+  ProcessoResponse,
 } from '../../contracts/licitacoes/encerrada.contracts';
 import { ApiClient } from '../../core/api/api-client';
 import { ENDPOINTS } from '../../core/api/endpoints';
@@ -17,7 +17,8 @@ export class EncerradasService {
     return this.api.get<EncerradasPagina>(ENDPOINTS.licitacoes.encerradas, { ...params });
   }
 
-  historico(id: number): Observable<HistoricoProcesso> {
-    return this.api.get<HistoricoProcesso>(ENDPOINTS.licitacoes.salvaEventos(id));
+  /** A história da salva no formato do modal do processo. */
+  processo(id: number): Observable<ProcessoResponse> {
+    return this.api.get<ProcessoResponse>(ENDPOINTS.licitacoes.processo(id));
   }
 }

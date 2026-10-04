@@ -1,4 +1,8 @@
-<app-modal-shell titulo="Cotador" largura="cheia" (fechar)="fechar()">
+<app-modal-shell
+  [titulo]="dados.somenteLeitura ? 'Cotador — somente leitura' : 'Cotador'"
+  largura="cheia"
+  (fechar)="fechar()"
+>
   <div class="cotador">
     <!-- ---------- Cabeçalho: título da cotação + composição do custo ---------- -->
     <header class="topo">
@@ -658,7 +662,9 @@
     <app-icon name="spreadsheet" />
     {{ exportando() ? 'Gerando…' : 'Exportar' }}
   </app-button>
-  <app-button modalFooter [disabled]="salvando() || carregando()" (click)="salvar()">
-    {{ salvando() ? 'Salvando…' : 'Salvar cotação' }}
-  </app-button>
+  @if (!dados.somenteLeitura) {
+    <app-button modalFooter [disabled]="salvando() || carregando()" (click)="salvar()">
+      {{ salvando() ? 'Salvando…' : 'Salvar cotação' }}
+    </app-button>
+  }
 </app-modal-shell>

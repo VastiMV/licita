@@ -46,6 +46,9 @@ export interface CotadorModalData {
   readonly titulo: string;
   readonly itens: readonly OportunidadeResponse[];
   readonly oportunidadeId: number;
+  /** Processo encerrado: a cotação é só consulta — sem salvar, e fechar
+   * não pergunta nada (o que se mexeu na tela é descartado). */
+  readonly somenteLeitura?: boolean;
 }
 
 /** O que o modal devolve ao fechar — `undefined` quando nada foi salvo. */
@@ -655,7 +658,7 @@ export class CotadorModalComponent implements OnInit {
   }
 
   protected fechar(): void {
-    if (!this.temAlteracao()) {
+    if (this.dados.somenteLeitura || !this.temAlteracao()) {
       this.dialogRef.close();
       return;
     }

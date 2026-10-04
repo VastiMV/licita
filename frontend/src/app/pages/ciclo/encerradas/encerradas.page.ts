@@ -32,7 +32,10 @@ import {
   formatarMoeda,
   normalizarTitulo,
 } from '../../oportunidades/edital-card/edital-card.utils';
-import { ProcessoModalComponent } from './processo-modal/processo-modal.component';
+import {
+  ProcessoModalComponent,
+  ProcessoModalResultado,
+} from './processo-modal/processo-modal.component';
 
 /** Período que a tela abre consultando — o usuário muda antes de pesquisar. */
 const JANELA_PADRAO_DIAS = 90;
@@ -153,14 +156,18 @@ export class EncerradasPage implements OnInit {
       { rotulo: 'Ver processo', icone: 'eye', executar: () => this.verProcesso(linha) },
     ];
     if (linha.cotacao_id !== null) {
-      itens.push({ rotulo: 'Ver cotação', icone: 'calculadora', executar: () => this.verCotacao(linha) });
+      itens.push({
+        rotulo: 'Ver cotação',
+        icone: 'calculadora',
+        executar: () => this.verCotacao(linha),
+      });
     }
     return itens;
   }
 
   protected verProcesso(linha: EncerradaResponse): void {
     this.modal
-      .abrir<'cotacao', EncerradaResponse>(ProcessoModalComponent, linha)
+      .abrir<ProcessoModalResultado, EncerradaResponse>(ProcessoModalComponent, linha)
       .subscribe((resultado) => {
         if (resultado === 'cotacao') this.verCotacao(linha);
       });
@@ -172,6 +179,7 @@ export class EncerradasPage implements OnInit {
         titulo: normalizarTitulo(linha.objeto),
         itens: linha.itens,
         oportunidadeId: linha.id,
+        somenteLeitura: true,
       })
       .subscribe((resultado) => {
         if (resultado) this.carregar();

@@ -20,8 +20,11 @@ export const ENDPOINTS = {
     /** Quem saiu do ciclo — encerramento calculado no backend. */
     encerradas: 'licitacoes/encerradas/',
     salva: (id: number) => `licitacoes/salvas/${id}/`,
-    /** Histórico de uma salva — lido pelo modal do processo em Encerradas. */
+    /** Histórico cru de uma salva (o log). */
     salvaEventos: (id: number) => `licitacoes/salvas/${id}/eventos/`,
+    /** A história no formato do modal do processo: etapa de cada evento,
+     * valores e o desfecho. */
+    processo: (id: number) => `licitacoes/salvas/${id}/processo/`,
   },
   /** Onde os arquivos ficam (`apps/armazenamento`) — driver escolhido e
    * configurado pelo cliente, só por administrador. */

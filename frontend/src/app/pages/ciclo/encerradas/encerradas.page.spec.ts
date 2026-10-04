@@ -81,7 +81,9 @@ describe('EncerradasPage', () => {
 
   beforeEach(() => {
     service = {
-      listar: vi.fn(() => of({ count: 2, next: null, previous: null, results: [COTADA, DESCARTADA] })),
+      listar: vi.fn(() =>
+        of({ count: 2, next: null, previous: null, results: [COTADA, DESCARTADA] }),
+      ),
     };
     modal = { abrir: vi.fn(() => of(undefined)) };
   });
@@ -109,8 +111,16 @@ describe('EncerradasPage', () => {
   it('"Ver cotação" só aparece para quem chegou a cotar', () => {
     montar();
 
-    expect(pagina().acoesDe(COTADA).map((a) => a.rotulo)).toEqual(['Ver processo', 'Ver cotação']);
-    expect(pagina().acoesDe(DESCARTADA).map((a) => a.rotulo)).toEqual(['Ver processo']);
+    expect(
+      pagina()
+        .acoesDe(COTADA)
+        .map((a) => a.rotulo),
+    ).toEqual(['Ver processo', 'Ver cotação']);
+    expect(
+      pagina()
+        .acoesDe(DESCARTADA)
+        .map((a) => a.rotulo),
+    ).toEqual(['Ver processo']);
   });
 
   it('ver processo abre o modal do processo; pedir a cotação de lá abre o Cotador', () => {

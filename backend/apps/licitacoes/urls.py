@@ -9,6 +9,7 @@ from .views import (
     OportunidadesSalvasChavesView,
     OportunidadesSalvasView,
     OportunidadesView,
+    ProcessoView,
 )
 
 urlpatterns = [
@@ -30,4 +31,5 @@ urlpatterns = [
         OportunidadeSalvaEventosView.as_view(),
         name="licitacoes-salva-eventos",
     ),
+    path("salvas/<int:pk>/processo/", ProcessoView.as_view(), name="licitacoes-salva-processo"),
 ]

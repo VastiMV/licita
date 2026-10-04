@@ -1,66 +1,381 @@
-<app-modal-shell titulo="Processo" largura="larga" (fechar)="fechar()">
-  <section class="cabecalho">
-    <p class="objeto">{{ processo.objeto || 'Edital sem objeto' }}</p>
-    <p class="muted">
-      {{ processo.orgao_nome }}
-      @if (processo.uasg) {
-        · UASG {{ processo.uasg }}
+<ng-template #icone let-nome let-tam="tam">
+  <svg
+    [attr.width]="tam ?? 16"
+    [attr.height]="tam ?? 16"
+    viewBox="0 0 24 24"
+    fill="none"
+    stroke="currentColor"
+    stroke-width="2"
+    stroke-linecap="round"
+    stroke-linejoin="round"
+    aria-hidden="true"
+  >
+    @switch (nome) {
+      @case ('x') {
+        <path d="M6 6l12 12M18 6L6 18" />
       }
-      @if (processo.municipio) {
-        · {{ processo.municipio }} / {{ processo.uf }}
+      @case ('check') {
+        <path d="M5 12.5l4.5 4.5L19 7" />
       }
-    </p>
-    <dl class="dados">
-      <div>
-        <dt>Modalidade</dt>
-        <dd>{{ processo.modalidade || '—' }}</dd>
+      @case ('relogio') {
+        <path d="M12 7v5l3 2M12 21a9 9 0 1 0 0-18 9 9 0 0 0 0 18z" />
+      }
+      @case ('lixeira') {
+        <path d="M4 7h16M9 7V4h6v3M6 7l1 13h10l1-13" />
+      }
+      @case ('link') {
+        <path d="M14 4h6v6M20 4l-9 9M18 14v5a1 1 0 0 1-1 1H5a1 1 0 0 1-1-1V7a1 1 0 0 1 1-1h5" />
+      }
+      @case ('baixar') {
+        <path d="M12 4v11M7 10l5 5 5-5M5 20h14" />
+      }
+      @case ('doc') {
+        <path d="M7 3h7l5 5v13H7zM14 3v5h5M10 13h6M10 17h6" />
+      }
+      @case ('cadeado') {
+        <path d="M7 11V8a5 5 0 0 1 10 0v3M5 11h14v10H5z" />
+      }
+      @case ('refazer') {
+        <path d="M4 12a8 8 0 1 0 2.3-5.6M4 4v4h4" />
+      }
+      @case ('engrenagem') {
+        <path
+          d="M12 15a3 3 0 1 0 0-6 3 3 0 0 0 0 6zM12 2v3M12 19v3M2 12h3M19 12h3M4.9 4.9l2.1 2.1M17 17l2.1 2.1M4.9 19.1L7 17M17 7l2.1-2.1"
+        />
+      }
+      @case ('esquerda') {
+        <path d="M15 6l-6 6 6 6" />
+      }
+      @case ('direita') {
+        <path d="M9 6l6 6-6 6" />
+      }
+    }
+  </svg>
+</ng-template>
+
+<div class="processo" role="document" tabindex="-1">
+  <!-- ---------- cabeçalho ---------- -->
+  <header class="cabeca">
+    <div class="cabeca-esq">
+      <div class="chips">
+        <span class="chip"
+          ><b>{{ cab.modalidade || 'Licitação' }}</b> nº {{ cab.sequencial_compra }}/{{
+            cab.ano_compra
+          }}</span
+        >
+        @if (cab.uasg) {
+          <span class="chip"
+            >UASG <b>{{ cab.uasg }}</b></span
+          >
+        }
+        @if (cab.municipio) {
+          <span class="chip">{{ cab.municipio }}/{{ cab.uf }}</span>
+        }
+        @if (cab.link_pncp) {
+          <a class="link" [href]="cab.link_pncp" target="_blank" rel="noopener">
+            <ng-container *ngTemplateOutlet="icone; context: { $implicit: 'link', tam: 13 }" />PNCP
+          </a>
+        }
+        @if (cab.link_plataforma) {
+          <a class="link" [href]="cab.link_plataforma" target="_blank" rel="noopener">
+            <ng-container *ngTemplateOutlet="icone; context: { $implicit: 'link', tam: 13 }" />{{
+              cab.plataforma_nome || 'Plataforma'
+            }}
+          </a>
+        }
       </div>
+      <h2 class="titulo" [title]="cab.objeto">{{ cab.objeto || 'Edital sem objeto' }}</h2>
+      <p class="orgao">{{ cab.orgao_nome }}</p>
+    </div>
+    <dl class="fatos">
       <div>
         <dt>Prazo da proposta</dt>
-        <dd>{{ data(processo.data_encerramento_proposta) ?? '—' }}</dd>
+        <dd>{{ data(cab.data_encerramento_proposta) ?? '—' }}</dd>
       </div>
       <div>
         <dt>Valor estimado</dt>
-        <dd>{{ moeda(processo.valor_total_estimado) ?? '—' }}</dd>
+        <dd class="num">{{ moeda(cab.valor_total_estimado) ?? '—' }}</dd>
       </div>
       <div>
         <dt>Valor cotado</dt>
-        <dd>{{ moeda(processo.valor_cotado) ?? '—' }}</dd>
+        <dd class="num">{{ moeda(cab.valor_cotado) ?? '—' }}</dd>
+      </div>
+      <div>
+        <dt>Salva por</dt>
+        <dd>{{ cab.salva_por ?? '—' }}</dd>
       </div>
     </dl>
-  </section>
+    <button type="button" class="fechar" aria-label="Fechar" (click)="fechar()">
+      <ng-container *ngTemplateOutlet="icone; context: { $implicit: 'x', tam: 18 }" />
+    </button>
+  </header>
 
-  <p class="situacao" [attr.data-motivo]="processo.motivo">
-    Encerrada em {{ data(processo.encerrada_em) }} — {{ processo.motivo_label }}
-    @if (processo.removida_por) {
-      por {{ processo.removida_por }}
-    }
-  </p>
-
-  <h3>O que aconteceu</h3>
-  @if (carregando()) {
-    <p class="muted">Carregando o histórico…</p>
-  } @else if (erro()) {
-    <p class="erro">Não foi possível carregar o histórico agora.</p>
+  @if (erro()) {
+    <p class="erro">Não foi possível carregar o processo agora.</p>
+  } @else if (!processo()) {
+    <p class="carregando">Carregando o processo…</p>
   } @else {
-    <ol class="linha-do-tempo">
-      @for (marco of marcos(); track $index) {
-        <li [class.sistema]="marco.sistema">
-          <span class="marcador" aria-hidden="true"></span>
-          <div>
-            <p class="titulo">{{ marco.titulo }}</p>
-            <p class="descricao">{{ marco.descricao }}</p>
-            <p class="meta">{{ quando(marco.quando) }} · {{ marco.autor ?? 'Sistema' }}</p>
-          </div>
-        </li>
-      } @empty {
-        <li class="sistema"><p class="muted">Sem eventos registrados.</p></li>
+    <!-- ---------- faixa de situação ---------- -->
+    @if (desfecho(); as d) {
+      <section class="faixa" [attr.data-familia]="infoDesfecho()!.familia" role="status">
+        <span class="faixa-icone">
+          <ng-container
+            *ngTemplateOutlet="icone; context: { $implicit: infoDesfecho()!.icone, tam: 16 }"
+          />
+        </span>
+        <div class="faixa-texto">
+          <b>{{ tituloDesfecho() }}</b>
+          @if (d.tipo !== 'concluido') {
+            <span class="faixa-tag">Encerrada em {{ nomeEtapaAtual() }}</span>
+          }
+          <p>{{ d.porque }}</p>
+        </div>
+        <div class="faixa-quando">
+          <b>{{ diaAno(d.data) }}</b>
+          {{
+            diasDesde() === 0
+              ? 'hoje'
+              : 'há ' + diasDesde() + (diasDesde() === 1 ? ' dia' : ' dias')
+          }}
+        </div>
+      </section>
+    }
+
+    <!-- ---------- fases ---------- -->
+    <div class="fases" role="tablist" aria-label="Fases do ciclo">
+      @for (etapa of etapas; track etapa.id; let i = $index) {
+        @let fase = fases()[i];
+        <button
+          type="button"
+          role="tab"
+          class="fase"
+          [attr.data-classe]="fase.classe"
+          [attr.data-familia]="fase.familia"
+          [class.selecionada]="i === selecionada()"
+          [attr.aria-selected]="i === selecionada()"
+          (click)="selecionar(i)"
+        >
+          <span class="fase-ponto">
+            @if (fase.classe === 'feita' || fase.classe === 'concluiu') {
+              <ng-container *ngTemplateOutlet="icone; context: { $implicit: 'check', tam: 13 }" />
+            } @else if (fase.classe === 'parou' && infoDesfecho()) {
+              <ng-container
+                *ngTemplateOutlet="icone; context: { $implicit: infoDesfecho()!.icone, tam: 13 }"
+              />
+            }
+          </span>
+          <span class="fase-nome"
+            ><span class="fase-num">{{ i + 1 }}. </span>{{ etapa.nome }}</span
+          >
+          <span class="fase-sub">{{ fase.sub }}</span>
+        </button>
       }
-    </ol>
+    </div>
+
+    <!-- ---------- corpo ---------- -->
+    <div class="corpo">
+      <section class="linha-do-tempo" aria-label="Linha do tempo">
+        <h3 class="rotulo">Linha do tempo</h3>
+        @for (grupo of grupos(); track grupo.etapa) {
+          <div
+            class="etapa"
+            [class.ativa]="grupo.indice === selecionada()"
+            (click)="selecionar(grupo.indice)"
+          >
+            <div class="etapa-cabeca">
+              <span class="etapa-marca"></span>
+              <b>{{ grupo.nome }}</b>
+              <span class="etapa-periodo">{{ grupo.periodo }}</span>
+              <span
+                class="pilula"
+                [attr.data-classe]="grupo.estado.classe"
+                [attr.data-familia]="grupo.estado.familia"
+              >
+                {{ grupo.estado.rotulo }}
+              </span>
+            </div>
+            @for (no of grupo.nos; track $index) {
+              @if (no.tipo === 'evento') {
+                <div class="evento" [class.sistema]="!no.evento.autor">
+                  @if (no.evento.autor) {
+                    <span class="avatar">{{ iniciais(no.evento.autor) }}</span>
+                  } @else {
+                    <span class="avatar avatar-sistema">
+                      <ng-container
+                        *ngTemplateOutlet="icone; context: { $implicit: 'engrenagem', tam: 13 }"
+                      />
+                    </span>
+                  }
+                  <div class="evento-texto">
+                    <p>
+                      {{ no.evento.texto }}
+                      @if (!no.evento.autor) {
+                        <span class="selo">sistema</span>
+                      }
+                    </p>
+                    <small>
+                      {{ quando(no.evento.data)
+                      }}{{ no.evento.autor ? ' · ' + no.evento.autor : '' }}
+                    </small>
+                  </div>
+                  @if (no.evento.valor !== null) {
+                    <span class="valor num">{{ brl(no.evento.valor) }}</span>
+                  }
+                </div>
+              } @else {
+                @let chave = chaveDoGrupo(no);
+                <button
+                  type="button"
+                  class="bloco"
+                  [attr.aria-expanded]="abertos().has(chave)"
+                  (click)="$event.stopPropagation(); alternarGrupo(chave)"
+                >
+                  <span class="bloco-seta" [class.aberta]="abertos().has(chave)">
+                    <ng-container
+                      *ngTemplateOutlet="icone; context: { $implicit: 'direita', tam: 14 }"
+                    />
+                  </span>
+                  <span class="bloco-texto">
+                    <b>{{ no.eventos.length }} atualizações intermediárias</b>
+                    <small>
+                      {{ dia(no.eventos[0].data) }} –
+                      {{ dia(no.eventos[no.eventos.length - 1].data) }}
+                      @if (no.autores.length) {
+                        · {{ no.autores.join(', ') }}
+                      }
+                    </small>
+                  </span>
+                  @if (tendencia(no.eventos); as pontos) {
+                    <svg
+                      class="tendencia"
+                      viewBox="0 0 100 32"
+                      preserveAspectRatio="none"
+                      aria-hidden="true"
+                    >
+                      <polyline [attr.points]="pontos" />
+                    </svg>
+                  }
+                  @if (
+                    no.eventos[0].valor !== null && no.eventos[no.eventos.length - 1].valor !== null
+                  ) {
+                    <span class="valor num">
+                      {{ brl(no.eventos[0].valor!) }} →
+                      {{ brl(no.eventos[no.eventos.length - 1].valor!) }}
+                    </span>
+                  }
+                </button>
+                @if (abertos().has(chave)) {
+                  <ol class="bloco-lista">
+                    @for (e of no.eventos; track e.id) {
+                      <li>
+                        <span>{{ quando(e.data) }} · {{ e.autor ?? 'sistema' }}</span>
+                        @if (e.valor !== null) {
+                          <span class="num">{{ brl(e.valor) }}</span>
+                        }
+                      </li>
+                    }
+                  </ol>
+                }
+              }
+            }
+          </div>
+        }
+        @if (desfecho(); as d) {
+          <div class="fim" [attr.data-familia]="infoDesfecho()!.familia">
+            <span class="fim-icone">
+              <ng-container
+                *ngTemplateOutlet="icone; context: { $implicit: infoDesfecho()!.icone, tam: 14 }"
+              />
+            </span>
+            <div>
+              <b>Encerrada · {{ tituloDesfecho() }}</b>
+              <small
+                >{{ diaAno(d.data) }} ·
+                {{ d.por ? 'por ' + d.por : 'registrado pelo sistema' }}</small
+              >
+            </div>
+          </div>
+        }
+      </section>
+
+      <!-- ---------- narração da fase ---------- -->
+      @if (narracao(); as n) {
+        @let fase = fases()[selecionada()];
+        <aside class="narracao" aria-live="polite">
+          <span class="narracao-k">Fase {{ selecionada() + 1 }} de 5</span>
+          <div class="narracao-cabeca">
+            <h3>{{ etapas[selecionada()].nome }}</h3>
+            <span
+              class="pilula"
+              [attr.data-classe]="fase.classe"
+              [attr.data-familia]="fase.familia"
+            >
+              {{ fase.rotulo }}
+            </span>
+          </div>
+          @if (periodoSelecionado()) {
+            <span class="narracao-periodo">{{ periodoSelecionado() }}</span>
+          }
+          <ol class="pontos">
+            @for (ponto of n.pontos; track $index) {
+              <li [innerHTML]="ponto"></li>
+            }
+          </ol>
+          @if (n.porque) {
+            <div class="porque" [attr.data-familia]="n.familia">
+              <b>{{ desfecho()?.tipo === 'concluido' ? 'Como terminou' : 'Por que parou aqui' }}</b>
+              {{ n.porque }}
+            </div>
+          }
+          <div class="navegacao">
+            <button
+              type="button"
+              [disabled]="selecionada() === 0"
+              (click)="selecionar(selecionada() - 1)"
+            >
+              <ng-container *ngTemplateOutlet="icone; context: { $implicit: 'esquerda' }" />
+              Anterior
+            </button>
+            <button
+              type="button"
+              [disabled]="selecionada() === 4"
+              (click)="selecionar(selecionada() + 1)"
+            >
+              Próxima <ng-container *ngTemplateOutlet="icone; context: { $implicit: 'direita' }" />
+            </button>
+          </div>
+        </aside>
+      }
+    </div>
   }
 
-  <app-button modalFooter variant="ghost" (click)="fechar()">Fechar</app-button>
-  @if (processo.cotacao_id !== null) {
-    <app-button modalFooter (click)="verCotacao()">Ver cotação</app-button>
-  }
-</app-modal-shell>
+  <!-- ---------- rodapé ---------- -->
+  <footer class="rodape">
+    <span class="nota">
+      <ng-container *ngTemplateOutlet="icone; context: { $implicit: 'cadeado', tam: 14 }" />
+      Somente consulta{{ temCotacao() ? ' · a cotação abre só para leitura' : '' }}
+      <span class="teclas">← → navegam pelas fases</span>
+    </span>
+    @if (desfecho()?.tipo !== 'concluido') {
+      <button type="button" class="botao botao-tracejado" disabled title="Disponível em breve">
+        <ng-container *ngTemplateOutlet="icone; context: { $implicit: 'refazer' }" />
+        Reabrir processo <span class="em-breve">em breve</span>
+      </button>
+    }
+    @if (temCotacao()) {
+      <button type="button" class="botao" [disabled]="exportando()" (click)="exportar()">
+        <ng-container *ngTemplateOutlet="icone; context: { $implicit: 'baixar' }" />
+        {{ exportando() ? 'Gerando…' : 'Exportar planilha' }}
+      </button>
+      <button type="button" class="botao botao-primario" (click)="verCotacao()">
+        <ng-container *ngTemplateOutlet="icone; context: { $implicit: 'doc' }" />
+        Ver cotação
+      </button>
+    } @else if (cab.link_pncp) {
+      <a class="botao botao-primario" [href]="cab.link_pncp" target="_blank" rel="noopener">
+        <ng-container *ngTemplateOutlet="icone; context: { $implicit: 'link' }" />
+        Abrir edital no PNCP
+      </a>
+    }
+  </footer>
+</div>

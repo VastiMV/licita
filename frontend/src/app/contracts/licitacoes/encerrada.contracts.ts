@@ -43,19 +43,41 @@ export interface EncerradasParams {
   readonly uf?: string;
 }
 
-/** Uma linha do histórico do processo (`GET licitacoes/salvas/<id>/eventos/`). */
-export interface EventoProcesso {
+// ---------- o processo (`GET licitacoes/salvas/<id>/processo/`) ----------
+
+export type EtapaCiclo = 'oportunidade' | 'cotacao' | 'proposta' | 'disputa' | 'empenho';
+
+/** Os desfechos de hoje são os motivos de Encerradas; desclassificada,
+ * perdida na disputa, falha no empenho e concluído entram com as etapas. */
+export type TipoDesfecho =
+  MotivoEncerramento | 'desclassificada' | 'perdido_disputa' | 'falhou_empenho' | 'concluido';
+
+export interface EventoDoProcesso {
   readonly id: number;
+  /** `oportunidade_salva`, `cotacao_criada`, `cotacao_atualizada`,
+   * `prazo_encerrado`, `removida`… */
   readonly tipo: string;
-  readonly tipo_label: string;
-  readonly descricao: string;
-  /** `null` = evento do sistema (ex.: prazo vencido). */
+  readonly etapa: EtapaCiclo;
+  readonly texto: string;
+  /** `null` = evento do sistema. */
   readonly autor: string | null;
-  readonly dados: Record<string, unknown>;
-  readonly ocorrido_em: string;
+  readonly data: string;
+  readonly valor: number | null;
 }
 
-export interface HistoricoProcesso {
+export interface DesfechoProcesso {
+  readonly tipo: TipoDesfecho;
+  /** Data (prazo) ou data e hora (descarte), ISO. */
+  readonly data: string;
+  readonly por: string | null;
+  /** O "por que parou aqui", já escrito pelo backend. */
+  readonly porque: string;
+}
+
+export interface ProcessoResponse {
   readonly id: number;
-  readonly eventos: readonly EventoProcesso[];
+  readonly etapa: EtapaCiclo;
+  /** `null` = processo em andamento. */
+  readonly desfecho: DesfechoProcesso | null;
+  readonly eventos: readonly EventoDoProcesso[];
 }

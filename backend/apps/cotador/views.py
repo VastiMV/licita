@@ -65,7 +65,11 @@ class CotacoesView(APIView):
                 f"Cotação {'criada' if not existente else 'atualizada'} por "
                 f"{nome_de_usuario(usuario)} — valor cotado R$ {cotacao.valor_cotado}."
             ),
-            dados={"cotacao_id": cotacao.pk},
+            dados={
+                "cotacao_id": cotacao.pk,
+                "criada": not existente,
+                "valor_cotado": float(cotacao.valor_cotado),
+            },
         )
 
         resposta = CotacaoSerializer(_com_relacionados(Cotacao.objects).get(pk=cotacao.pk)).data
