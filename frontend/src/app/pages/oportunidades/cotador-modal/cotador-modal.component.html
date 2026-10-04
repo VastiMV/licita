@@ -3,13 +3,17 @@
     <!-- ---------- Cabeçalho: título da cotação + composição do custo ---------- -->
     <header class="topo">
       <div class="topo-identidade">
-        <input
+        <!-- O título vem do objeto do edital, que costuma ser longo: textarea
+             na largura toda, crescendo com o texto. -->
+        <textarea
           class="campo-titulo"
+          rows="1"
           [value]="titulo()"
           (input)="titulo.set($any($event.target).value)"
+          (keydown.enter)="$event.preventDefault()"
           placeholder="Título da cotação"
           aria-label="Título da cotação"
-        />
+        ></textarea>
         <p class="topo-sub">
           {{
             cotacaoId() === null
