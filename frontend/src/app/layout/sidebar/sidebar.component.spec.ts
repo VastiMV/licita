@@ -13,19 +13,19 @@ import { SidebarComponent } from './sidebar.component';
 describe('SidebarComponent', () => {
   let fixture: ComponentFixture<SidebarComponent>;
   let state: SidebarStateService;
-  const ehAdmin = signal(false);
+  const ehSuperusuario = signal(false);
 
   beforeEach(() => {
-    ehAdmin.set(false);
+    ehSuperusuario.set(false);
     TestBed.configureTestingModule({
       imports: [SidebarComponent],
       // Rota curinga: o teste clica num link de verdade, e sem rota casada o
       // Router rejeita a navegação depois que o teste já terminou.
       providers: [
         provideRouter([{ path: '**', children: [] }]),
-        // Só `ehAdmin` interessa aqui, e como signal — o menu reage à
+        // Só `ehSuperusuario` interessa aqui, e como signal — o menu reage à
         // troca sem remontar o componente.
-        { provide: AuthService, useValue: { ehAdmin } },
+        { provide: AuthService, useValue: { ehSuperusuario } },
       ],
     });
     fixture = TestBed.createComponent(SidebarComponent);
@@ -70,7 +70,7 @@ describe('SidebarComponent', () => {
 
     expect(rotulos()).toEqual(['Ciclo de Licitação', 'Oportunidades']);
 
-    ehAdmin.set(true);
+    ehSuperusuario.set(true);
     fixture.detectChanges();
 
     expect(rotulos()).toEqual(['Ciclo de Licitação', 'Oportunidades', 'Configurações']);

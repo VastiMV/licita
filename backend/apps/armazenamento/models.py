@@ -51,6 +51,12 @@ class ConfigArmazenamento(models.Model):
         blank=True,
         on_delete=models.SET_NULL,
     )
+    atualizado_por_nome = models.CharField(
+        "atualizado por (nome)",
+        max_length=150,
+        blank=True,
+        help_text="Gravado junto com o autor: o nome continua aqui se o usuário for excluído.",
+    )
     atualizado_em = models.DateTimeField("atualizado em", auto_now=True)
 
     class Meta:

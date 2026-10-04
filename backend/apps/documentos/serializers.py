@@ -55,9 +55,7 @@ class VersaoSerializer(serializers.ModelSerializer):
         read_only_fields = fields
 
     def get_enviado_por_nome(self, versao: VersaoDocumento) -> str:
-        if not versao.enviado_por:
-            return ""
-        return versao.enviado_por.nome or versao.enviado_por.email
+        return versao.enviado_por_nome
 
 
 class DocumentoSerializer(serializers.ModelSerializer):
@@ -152,6 +150,4 @@ class EventoSerializer(serializers.ModelSerializer):
         fields = ["id", "tipo", "tipo_label", "detalhe", "autor_nome", "quando"]
 
     def get_autor_nome(self, evento: EventoDocumento) -> str:
-        if not evento.autor:
-            return ""
-        return evento.autor.nome or evento.autor.email
+        return evento.autor_nome

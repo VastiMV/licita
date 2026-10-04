@@ -231,7 +231,6 @@ class OportunidadesSalvasView(APIView):
         salvas = (
             OportunidadeSalva.objects.ativas()
             .sem_cotacao()
-            .select_related("salva_por")
             .buscar(request.query_params.get("busca", ""))
             .order_by(_ordenacao(request.query_params.get("ordering")))
         )
@@ -313,15 +312,13 @@ class OportunidadeSalvaEventosView(APIView):
 
     def get(self, request: Request, pk: int) -> Response:
         salva = get_object_or_404(OportunidadeSalva, pk=pk)
-        eventos = salva.eventos.select_related("autor")
+        eventos = salva.eventos.all()
         return Response(
             {
                 "id": salva.id,
                 "chave": salva.chave,
                 "resumo": salva.resumo,
-                "salva_por": (salva.salva_por.nome or salva.salva_por.email)
-                if salva.salva_por
-                else None,
+                "salva_por": salva.salva_por_nome or None,
                 "criada_em": salva.criada_em,
                 "removida_em": salva.removida_em,
                 "eventos": EventoOportunidadeSalvaSerializer(eventos, many=True).data,

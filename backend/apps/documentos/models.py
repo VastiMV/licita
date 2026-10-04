@@ -309,6 +309,12 @@ class VersaoDocumento(models.Model):
         blank=True,
         on_delete=models.SET_NULL,
     )
+    enviado_por_nome = models.CharField(
+        "enviado por (nome)",
+        max_length=150,
+        blank=True,
+        help_text="Gravado junto com o autor: o nome continua aqui se o usuário for excluído.",
+    )
     enviado_em = models.DateTimeField("enviado em", auto_now_add=True)
 
     class Meta:
@@ -355,6 +361,12 @@ class EventoDocumento(models.Model):
         null=True,
         blank=True,
         on_delete=models.SET_NULL,
+    )
+    autor_nome = models.CharField(
+        "quem (nome)",
+        max_length=150,
+        blank=True,
+        help_text="Gravado junto com o autor: o nome continua aqui se o usuário for excluído.",
     )
     quando = models.DateTimeField("quando", auto_now_add=True)
 
