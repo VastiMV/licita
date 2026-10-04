@@ -129,22 +129,20 @@ class FabricanteView(APIView):
 
 class FabricantesOpcoesView(APIView):
     """`GET ?busca=&fornecedor=` — o dropdown de fabricante. Com fornecedor,
-    os que ele vende vêm primeiro e marcados (`afim`)."""
+    só os que ele vende (`afim`); outro fabricante entra pelo "criar", que é
+    idempotente e grava a afinidade."""
 
     def get(self, request: Request) -> Response:
         fabricantes = Fabricante.objects.all()
         if termo := normalizar_nome(request.query_params.get("busca", "")):
             fabricantes = fabricantes.filter(nome_normalizado__contains=termo)
-        afins: set[int] = set()
-        if fornecedor := request.query_params.get("fornecedor"):
-            afins = set(
-                Fabricante.objects.filter(fornecedores=fornecedor).values_list("pk", flat=True)
-            )
-        lista = sorted(fabricantes.order_by("nome")[:200], key=lambda f: f.pk not in afins)
+        fornecedor = request.query_params.get("fornecedor")
+        if fornecedor:
+            fabricantes = fabricantes.filter(fornecedores=fornecedor)
         return Response(
             [
-                {**OpcaoSerializer(f).data, "afim": f.pk in afins}
-                for f in lista[:LIMITE_OPCOES]
+                {**OpcaoSerializer(f).data, "afim": bool(fornecedor)}
+                for f in fabricantes.order_by("nome")[:LIMITE_OPCOES]
             ]
         )
 

@@ -60,7 +60,7 @@ class CadastroTests(Base):
         self.assertEqual(resposta.status_code, 400)
         self.assertEqual(Modelo.objects.get(pk=cr40["id"]).nome, "CR-40")
 
-    def test_opcoes_de_fabricante_trazem_os_do_fornecedor_primeiro(self):
+    def test_opcoes_de_fabricante_com_fornecedor_trazem_so_os_dele(self):
         Fabricante.objects.create(nome="Alfa")
         Fabricante.objects.create(nome="Zeta").fornecedores.add(self.sul)
 
@@ -68,7 +68,7 @@ class CadastroTests(Base):
             "/api/produtos/fabricantes/opcoes/", {"fornecedor": self.sul.pk}
         ).data
 
-        self.assertEqual([(o["nome"], o["afim"]) for o in opcoes], [("Zeta", True), ("Alfa", False)])
+        self.assertEqual([(o["nome"], o["afim"]) for o in opcoes], [("Zeta", True)])
 
     def test_tabela_lista_fabricantes_com_marcas_modelos_e_busca(self):
         marca = Marca.objects.create(fabricante=Fabricante.objects.create(nome="Jaguaribe"), nome="Prolife")
