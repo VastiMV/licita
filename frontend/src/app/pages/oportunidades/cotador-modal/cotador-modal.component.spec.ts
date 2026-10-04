@@ -1,7 +1,7 @@
 import { DIALOG_DATA, DialogRef } from '@angular/cdk/dialog';
 import { ComponentFixture, TestBed } from '@angular/core/testing';
 import { By } from '@angular/platform-browser';
-import { Observable, of, throwError } from 'rxjs';
+import { Observable, Subject, of, throwError } from 'rxjs';
 
 import { CotacaoRequest } from '../../../contracts/cotador/cotacao.contracts';
 import { FornecedorOpcao } from '../../../contracts/fornecedores/fornecedor.contracts';
@@ -130,7 +130,12 @@ function montar(
   const fornecedores = { opcoes: vi.fn((_todos?: boolean) => of([FORNECEDOR])) };
   const modal = { abrir: vi.fn(() => of(undefined)), confirmar: vi.fn(() => of(true)) };
   const toast = { sucesso: vi.fn(), erro: vi.fn(), alerta: vi.fn() };
-  const dialogRef = { close: vi.fn() };
+  const dialogRef = {
+    close: vi.fn(),
+    disableClose: false,
+    backdropClick: new Subject<MouseEvent>(),
+    keydownEvents: new Subject<KeyboardEvent>(),
+  };
 
   TestBed.configureTestingModule({
     imports: [CotadorModalComponent],
@@ -168,6 +173,7 @@ function interno(fixture: ComponentFixture<CotadorModalComponent>) {
     padroes: () => { markupMinimo: number; markupAlvo: number };
     salvar: () => void;
     exportar: () => void;
+    fechar: () => void;
   };
 }
 
@@ -543,6 +549,37 @@ describe('CotadorModalComponent', () => {
 
       expect(cotador.salvar).not.toHaveBeenCalled();
       expect(cotador.exportar).not.toHaveBeenCalled();
+    });
+  });
+
+  describe('fechar sem perder trabalho', () => {
+    it('clique fora e Esc não fecham direto: o modal trava o fechamento do CDK', () => {
+      const { dialogRef } = montar(DADOS);
+      expect(dialogRef.disableClose).toBe(true);
+    });
+
+    it('sem alteração, clique fora fecha sem perguntar', () => {
+      const { modal, dialogRef } = montar(DADOS);
+      dialogRef.backdropClick.next(new MouseEvent('click'));
+      expect(modal.confirmar).not.toHaveBeenCalled();
+      expect(dialogRef.close).toHaveBeenCalled();
+    });
+
+    it('com alteração não salva, Esc pergunta e recusar mantém aberto', () => {
+      const { fixture, modal, dialogRef } = montar(DADOS);
+      modal.confirmar.mockReturnValue(of(false));
+      const c = interno(fixture);
+      const item = c.itens()[0];
+      c.alterarCusto(item, item.ofertas[0], 'custoProduto', '10');
+      dialogRef.keydownEvents.next(new KeyboardEvent('keydown', { key: 'Escape' }));
+      expect(modal.confirmar).toHaveBeenCalled();
+      expect(dialogRef.close).not.toHaveBeenCalled();
+    });
+
+    it('erro que não é 404 ao carregar não abre em branco', () => {
+      const { toast, dialogRef } = montar(DADOS, throwError(() => ({ status: 500 })));
+      expect(toast.erro).toHaveBeenCalled();
+      expect(dialogRef.close).toHaveBeenCalled();
     });
   });
 });

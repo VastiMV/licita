@@ -163,7 +163,27 @@ export class CotadorModalComponent implements OnInit {
 
   ngOnInit(): void {
     this.titulo.set(this.dados.titulo);
+    // A cotação vive só na memória do modal até ser salva: clique fora ou
+    // Esc não podem jogar o trabalho fora sem perguntar.
+    this.dialogRef.disableClose = true;
+    this.dialogRef.backdropClick.subscribe(() => this.fechar());
+    this.dialogRef.keydownEvents.subscribe((evento) => {
+      if (evento.key === 'Escape') this.fechar();
+    });
     this.carregarCotacao();
+  }
+
+  /** O payload como estava ao abrir (ou ao salvar) — base do "tem alteração
+   * não salva?". */
+  private readonly estadoSalvo = signal<string | null>(null);
+
+  private marcarSalvo(): void {
+    this.estadoSalvo.set(JSON.stringify(this.montarPayload()));
+  }
+
+  private temAlteracao(): boolean {
+    const salvo = this.estadoSalvo();
+    return salvo !== null && salvo !== JSON.stringify(this.montarPayload());
   }
 
   // ---------- carga ----------
@@ -172,13 +192,22 @@ export class CotadorModalComponent implements OnInit {
     this.cotador.carregarDaOportunidade(this.dados.oportunidadeId).subscribe({
       next: (cotacao) => {
         this.aplicar(cotacao);
+        this.marcarSalvo();
         this.carregando.set(false);
         this.carregarFornecedores(true);
       },
       // 404 = oportunidade ainda não cotada. Não é erro: é o sinal de abrir
       // em branco, com os itens do snapshot do edital.
-      error: () => {
+      // Qualquer outro erro NÃO é "não cotada": abrir em branco faria o
+      // operador achar que perdeu a cotação — e salvar por cima a apagaria.
+      error: (erro: unknown) => {
+        if ((erro as { status?: number } | null)?.status !== 404) {
+          this.toast.erro('Não foi possível carregar a cotação agora. Tente de novo.');
+          this.dialogRef.close();
+          return;
+        }
         this.montarDoEdital();
+        this.marcarSalvo();
         this.carregando.set(false);
         this.carregarFornecedores(false);
       },
@@ -593,6 +622,7 @@ export class CotadorModalComponent implements OnInit {
           next: (cotacao) => {
             this.salvando.set(false);
             this.cotacaoId.set(cotacao.id);
+            this.marcarSalvo();
             this.baixar(cotacao.id);
           },
           error: () => {
@@ -625,7 +655,19 @@ export class CotadorModalComponent implements OnInit {
   }
 
   protected fechar(): void {
-    this.dialogRef.close();
+    if (!this.temAlteracao()) {
+      this.dialogRef.close();
+      return;
+    }
+    this.modal
+      .confirmar({
+        titulo: 'Descartar alterações?',
+        mensagem: 'A cotação tem alterações que ainda não foram salvas.',
+        confirmarLabel: 'Descartar',
+      })
+      .subscribe((confirmou) => {
+        if (confirmou) this.dialogRef.close();
+      });
   }
 
   private montarPayload(): CotacaoRequest {
