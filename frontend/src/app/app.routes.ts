@@ -98,6 +98,10 @@ export const routes: Routes = [
         loadComponent: () =>
           import('./pages/fornecedores/fornecedores.page').then((m) => m.FornecedoresPage),
       },
+      {
+        path: 'produtos',
+        loadComponent: () => import('./pages/produtos/produtos.page').then((m) => m.ProdutosPage),
+      },
       // Configurações é menu de primeiro nível com filhos, como
       // Oportunidades — "Armazenamento" e "Usuários", só para o super usuário
       // (quem barra de verdade é o backend, com 403).

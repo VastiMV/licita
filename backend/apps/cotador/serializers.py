@@ -22,6 +22,7 @@ from django.db import transaction
 from rest_framework import serializers
 
 from apps.fornecedores.models import Fornecedor
+from apps.produtos.models import Fabricante, Marca, Modelo, PrecoFornecedor
 
 from .formulas import calcular_item, totalizar
 from .models import Cotacao, ItemCotacao, OfertaFornecedor
@@ -76,6 +77,15 @@ class OfertaSerializer(serializers.ModelSerializer):
     fornecedor = serializers.PrimaryKeyRelatedField(
         queryset=Fornecedor.objects.all(), allow_null=True, required=False
     )
+    fabricante = serializers.PrimaryKeyRelatedField(
+        queryset=Fabricante.objects.all(), allow_null=True, required=False
+    )
+    marca = serializers.PrimaryKeyRelatedField(
+        queryset=Marca.objects.all(), allow_null=True, required=False
+    )
+    modelo = serializers.PrimaryKeyRelatedField(
+        queryset=Modelo.objects.all(), allow_null=True, required=False
+    )
     # Derivado — a tela mostra o custo unitário ao lado dos três campos.
     custo_unitario = serializers.DecimalField(
         max_digits=16, decimal_places=4, read_only=True
@@ -87,13 +97,34 @@ class OfertaSerializer(serializers.ModelSerializer):
             "id",
             "fornecedor",
             "nome",
+            "fabricante",
+            "fabricante_nome",
+            "marca",
+            "marca_nome",
+            "modelo",
+            "modelo_nome",
             "custo_produto",
             "frete",
             "outros",
             "escolhida",
             "custo_unitario",
         ]
-        read_only_fields = ["id"]
+        read_only_fields = ["id", "fabricante_nome", "marca_nome", "modelo_nome"]
+
+    def validate(self, dados: dict) -> dict:
+        # A hierarquia tem de fechar: marca do fabricante, modelo da marca.
+        # Um nível escolhido sem o de cima é completado a partir dele.
+        modelo, marca = dados.get("modelo"), dados.get("marca")
+        if modelo:
+            if marca and modelo.marca_id != marca.pk:
+                raise serializers.ValidationError("O modelo não é dessa marca.")
+            dados["marca"] = marca = modelo.marca
+        if marca:
+            fabricante = dados.get("fabricante")
+            if fabricante and marca.fabricante_id != fabricante.pk:
+                raise serializers.ValidationError("A marca não é desse fabricante.")
+            dados["fabricante"] = marca.fabricante
+        return dados
 
 
 class ItemSerializer(serializers.ModelSerializer):
@@ -310,6 +341,12 @@ class CotacaoSerializer(serializers.ModelSerializer):
                         if oferta.get("fornecedor")
                         else (oferta.get("nome") or "")
                     ),
+                    fabricante=oferta.get("fabricante"),
+                    fabricante_nome=oferta["fabricante"].nome if oferta.get("fabricante") else "",
+                    marca=oferta.get("marca"),
+                    marca_nome=oferta["marca"].nome if oferta.get("marca") else "",
+                    modelo=oferta.get("modelo"),
+                    modelo_nome=oferta["modelo"].nome if oferta.get("modelo") else "",
                     custo_produto=oferta.get("custo_produto") or 0,
                     frete=oferta.get("frete") or 0,
                     outros=oferta.get("outros") or 0,
@@ -317,6 +354,36 @@ class CotacaoSerializer(serializers.ModelSerializer):
                 )
                 for posicao, oferta in enumerate(ofertas)
             )
+            for oferta in ofertas:
+                _aprender(cotacao, oferta)
+
+
+def _aprender(cotacao: Cotacao, oferta: dict) -> None:
+    """O que uma oferta ensina ao cadastro de produtos (ver
+    `apps.produtos.models`): o fornecedor vende o fabricante (afinidade), e
+    o custo dele para o modelo entra na tabela de preços — só quando muda,
+    para salvar a cotação de novo não repetir a mesma linha."""
+
+    fornecedor, fabricante, modelo = (
+        oferta.get("fornecedor"),
+        oferta.get("fabricante"),
+        oferta.get("modelo"),
+    )
+    if fornecedor and fabricante:
+        fabricante.fornecedores.add(fornecedor)
+    custo = oferta.get("custo_produto") or 0
+    if not (fornecedor and modelo and custo > 0):
+        return
+    ultimo = PrecoFornecedor.objects.filter(fornecedor=fornecedor, modelo=modelo).first()
+    if ultimo and ultimo.custo == custo:
+        return
+    PrecoFornecedor.objects.create(
+        fornecedor=fornecedor,
+        modelo=modelo,
+        custo=custo,
+        cotacao=cotacao,
+        registrado_por=cotacao.atualizada_por,
+    )
 
 
 class CotacaoResumoSerializer(serializers.ModelSerializer):

@@ -26,6 +26,19 @@ export const ENDPOINTS = {
      * valores e o desfecho. */
     processo: (id: number) => `licitacoes/salvas/${id}/processo/`,
   },
+  /** Fabricante › Marca › Modelo e a tabela de preços (`apps/produtos`). */
+  produtos: {
+    fabricantes: 'produtos/fabricantes/',
+    fabricantesOpcoes: 'produtos/fabricantes/opcoes/',
+    fabricante: (id: number) => `produtos/fabricantes/${id}/`,
+    marcas: 'produtos/marcas/',
+    marcasOpcoes: 'produtos/marcas/opcoes/',
+    marca: (id: number) => `produtos/marcas/${id}/`,
+    modelos: 'produtos/modelos/',
+    modelosOpcoes: 'produtos/modelos/opcoes/',
+    modelo: (id: number) => `produtos/modelos/${id}/`,
+    precoSugerido: 'produtos/precos/sugerido/',
+  },
   /** Onde os arquivos ficam (`apps/armazenamento`) — driver escolhido e
    * configurado pelo cliente, só por administrador. */
   armazenamento: {

@@ -39,7 +39,7 @@ describe('SidebarComponent', () => {
     const grupos = fixture.debugElement
       .queryAll(By.directive(NavGroupComponent))
       .map((grupo) => (grupo.componentInstance as NavGroupComponent).label());
-    expect(grupos).toEqual(['Ciclo de Licitação', 'Oportunidades']);
+    expect(grupos).toEqual(['Ciclo de Licitação', 'Oportunidades', 'Cadastros']);
 
     // "Visão Geral" é o quadro; Oportunidades é subgrupo, com "Buscar"
     // antes de "Salvas" (a busca é a tela inicial do app).
@@ -57,6 +57,7 @@ describe('SidebarComponent', () => {
       'Encerradas',
       'Empresas',
       'Fornecedores',
+      'Produtos',
     ]);
   });
 
@@ -68,12 +69,17 @@ describe('SidebarComponent', () => {
         .queryAll(By.directive(NavGroupComponent))
         .map((grupo) => (grupo.componentInstance as NavGroupComponent).label());
 
-    expect(rotulos()).toEqual(['Ciclo de Licitação', 'Oportunidades']);
+    expect(rotulos()).toEqual(['Ciclo de Licitação', 'Oportunidades', 'Cadastros']);
 
     ehSuperusuario.set(true);
     fixture.detectChanges();
 
-    expect(rotulos()).toEqual(['Ciclo de Licitação', 'Oportunidades', 'Configurações']);
+    expect(rotulos()).toEqual([
+      'Ciclo de Licitação',
+      'Oportunidades',
+      'Cadastros',
+      'Configurações',
+    ]);
   });
 
   it('cada item do Ciclo aponta para a sua rota', () => {

@@ -39,7 +39,9 @@ export type IconName =
   | 'proposta'
   | 'disputa'
   | 'empenho'
-  | 'encerradas';
+  | 'encerradas'
+  | 'cadastros'
+  | 'produtos';
 
 /**
  * Catálogo de ícones inline (SVG) do projeto — único lugar que sabe

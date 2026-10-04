@@ -1108,3 +1108,39 @@ h4 {
     display: none;
   }
 }
+
+// ---------- produto da oferta (fabricante › marca › modelo) ----------
+.oferta-fornecedor {
+  flex: 1;
+  min-width: 0;
+}
+
+.oferta-produto {
+  flex: 1 1 100%;
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: var(--space-2);
+}
+
+.oferta-sugestao {
+  flex: 1 1 100%;
+  margin: 0;
+  font-size: var(--font-size-xs);
+  color: var(--color-muted);
+
+  button {
+    margin-left: var(--space-1);
+    border: 0;
+    background: none;
+    color: var(--color-blue);
+    font: inherit;
+    font-weight: var(--font-weight-semibold);
+    cursor: pointer;
+  }
+}
+
+@media (max-width: 760px) {
+  .oferta-produto {
+    grid-template-columns: 1fr;
+  }
+}

@@ -298,6 +298,37 @@ class OfertaFornecedor(models.Model):
     )
     ordem = models.PositiveIntegerField("ordem", default=0)
 
+    # O produto ofertado (ver `apps.produtos`). Mesmo esquema do fornecedor:
+    # FK para o cadastro e o nome gravado junto, para a cotação sobreviver à
+    # exclusão do cadastro.
+    fabricante = models.ForeignKey(
+        "produtos.Fabricante",
+        verbose_name="fabricante",
+        related_name="ofertas",
+        null=True,
+        blank=True,
+        on_delete=models.SET_NULL,
+    )
+    fabricante_nome = models.CharField("fabricante (snapshot)", max_length=150, blank=True)
+    marca = models.ForeignKey(
+        "produtos.Marca",
+        verbose_name="marca",
+        related_name="ofertas",
+        null=True,
+        blank=True,
+        on_delete=models.SET_NULL,
+    )
+    marca_nome = models.CharField("marca (snapshot)", max_length=150, blank=True)
+    modelo = models.ForeignKey(
+        "produtos.Modelo",
+        verbose_name="modelo",
+        related_name="ofertas",
+        null=True,
+        blank=True,
+        on_delete=models.SET_NULL,
+    )
+    modelo_nome = models.CharField("modelo (snapshot)", max_length=150, blank=True)
+
     custo_produto = models.DecimalField(
         "custo do produto (un.)", max_digits=16, decimal_places=4, default=0
     )
