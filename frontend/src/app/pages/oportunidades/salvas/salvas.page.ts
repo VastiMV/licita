@@ -41,7 +41,8 @@ const COLUNAS: readonly ColunaTabela<OportunidadeSalvaResponse>[] = [
     // o que identifica a oportunidade — fica na dica da primeira coluna e
     // inteiro no modal.
     dica: (salva) => salva.objeto || null,
-    umaLinha: true,
+    // Sem `umaLinha`: o nome da unidade embaixo precisa quebrar, senão
+    // estica a tabela (igual a Encerradas).
   },
   { chave: 'modalidade', titulo: 'Modalidade', valor: (salva) => salva.modalidade || '—' },
   {
@@ -59,13 +60,13 @@ const COLUNAS: readonly ColunaTabela<OportunidadeSalvaResponse>[] = [
   },
   {
     chave: 'prazo',
-    titulo: 'Prazo da proposta',
+    titulo: 'Prazo',
     valor: (salva) => formatarData(salva.data_encerramento_proposta) ?? '—',
     umaLinha: true,
   },
   {
     chave: 'valor',
-    titulo: 'Valor estimado',
+    titulo: 'Estimado',
     valor: (salva) => formatarMoeda(salva.valor_total_estimado) ?? '—',
     numerica: true,
     umaLinha: true,
