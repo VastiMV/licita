@@ -1,0 +1,165 @@
+<app-modal-shell [titulo]="titulo()" largura="larga" (fechar)="fechar()">
+  @if (carregando()) {
+    <p class="muted carregando"><app-icon name="spinner" /> Carregando a proposta…</p>
+  } @else if (erro()) {
+    <p class="erro">Não foi possível carregar a proposta agora.</p>
+  } @else if (proposta(); as p) {
+    <p class="kicker">Proposta</p>
+    <p class="sub">
+      @if (p.oportunidade.uasg) {
+        UASG {{ p.oportunidade.uasg }} ·
+      }
+      {{ p.oportunidade.orgao_nome }}
+      @if (p.oportunidade.data_encerramento_proposta) {
+        · propostas até {{ data(p.oportunidade.data_encerramento_proposta) }}
+      }
+      · proposto {{ moeda(p.valor) }}
+    </p>
+
+    <div class="pasta">
+      <p class="muted">
+        A pasta desta proposta: a proposta comercial, os documentos de habilitação da empresa e os
+        arquivos da licitação — cada um baixa sozinho aqui embaixo, ou tudo de uma vez.
+      </p>
+      <app-button variant="ghost" [disabled]="baixandoPasta()" (click)="baixarPasta()">
+        <app-icon name="download" />
+        {{ baixandoPasta() ? 'Montando a pasta…' : 'Baixar pasta (.zip)' }}
+      </app-button>
+    </div>
+
+    <ul class="checklist" aria-label="O que falta para subir a proposta">
+      @for (item of checklist(); track item.texto) {
+        <li [class.ok]="item.ok">
+          <app-icon [name]="item.ok ? 'check' : 'exclamation'" />
+          {{ item.texto }}
+        </li>
+      }
+    </ul>
+
+    <section class="bloco">
+      <h4>Proposta comercial</h4>
+      <div class="linha-campos">
+        @if (p.empresas.length > 1) {
+          <app-select
+            label="Empresa (CNPJ)"
+            [options]="opcoesEmpresa()"
+            [ngModel]="p.empresa ? '' + p.empresa.id : ''"
+            (ngModelChange)="escolherEmpresa($event)"
+            name="empresa"
+            placeholder="Selecione"
+          />
+        } @else if (p.empresa) {
+          <div class="campo">
+            <span class="campo-rotulo">Empresa (CNPJ)</span>
+            <span>{{ p.empresa.nome }}</span>
+          </div>
+        } @else {
+          <p class="aviso">
+            <app-icon name="exclamation" />
+            Nenhuma empresa cadastrada. Cadastre em Cadastros › Empresas para gerar a proposta.
+          </p>
+        }
+        <label class="campo validade">
+          <span class="campo-rotulo">Validade (dias)</span>
+          <input
+            type="number"
+            min="1"
+            [value]="p.validade_dias"
+            (change)="mudarValidade($any($event.target).value)"
+          />
+        </label>
+        <app-button [disabled]="!p.empresa || gerando()" (click)="gerarWord()">
+          <app-icon name="download" />
+          {{ gerando() ? 'Gerando…' : gerado() ? 'Gerar de novo (Word)' : 'Gerar proposta (Word)' }}
+        </app-button>
+      </div>
+
+      <p class="modelo">
+        Modelo: <b>{{ p.modelo.nome }}</b>
+        @if (p.modelo.enviado_por) {
+          · enviado por {{ p.modelo.enviado_por }}
+        }
+        ·
+        <button type="button" class="link" (click)="baixarModelo()">Baixar modelo</button>
+        ·
+        <label class="link">
+          {{ enviandoModelo() ? 'Enviando…' : 'Enviar o meu modelo (.docx)' }}
+          <input type="file" accept=".docx" hidden (change)="enviarModelo($event)" />
+        </label>
+        @if (!p.modelo.padrao) {
+          ·
+          <button type="button" class="link" (click)="voltarAoPadrao()">Voltar ao padrão</button>
+        }
+      </p>
+    </section>
+
+    <section class="bloco">
+      <h4>Documentos de habilitação{{ p.empresa ? ' — ' + p.empresa.nome : '' }}</h4>
+      @if (!p.empresa) {
+        <p class="vazio">Escolha a empresa para conferir os documentos dela.</p>
+      } @else if (documentos().length === 0) {
+        <p class="vazio">Nenhum documento cadastrado para esta empresa (Cadastros › Empresas).</p>
+      } @else {
+        @if (vencidos() > 0) {
+          <p class="aviso">
+            <app-icon name="exclamation" />
+            Há documento vencido ou pendente — renove em Cadastros › Empresas › Documentos antes da
+            habilitação.
+          </p>
+        }
+        @for (documento of documentos(); track documento.id) {
+          <div class="linha">
+            <span class="nome">{{ documento.nome }}</span>
+            <span class="validade-doc">
+              @if (documento.validade) {
+                {{ data(documento.validade) }}
+              } @else {
+                <span class="muted">{{ documento.exige_validade ? '—' : 'não vence' }}</span>
+              }
+            </span>
+            <span class="pilula" [class]="tomDe(documento)">{{ documento.situacao_label }}</span>
+            <span class="acoes">
+              @if (documento.versao_atual) {
+                <button type="button" class="link" (click)="baixarDocumento(documento)">
+                  Baixar
+                </button>
+              }
+            </span>
+          </div>
+        }
+      }
+    </section>
+
+    <section class="bloco">
+      <h4>Documentos desta licitação</h4>
+      @if (gerado(); as arquivo) {
+        <div class="linha">
+          <span class="nome"><app-icon name="proposta" /> {{ arquivo.nome }}</span>
+          <span class="muted">{{ tamanho(arquivo.tamanho) }}</span>
+          <span class="pilula sucesso">gerada</span>
+          <span class="acoes">
+            <button type="button" class="link" (click)="baixarArquivo(arquivo)">Baixar</button>
+          </span>
+        </div>
+      }
+      @for (arquivo of subidos(); track arquivo.id) {
+        <div class="linha">
+          <span class="nome">{{ arquivo.nome }}</span>
+          <span class="muted">{{ tamanho(arquivo.tamanho) }}</span>
+          <span class="muted">{{ arquivo.enviado_por ?? '' }}</span>
+          <span class="acoes">
+            <button type="button" class="link" (click)="baixarArquivo(arquivo)">Baixar</button>
+            <button type="button" class="link perigo" (click)="removerArquivo(arquivo)">
+              Remover
+            </button>
+          </span>
+        </div>
+      }
+      <app-upload-dropzone
+        titulo="Arraste aqui declarações, catálogos, a proposta assinada…"
+        [enviando]="enviando()"
+        (escolhido)="enviarArquivo($event)"
+      />
+    </section>
+  }
+</app-modal-shell>

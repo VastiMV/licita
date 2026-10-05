@@ -17,11 +17,29 @@ export const ENDPOINTS = {
     ciclo: 'licitacoes/ciclo/',
     salvas: 'licitacoes/salvas/',
     salvasChaves: 'licitacoes/salvas/chaves/',
-    salvasExpiradas: 'licitacoes/salvas/expiradas/',
+    /** A lista do Cotador: as salvas na etapa Cotação. */
+    cotacoes: 'licitacoes/cotacoes/',
+    /** Quem saiu do ciclo — encerramento calculado no backend. */
+    encerradas: 'licitacoes/encerradas/',
     salva: (id: number) => `licitacoes/salvas/${id}/`,
-    /** Histórico de uma salva — a tela que lê isso ainda não existe (ver
-     * docs/DOMINIO.md, "Histórico da oportunidade salva"). */
+    /** Histórico cru de uma salva (o log). */
     salvaEventos: (id: number) => `licitacoes/salvas/${id}/eventos/`,
+    /** A história no formato do modal do processo: etapa de cada evento,
+     * valores e o desfecho. */
+    processo: (id: number) => `licitacoes/salvas/${id}/processo/`,
+  },
+  /** Fabricante › Marca › Modelo e a tabela de preços (`apps/produtos`). */
+  produtos: {
+    fabricantes: 'produtos/fabricantes/',
+    fabricantesOpcoes: 'produtos/fabricantes/opcoes/',
+    fabricante: (id: number) => `produtos/fabricantes/${id}/`,
+    marcas: 'produtos/marcas/',
+    marcasOpcoes: 'produtos/marcas/opcoes/',
+    marca: (id: number) => `produtos/marcas/${id}/`,
+    modelos: 'produtos/modelos/',
+    modelosOpcoes: 'produtos/modelos/opcoes/',
+    modelo: (id: number) => `produtos/modelos/${id}/`,
+    precoSugerido: 'produtos/precos/sugerido/',
   },
   /** Onde os arquivos ficam (`apps/armazenamento`) — driver escolhido e
    * configurado pelo cliente, só por administrador. */
@@ -65,6 +83,18 @@ export const ENDPOINTS = {
     opcoes: 'fornecedores/opcoes/',
   },
   /** O Cotador (`apps/cotador`). */
+  /** Propostas (`apps/propostas`): a lista, gerar, o Word e os arquivos. */
+  propostas: {
+    lista: 'propostas/',
+    detalhe: (id: number) => `propostas/${id}/`,
+    documento: (id: number) => `propostas/${id}/documento/`,
+    pasta: (id: number) => `propostas/${id}/pasta/`,
+    arquivos: (id: number) => `propostas/${id}/arquivos/`,
+    arquivo: (id: number) => `propostas/arquivos/${id}/`,
+    arquivoDownload: (id: number) => `propostas/arquivos/${id}/download/`,
+    modelo: 'propostas/modelo/',
+    modeloDownload: 'propostas/modelo/download/',
+  },
   cotador: {
     cotacoes: 'cotador/cotacoes/',
     cotacao: (id: number) => `cotador/cotacoes/${id}/`,

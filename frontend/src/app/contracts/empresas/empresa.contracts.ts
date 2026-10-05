@@ -36,8 +36,16 @@ export interface EmpresaResponse {
   /** "São Paulo / SP" — já montado, é a coluna "Cidade" da tabela. */
   readonly cidade_uf: string;
   readonly responsavel_legal: string;
+  readonly responsavel_cpf: string;
+  readonly responsavel_rg: string;
+  /** O parágrafo do representante na proposta comercial. */
+  readonly responsavel_qualificacao: string;
   readonly email: string;
   readonly telefone: string;
+  /** Dados bancários para pagamento — entram na proposta comercial. */
+  readonly banco: string;
+  readonly agencia: string;
+  readonly conta: string;
   readonly observacoes: string;
   /** A que já vem escolhida na proposta. Uma por operação. */
   readonly padrao: boolean;

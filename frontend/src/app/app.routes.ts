@@ -5,16 +5,6 @@ import { ShellComponent } from './layout/shell/shell.component';
 
 const CICLO = [
   {
-    path: 'cotador',
-    titulo: 'Cotador',
-    descricao: 'As licitações em cotação: salvas que já têm cotação e ainda não viraram proposta.',
-  },
-  {
-    path: 'propostas',
-    titulo: 'Propostas',
-    descricao: 'As licitações com proposta gerada, até a sessão de disputa.',
-  },
-  {
     path: 'disputas',
     titulo: 'Disputas',
     descricao: 'As licitações em sessão, habilitação ou recurso, até a homologação.',
@@ -23,11 +13,6 @@ const CICLO = [
     path: 'empenhos',
     titulo: 'Empenhos',
     descricao: 'As licitações ganhas: ata ou contrato, notas de empenho e pedidos ao fornecedor.',
-  },
-  {
-    path: 'encerradas',
-    titulo: 'Encerradas',
-    descricao: 'As que saíram do ciclo — descartadas, perdidas, com prazo perdido ou concluídas.',
   },
 ];
 
@@ -78,6 +63,21 @@ export const routes: Routes = [
             loadComponent: () =>
               import('./pages/ciclo/quadro/quadro.page').then((m) => m.QuadroPage),
           },
+          {
+            path: 'cotador',
+            loadComponent: () =>
+              import('./pages/ciclo/cotador/cotador.page').then((m) => m.CotadorPage),
+          },
+          {
+            path: 'propostas',
+            loadComponent: () =>
+              import('./pages/ciclo/propostas/propostas.page').then((m) => m.PropostasPage),
+          },
+          {
+            path: 'encerradas',
+            loadComponent: () =>
+              import('./pages/ciclo/encerradas/encerradas.page').then((m) => m.EncerradasPage),
+          },
           ...CICLO.map(({ path, titulo, descricao }) => ({
             path,
             pathMatch: 'full' as const,
@@ -97,6 +97,10 @@ export const routes: Routes = [
         path: 'fornecedores',
         loadComponent: () =>
           import('./pages/fornecedores/fornecedores.page').then((m) => m.FornecedoresPage),
+      },
+      {
+        path: 'produtos',
+        loadComponent: () => import('./pages/produtos/produtos.page').then((m) => m.ProdutosPage),
       },
       // Configurações é menu de primeiro nível com filhos, como
       // Oportunidades — "Armazenamento" e "Usuários", só para o super usuário

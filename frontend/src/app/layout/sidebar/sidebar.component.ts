@@ -94,7 +94,16 @@ const MENU: readonly NavLink[] = [
       { path: '/ciclo/encerradas', label: 'Encerradas', icon: 'encerradas' },
     ],
   },
-  // O par natural: com quem eu disputo, de quem eu compro.
-  { path: '/empresas', label: 'Empresas', icon: 'empresas' },
-  { path: '/fornecedores', label: 'Fornecedores', icon: 'fornecedores' },
+  // Os cadastros que o Cotador usa: com quem eu disputo, de quem eu compro
+  // e o que eu vendo.
+  {
+    path: '/cadastros',
+    label: 'Cadastros',
+    icon: 'cadastros',
+    itens: [
+      { path: '/empresas', label: 'Empresas', icon: 'empresas' },
+      { path: '/fornecedores', label: 'Fornecedores', icon: 'fornecedores' },
+      { path: '/produtos', label: 'Produtos', icon: 'produtos' },
+    ],
+  },
 ];

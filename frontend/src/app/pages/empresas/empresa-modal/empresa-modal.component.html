@@ -117,6 +117,29 @@
           [error]="erroDe('telefone')"
         />
       </div>
+    </section>
+
+    <section>
+      <h3>Para a proposta comercial</h3>
+      <div class="grade grade-contato">
+        <app-input-text
+          label="CPF do responsável"
+          formControlName="responsavel_cpf"
+          placeholder="000.000.000-00"
+        />
+        <app-input-text label="RG do responsável" formControlName="responsavel_rg" />
+        <app-input-text label="Banco" formControlName="banco" placeholder="Santander" />
+        <app-input-text label="Agência" formControlName="agencia" placeholder="0150" />
+        <app-input-text label="Conta-corrente" formControlName="conta" placeholder="01036486-6" />
+      </div>
+      <label class="field">
+        <span class="field-label">Qualificação do responsável</span>
+        <textarea
+          formControlName="responsavel_qualificacao"
+          rows="3"
+          placeholder="brasileiro, empresário, residente e domiciliado à Rua…"
+        ></textarea>
+      </label>
 
       <label class="field">
         <span class="field-label">Observações</span>

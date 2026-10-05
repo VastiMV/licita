@@ -1,0 +1,115 @@
+<app-modal-shell
+  [titulo]="id() ? 'Fabricante' : 'Novo fabricante'"
+  largura="larga"
+  (fechar)="fechar()"
+>
+  <section class="bloco">
+    <label class="campo">
+      <span>Nome do fabricante</span>
+      <input
+        [value]="nome()"
+        (input)="nome.set($any($event.target).value)"
+        (keydown.enter)="salvar()"
+        placeholder="ex.: Jaguaribe"
+      />
+      @if (erroNome()) {
+        <small class="erro">{{ erroNome() }}</small>
+      }
+    </label>
+
+    <div class="campo">
+      <span>Fornecedores que vendem este fabricante</span>
+      <div class="fichas">
+        @for (fornecedor of fornecedores(); track fornecedor.id) {
+          <span class="ficha">
+            {{ fornecedor.fantasia || fornecedor.nome }}
+            <button
+              type="button"
+              [attr.aria-label]="'Tirar ' + fornecedor.nome"
+              (click)="removerFornecedor(fornecedor.id)"
+            >
+              ×
+            </button>
+          </span>
+        } @empty {
+          <small class="muted">Nenhum ainda — o Cotador também aprende isso ao salvar.</small>
+        }
+      </div>
+      <app-combobox
+        rotulo="Adicionar fornecedor"
+        placeholder="Adicionar fornecedor…"
+        [buscar]="buscarFornecedor"
+        (escolheu)="adicionarFornecedor($event)"
+      />
+    </div>
+  </section>
+
+  <section class="bloco">
+    <h3>Marcas e modelos</h3>
+    @if (!id()) {
+      <p class="muted">Salve o fabricante para cadastrar as marcas e os modelos.</p>
+    } @else {
+      @for (marca of marcas(); track marca.id) {
+        <div class="marca">
+          <div class="marca-topo">
+            <input
+              class="marca-nome"
+              [value]="marca.nome"
+              (blur)="renomearMarca(marca, $any($event.target).value)"
+              (keydown.enter)="$any($event.target).blur()"
+              [attr.aria-label]="'Nome da marca ' + marca.nome"
+            />
+            <button
+              type="button"
+              class="icone perigo"
+              title="Remover a marca e os modelos dela"
+              (click)="removerMarca(marca)"
+            >
+              <app-icon name="trash" />
+            </button>
+          </div>
+          <div class="fichas">
+            @for (modelo of marca.modelos; track modelo.id) {
+              <span class="ficha">
+                {{ modelo.nome }}
+                <button
+                  type="button"
+                  [attr.aria-label]="'Remover o modelo ' + modelo.nome"
+                  (click)="removerModelo(marca, modelo.id)"
+                >
+                  ×
+                </button>
+              </span>
+            }
+            <input
+              #campoModelo
+              class="novo-modelo"
+              placeholder="+ modelo (Enter)"
+              (keydown.enter)="adicionarModelo(marca, campoModelo)"
+              [attr.aria-label]="'Novo modelo da marca ' + marca.nome"
+            />
+          </div>
+        </div>
+      } @empty {
+        <p class="muted">Nenhuma marca ainda.</p>
+      }
+      <div class="nova-marca">
+        <input
+          [value]="novaMarca()"
+          (input)="novaMarca.set($any($event.target).value)"
+          (keydown.enter)="adicionarMarca()"
+          placeholder="Nova marca"
+          aria-label="Nova marca"
+        />
+        <app-button variant="ghost" (click)="adicionarMarca()">
+          <app-icon name="plus" /> Adicionar marca
+        </app-button>
+      </div>
+    }
+  </section>
+
+  <app-button modalFooter variant="ghost" (click)="fechar()">Fechar</app-button>
+  <app-button modalFooter [disabled]="salvando()" (click)="salvar()">
+    {{ salvando() ? 'Salvando…' : 'Salvar' }}
+  </app-button>
+</app-modal-shell>

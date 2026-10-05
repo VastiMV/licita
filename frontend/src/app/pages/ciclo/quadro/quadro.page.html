@@ -78,33 +78,30 @@
                   </div>
 
                   <div class="acoes">
-                    <button
-                      type="button"
-                      class="acao-excluir"
-                      (click)="excluir(cartao)"
-                      [attr.aria-label]="
-                        cartao.etapa === 'cotacao' ? 'Excluir cotação' : 'Excluir oportunidade'
-                      "
-                      [attr.title]="
-                        cartao.etapa === 'cotacao'
-                          ? 'Excluir cotação (volta para Oportunidade)'
-                          : 'Excluir oportunidade'
-                      "
-                    >
-                      <app-icon name="trash" />
-                    </button>
+                    @if (cartao.etapa !== 'proposta') {
+                      <button
+                        type="button"
+                        class="acao-excluir"
+                        (click)="excluir(cartao)"
+                        [attr.aria-label]="
+                          cartao.etapa === 'cotacao' ? 'Excluir cotação' : 'Excluir oportunidade'
+                        "
+                        [attr.title]="
+                          cartao.etapa === 'cotacao'
+                            ? 'Excluir cotação (volta para Oportunidade)'
+                            : 'Excluir oportunidade'
+                        "
+                      >
+                        <app-icon name="trash" />
+                      </button>
+                    }
                     @if (cartao.etapa === 'oportunidade') {
                       <button type="button" class="acao" (click)="cotar(cartao)">
                         <app-icon name="calculadora" />
                         Iniciar cotação
                       </button>
                     } @else if (cartao.etapa === 'cotacao') {
-                      <button
-                        type="button"
-                        class="acao"
-                        disabled
-                        title="A tela de Proposta ainda não existe"
-                      >
+                      <button type="button" class="acao" (click)="gerarProposta(cartao)">
                         <app-icon name="proposta" />
                         Gerar proposta
                       </button>

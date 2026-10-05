@@ -1,5 +1,6 @@
 import { DIALOG_DATA, DialogRef } from '@angular/cdk/dialog';
 import { Component, OnInit, computed, inject, signal } from '@angular/core';
+import { Observable, map, of } from 'rxjs';
 
 import {
   CotacaoRequest,
@@ -9,7 +10,14 @@ import {
 import { FornecedorOpcao } from '../../../contracts/fornecedores/fornecedor.contracts';
 import { OportunidadeResponse } from '../../../contracts/licitacoes/oportunidade.contracts';
 import { CotadorService } from '../../../services/cotador/cotador.service';
+import { PrecoSugerido } from '../../../contracts/produtos/produto.contracts';
 import { FornecedoresService } from '../../../services/fornecedores/fornecedores.service';
+import { ProdutosService } from '../../../services/produtos/produtos.service';
+import {
+  ComboboxComponent,
+  OpcaoCombo,
+  normalizarNome,
+} from '../../../shared/ui/combobox/combobox.component';
 import { ModalService } from '../../../shared/overlay/modal.service';
 import { ModalShellComponent } from '../../../shared/overlay/modal-shell/modal-shell.component';
 import { ButtonComponent } from '../../../shared/ui/button/button.component';
@@ -22,6 +30,7 @@ import {
   ItemCalculado,
   ItemCotador,
   OfertaCotador,
+  RefProduto,
   PADROES_INICIAIS,
   PadroesCotador,
   calcularItem,
@@ -46,6 +55,9 @@ export interface CotadorModalData {
   readonly titulo: string;
   readonly itens: readonly OportunidadeResponse[];
   readonly oportunidadeId: number;
+  /** Processo encerrado: a cotação é só consulta — sem salvar, e fechar
+   * não pergunta nada (o que se mexeu na tela é descartado). */
+  readonly somenteLeitura?: boolean;
 }
 
 /** O que o modal devolve ao fechar — `undefined` quando nada foi salvo. */
@@ -58,6 +70,10 @@ const novoId = () => `l${++proximoId}`;
 
 /** Quantidade padrão de um item criado à mão (o do edital vem com a dele). */
 const QUANTIDADE_PADRAO = 1;
+
+function ref(id: number | null | undefined, nome: string | undefined): RefProduto | null {
+  return id ? { id, nome: nome ?? '' } : null;
+}
 
 function ofertaVazia(): OfertaCotador {
   return {
@@ -94,7 +110,7 @@ function ofertaVazia(): OfertaCotador {
  */
 @Component({
   selector: 'app-cotador-modal',
-  imports: [ModalShellComponent, ButtonComponent, IconComponent],
+  imports: [ModalShellComponent, ButtonComponent, IconComponent, ComboboxComponent],
   templateUrl: './cotador-modal.component.html',
   styleUrl: './cotador-modal.component.scss',
 })
@@ -102,6 +118,7 @@ export class CotadorModalComponent implements OnInit {
   private readonly dialogRef = inject(DialogRef<CotadorModalResultado>);
   private readonly cotador = inject(CotadorService);
   private readonly fornecedoresService = inject(FornecedoresService);
+  private readonly produtos = inject(ProdutosService);
   private readonly modal = inject(ModalService);
   private readonly toast = inject(ToastService);
 
@@ -254,6 +271,9 @@ export class CotadorModalComponent implements OnInit {
           id: novoId(),
           fornecedorId: oferta.fornecedor,
           nome: oferta.nome,
+          fabricante: ref(oferta.fabricante, oferta.fabricante_nome),
+          marca: ref(oferta.marca, oferta.marca_nome),
+          modelo: ref(oferta.modelo, oferta.modelo_nome),
           custoProduto: Number(oferta.custo_produto),
           frete: Number(oferta.frete),
           outros: Number(oferta.outros),
@@ -404,6 +424,12 @@ export class CotadorModalComponent implements OnInit {
     if (this.expandido() === item.id) this.expandido.set(null);
   }
 
+  protected novoItemNoEnter(evento: KeyboardEvent, depoisDe: string): void {
+    if (evento.shiftKey) return;
+    evento.preventDefault();
+    this.adicionarItem(depoisDe);
+  }
+
   protected alterarDescricao(item: ItemCotador, valor: string): void {
     this.atualizarItem(item.id, (atual) => ({ ...atual, descricao: valor }));
   }
@@ -452,6 +478,158 @@ export class CotadorModalComponent implements OnInit {
       // O nome vem do cadastro — é o que a planilha imprime e o que
       // sobrevive se o fornecedor for excluído depois.
       nome: fornecedor?.nome ?? '',
+    }));
+  }
+
+  // ---------- dropdowns: fornecedor › fabricante › marca › modelo ----------
+
+  protected readonly buscarFornecedor = (termo: string): Observable<readonly OpcaoCombo[]> => {
+    const chave = normalizarNome(termo);
+    return of(
+      this.fornecedores()
+        .filter((f) => !chave || normalizarNome(`${f.nome} ${f.fantasia}`).includes(chave))
+        .slice(0, 40)
+        .map((f) => ({
+          id: f.id,
+          nome: f.nome,
+          detalhe: f.situacao !== 'ativo' ? f.situacao_label : f.fantasia || null,
+        })),
+    );
+  };
+
+  /** Criar fornecedor precisa de CNPJ e e-mail: abre o cadastro completo,
+   * já com o nome digitado. */
+  protected criarFornecedor(item: ItemCotador, oferta: OfertaCotador) {
+    return (): Observable<OpcaoCombo | undefined> => {
+      this.cadastrarFornecedor(item, oferta);
+      return of(undefined);
+    };
+  }
+
+  protected fornecedorDe(oferta: OfertaCotador): OpcaoCombo | null {
+    return oferta.fornecedorId ? { id: oferta.fornecedorId, nome: oferta.nome } : null;
+  }
+
+  protected escolherFornecedor(
+    item: ItemCotador,
+    oferta: OfertaCotador,
+    opcao: OpcaoCombo | null,
+  ): void {
+    this.vincularFornecedor(item, oferta, opcao ? String(opcao.id) : '');
+    this.sugerirPreco(item, { ...oferta, fornecedorId: opcao?.id ?? null });
+  }
+
+  protected buscarFabricante(oferta: OfertaCotador) {
+    return (termo: string): Observable<readonly OpcaoCombo[]> =>
+      this.produtos.opcoesFabricante(termo, oferta.fornecedorId).pipe(
+        map((opcoes) =>
+          opcoes.map((o) => ({
+            id: o.id,
+            nome: o.nome,
+            destaque: o.afim,
+            detalhe: o.afim ? 'vendido por este fornecedor' : null,
+          })),
+        ),
+      );
+  }
+
+  /** Criar fabricante já grava a afinidade com o fornecedor da oferta — e
+   * se o nome já existe, o backend devolve o existente (não duplica). */
+  protected criarFabricante(oferta: OfertaCotador) {
+    return (nome: string): Observable<OpcaoCombo | undefined> =>
+      this.produtos
+        .criarFabricante({
+          nome,
+          ...(oferta.fornecedorId ? { fornecedor: oferta.fornecedorId } : {}),
+        })
+        .pipe(map((f) => ({ id: f.id, nome: f.nome })));
+  }
+
+  protected escolherFabricante(
+    item: ItemCotador,
+    oferta: OfertaCotador,
+    opcao: OpcaoCombo | null,
+  ): void {
+    if (opcao?.id === oferta.fabricante?.id) return;
+    this.atualizarOferta(item.id, oferta.id, (atual) => ({
+      ...atual,
+      fabricante: opcao ? { id: opcao.id, nome: opcao.nome } : null,
+      marca: null,
+      modelo: null,
+    }));
+  }
+
+  protected buscarMarca(oferta: OfertaCotador) {
+    return (termo: string): Observable<readonly OpcaoCombo[]> =>
+      oferta.fabricante ? this.produtos.opcoesMarca(oferta.fabricante.id, termo) : of([]);
+  }
+
+  protected criarMarca(oferta: OfertaCotador) {
+    return (nome: string): Observable<OpcaoCombo | undefined> =>
+      oferta.fabricante
+        ? this.produtos
+            .criarMarca(oferta.fabricante.id, nome)
+            .pipe(map((m) => ({ id: m.id, nome: m.nome })))
+        : of(undefined);
+  }
+
+  protected escolherMarca(
+    item: ItemCotador,
+    oferta: OfertaCotador,
+    opcao: OpcaoCombo | null,
+  ): void {
+    if (opcao?.id === oferta.marca?.id) return;
+    this.atualizarOferta(item.id, oferta.id, (atual) => ({
+      ...atual,
+      marca: opcao ? { id: opcao.id, nome: opcao.nome } : null,
+      modelo: null,
+    }));
+  }
+
+  protected buscarModelo(oferta: OfertaCotador) {
+    return (termo: string): Observable<readonly OpcaoCombo[]> =>
+      oferta.marca ? this.produtos.opcoesModelo(oferta.marca.id, termo) : of([]);
+  }
+
+  protected criarModelo(oferta: OfertaCotador) {
+    return (nome: string): Observable<OpcaoCombo | undefined> =>
+      oferta.marca
+        ? this.produtos
+            .criarModelo(oferta.marca.id, nome)
+            .pipe(map((m) => ({ id: m.id, nome: m.nome })))
+        : of(undefined);
+  }
+
+  protected escolherModelo(
+    item: ItemCotador,
+    oferta: OfertaCotador,
+    opcao: OpcaoCombo | null,
+  ): void {
+    const modelo = opcao ? { id: opcao.id, nome: opcao.nome } : null;
+    this.atualizarOferta(item.id, oferta.id, (atual) => ({ ...atual, modelo }));
+    this.sugerirPreco(item, { ...oferta, modelo });
+  }
+
+  /** Último custo que este fornecedor deu para este modelo, por oferta. */
+  protected readonly sugestoes = signal<Readonly<Record<string, PrecoSugerido>>>({});
+
+  /** Tabela de preços: com fornecedor e modelo escolhidos, busca o último
+   * custo. Se o custo do produto ainda está zerado, já preenche; senão só
+   * mostra a sugestão ao lado, para o operador decidir. */
+  private sugerirPreco(item: ItemCotador, oferta: OfertaCotador): void {
+    this.sugestoes.update(({ [oferta.id]: _, ...resto }) => resto);
+    if (!oferta.fornecedorId || !oferta.modelo || this.dados.somenteLeitura) return;
+    this.produtos.precoSugerido(oferta.fornecedorId, oferta.modelo.id).subscribe((preco) => {
+      if (!preco) return;
+      this.sugestoes.update((atual) => ({ ...atual, [oferta.id]: preco }));
+      if (oferta.custoProduto === 0) this.usarSugestao(item, oferta, preco);
+    });
+  }
+
+  protected usarSugestao(item: ItemCotador, oferta: OfertaCotador, preco: PrecoSugerido): void {
+    this.atualizarOferta(item.id, oferta.id, (atual) => ({
+      ...atual,
+      custoProduto: Number(preco.custo),
     }));
   }
 
@@ -610,8 +788,7 @@ export class CotadorModalComponent implements OnInit {
     this.modal
       .confirmar({
         titulo: 'Exportar proposta',
-        mensagem:
-          'A planilha é gerada a partir da cotação salva. Deseja salvar a cotação agora?',
+        mensagem: 'A planilha é gerada a partir da cotação salva. Deseja salvar a cotação agora?',
         confirmarLabel: 'Salvar e exportar',
       })
       .subscribe((confirmou) => {
@@ -655,7 +832,7 @@ export class CotadorModalComponent implements OnInit {
   }
 
   protected fechar(): void {
-    if (!this.temAlteracao()) {
+    if (this.dados.somenteLeitura || !this.temAlteracao()) {
       this.dialogRef.close();
       return;
     }
@@ -686,6 +863,9 @@ export class CotadorModalComponent implements OnInit {
       ofertas: item.ofertas.map((oferta) => ({
         fornecedor: oferta.fornecedorId,
         nome: this.nomeDaOferta(oferta),
+        fabricante: oferta.fabricante?.id ?? null,
+        marca: oferta.marca?.id ?? null,
+        modelo: oferta.modelo?.id ?? null,
         custo_produto: oferta.custoProduto,
         frete: oferta.frete,
         outros: oferta.outros,

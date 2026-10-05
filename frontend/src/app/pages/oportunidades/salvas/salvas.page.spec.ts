@@ -51,8 +51,8 @@ const VENCIDA: OportunidadeSalvaResponse = {
   expirada: true,
 };
 
-function pagina(results: OportunidadeSalvaResponse[], expiradas = 0) {
-  return { count: results.length, next: null, previous: null, expiradas, results };
+function pagina(results: OportunidadeSalvaResponse[]) {
+  return { count: results.length, next: null, previous: null, results };
 }
 
 describe('SalvasPage', () => {
@@ -60,7 +60,6 @@ describe('SalvasPage', () => {
   let service: {
     listar: ReturnType<typeof vi.fn>;
     remover: ReturnType<typeof vi.fn>;
-    removerExpiradas: ReturnType<typeof vi.fn>;
   };
   let modal: { confirmar: ReturnType<typeof vi.fn>; abrir: ReturnType<typeof vi.fn> };
   let toast: {
@@ -73,7 +72,6 @@ describe('SalvasPage', () => {
     service = {
       listar: vi.fn(() => of(pagina([SALVA, VENCIDA]))),
       remover: vi.fn(() => of(undefined)),
-      removerExpiradas: vi.fn(() => of({ removidas: 1 })),
     };
     modal = { confirmar: vi.fn(() => of(true)), abrir: vi.fn(() => of(undefined)) };
     toast = { sucesso: vi.fn(), erro: vi.fn(), alerta: vi.fn() };
@@ -108,11 +106,11 @@ describe('SalvasPage', () => {
     fixture.detectChanges();
   }
 
-  it('carrega a lista ao abrir, mais recentes primeiro', () => {
+  it('carrega a lista ao abrir, o prazo que vence primeiro no topo', () => {
     expect(service.listar).toHaveBeenCalledWith({
       page: 1,
       page_size: 10,
-      ordering: '-criada_em',
+      ordering: 'prazo',
       busca: '',
     });
     expect(linhas()).toHaveLength(2);
@@ -123,7 +121,8 @@ describe('SalvasPage', () => {
       .queryAll(By.css('td'))
       .map((td) => td.nativeElement.textContent.trim());
 
-    expect(celulas[0]).toBe('925997');
+    // O nome da unidade vem embaixo da UASG.
+    expect(celulas[0]).toBe('925997Prefeitura de Campinas');
     expect(celulas[1]).toBe('Pregão Eletrônico');
     expect(celulas[2]).toBe('Campinas / SP');
     expect(celulas[3]).toBe('20/08/2026');
@@ -144,14 +143,6 @@ describe('SalvasPage', () => {
     expect(cidade.className).toContain('uma-linha');
     // O nome inteiro fica na dica.
     expect(cidade.getAttribute('title')).toBe('São Miguel do Oeste dos Campos Gerais / SC');
-  });
-
-  it('a que perdeu o prazo fica destacada, com o prazo em vermelho', () => {
-    expect(linhas()[1].classes['destacada']).toBe(true);
-    expect(linhas()[0].classes['destacada']).toBeFalsy();
-    expect(linhas()[1].queryAll(By.css('td'))[4].nativeElement.className).toContain(
-      'celula-perigo',
-    );
   });
 
   it('as ações ficam num menu por linha, não como botões soltos', () => {
@@ -210,39 +201,6 @@ describe('SalvasPage', () => {
 
     expect(toast.erro).toHaveBeenCalled();
     expect(linhas()).toHaveLength(2);
-  });
-
-  it('avisa em toast amarelo quantas perderam o prazo, com link pra apagar', () => {
-    expect(toast.alerta).not.toHaveBeenCalled(); // a carga inicial não tinha expiradas
-
-    service.listar.mockReturnValue(of(pagina([SALVA, VENCIDA], 3)));
-    fixture = TestBed.createComponent(SalvasPage);
-    fixture.detectChanges();
-
-    expect(toast.alerta).toHaveBeenCalledWith(
-      '3 oportunidades salvas não têm mais prazo para gerar proposta.',
-      expect.objectContaining({ acao: expect.objectContaining({ rotulo: 'Apagar as vencidas' }) }),
-    );
-
-    // O link do toast também confirma antes de apagar em lote.
-    toast.alerta.mock.calls[0][1].acao.executar();
-    expect(modal.confirmar).toHaveBeenCalled();
-    expect(service.removerExpiradas).toHaveBeenCalled();
-  });
-
-  it('não repete o aviso a cada consulta enquanto o número não muda', () => {
-    service.listar.mockReturnValue(of(pagina([VENCIDA], 1)));
-    fixture = TestBed.createComponent(SalvasPage);
-    fixture.detectChanges();
-    expect(toast.alerta).toHaveBeenCalledTimes(1);
-    service.listar.mockClear();
-
-    // Ordenar por uma coluna refaz a consulta — sem novo aviso.
-    fixture.debugElement.queryAll(By.css('thead th .ordenar'))[0].nativeElement.click();
-    fixture.detectChanges();
-
-    expect(service.listar).toHaveBeenCalledTimes(1);
-    expect(toast.alerta).toHaveBeenCalledTimes(1);
   });
 
   it('ordenar por uma coluna refaz a consulta com o `ordering` do backend', () => {

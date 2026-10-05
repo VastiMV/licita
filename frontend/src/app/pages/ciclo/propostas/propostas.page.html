@@ -1,0 +1,26 @@
+<h1>Propostas</h1>
+<p class="muted">
+  As licitações com proposta gerada no Cotador. Abra a proposta para gerar o Word, conferir os
+  documentos de habilitação da empresa e juntar os arquivos que sobem na plataforma.
+</p>
+
+@if (erro()) {
+  <p class="erro">Não foi possível carregar as propostas agora.</p>
+}
+
+<app-data-table
+  [colunas]="colunas"
+  [linhas]="linhas()"
+  [total]="total()"
+  [estado]="estado()"
+  [carregando]="carregando()"
+  [chaveDe]="chaveDe"
+  rotuloBusca="Buscar"
+  placeholderBusca="Busca na descrição e nos itens…"
+  mensagemVazia="Nenhuma proposta. Gere uma no Cotador (Ciclo de Licitação / Cotador)."
+  (estadoMudou)="aoMudarEstado($event)"
+>
+  <ng-template appTabelaAcoes let-linha>
+    <app-menu [itens]="acoesDe(linha)" [descricao]="'Ações da proposta ' + linha.chave" />
+  </ng-template>
+</app-data-table>

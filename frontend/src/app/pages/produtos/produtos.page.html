@@ -1,0 +1,34 @@
+<div class="pagina-topo">
+  <div>
+    <h1>Produtos</h1>
+    <p class="muted">
+      Fabricante › Marca › Modelo — o produto cotado é o modelo. Aqui também se diz quais
+      fornecedores vendem cada fabricante; o Cotador usa isso para sugerir e aprende ao salvar.
+    </p>
+  </div>
+  <app-button (click)="abrir(null)">
+    <app-icon name="plus" />
+    Adicionar fabricante
+  </app-button>
+</div>
+
+@if (erro()) {
+  <p class="erro">Não foi possível carregar os produtos agora.</p>
+}
+
+<app-data-table
+  [colunas]="colunas"
+  [linhas]="linhas()"
+  [total]="total()"
+  [estado]="estado()"
+  [carregando]="carregando()"
+  [chaveDe]="chaveDe"
+  rotuloBusca="Buscar"
+  placeholderBusca="Busca por fabricante, marca, modelo ou fornecedor…"
+  mensagemVazia="Nenhum fabricante cadastrado. Adicione aqui ou crie direto no Cotador."
+  (estadoMudou)="aoMudarEstado($event)"
+>
+  <ng-template appTabelaAcoes let-fabricante>
+    <app-menu [itens]="acoesDe(fabricante)" [descricao]="'Ações de ' + fabricante.nome" />
+  </ng-template>
+</app-data-table>

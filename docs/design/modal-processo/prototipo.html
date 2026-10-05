@@ -1,0 +1,1033 @@
+<!doctype html><html lang="pt-BR"><head><meta charset="utf-8"><link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin><link href="https://fonts.googleapis.com/css2?family=Raleway:wght@400;500;600;700&display=swap" rel="stylesheet">
+<style>:root{--surface-000:#dde5ef;--surface-100:#ffffff;--surface-200:#eef2f7;--line:#ced7e3;--line-strong:#8794a8;--ink:#16294d;--ink-muted:#56677f;--brand:#16294d;--brand-ink:#ffffff;--brand-soft:#e2ebf6;--brand-text:#1d5ea6;--accent:#2b7cc4;--warn:#b87500;--warn-soft:#fdf6ea;--warn-text:#7a4b00;--danger:#b23a24;--danger-soft:#f8e2dc;--danger-text:#8a2a18;--success:#2a7a43;--success-soft:#e1f0e5;--success-text:#1d5a31;--neutral:#6b7068;--neutral-soft:#e8ecf2;--scrim:#16294d8c;--shadow-modal:0 24px 64px rgba(22,41,77,0.22), 0 2px 6px rgba(22,41,77,0.08);--space-1:4px;--space-2:8px;--space-3:12px;--space-4:16px;--space-5:24px;--space-6:32px;--radius-sm:4px;--radius-md:8px;--radius-lg:14px;--radius-pill:999px;--font-sans:Raleway, system-ui, -apple-system, "Segoe UI", sans-serif;--font-mono:Raleway, system-ui, sans-serif;}
+body{margin:0;background:var(--surface-000)}
+/* Licita — estilos do modal do processo. Usa só as variáveis de tokens.css. */
+.lc, .lc * { box-sizing: border-box; }
+.lc { font-family: var(--font-sans); color: var(--ink); font-size: 14px; line-height: 20px; -webkit-font-smoothing: antialiased; }
+.lc button { font: inherit; }
+.lc .num { font-family: var(--font-mono); font-variant-numeric: lining-nums tabular-nums; font-feature-settings: 'lnum' 1, 'tnum' 1; }
+.lc { font-variant-numeric: lining-nums; font-feature-settings: 'lnum' 1; }
+.lc svg { flex: none; }
+
+/* ---------- véu + modal ---------- */
+.lc-scrim { background: var(--scrim); padding: 24px; display: flex; justify-content: center; align-items: flex-start; min-height: 100%; }
+.lc-modal { container-type: inline-size; width: min(1120px, 100%); max-height: calc(100vh - 48px); display: flex; flex-direction: column;
+  background: var(--surface-100); border-radius: var(--radius-lg); box-shadow: var(--shadow-modal); overflow: hidden; }
+.lc-modal.is-static { max-height: none; }
+
+/* ---------- cabeçalho ---------- */
+.lc-head { padding: 18px 24px 16px; border-bottom: 1px solid var(--line); }
+.lc-head-top { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; }
+.lc-chip { display: inline-flex; align-items: center; gap: 4px; padding: 2px 8px; border-radius: var(--radius-sm); background: var(--surface-200); color: var(--ink-muted); font-size: 12px; line-height: 18px; white-space: nowrap; }
+.lc-chip b { color: var(--ink); font-weight: 600; }
+.lc-head-links { margin-left: auto; display: flex; align-items: center; gap: 4px; }
+.lc-link { display: inline-flex; align-items: center; gap: 4px; padding: 4px 8px; border-radius: var(--radius-md); color: var(--brand-text); font-size: 13px; font-weight: 500; text-decoration: none; }
+.lc-link:hover { background: var(--brand-soft); }
+.lc-icon-btn { width: 32px; height: 32px; display: inline-grid; place-items: center; border: 0; background: transparent; border-radius: var(--radius-md); color: var(--ink-muted); cursor: pointer; }
+.lc-icon-btn:hover { background: var(--surface-200); color: var(--ink); }
+.lc-title { margin: 10px 0 2px; font-size: 21px; line-height: 28px; font-weight: 700; letter-spacing: -0.005em; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; }
+.lc-orgao { color: var(--ink-muted); }
+.lc-facts { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 16px; margin: 14px 0 0; }
+.lc-fact dt { font-size: 11px; line-height: 14px; font-weight: 600; letter-spacing: .04em; text-transform: uppercase; color: var(--ink-muted); }
+.lc-fact dd { margin: 3px 0 0; font-weight: 600; }
+.lc-fact dd small { font-family: var(--font-sans); display: block; font-weight: 400; font-size: 12px; line-height: 16px; color: var(--ink-muted); }
+.lc-fact dd.is-warn small { color: var(--warn-text); font-weight: 600; }
+
+/* ---------- faixa de situação ---------- */
+.lc-faixa { display: flex; gap: 12px; align-items: flex-start; padding: 14px 16px; border-radius: var(--radius-md); background: var(--surface-200); }
+.lc-faixa-ico { width: 32px; height: 32px; border-radius: var(--radius-pill); display: grid; place-items: center; color: var(--surface-100); background: var(--neutral); }
+.lc-faixa-txt { flex: 1; min-width: 0; }
+.lc-faixa-tag { font-size: 11px; line-height: 14px; font-weight: 600; letter-spacing: .04em; text-transform: uppercase; }
+.lc-faixa h3 { margin: 2px 0 0; font-size: 16px; line-height: 22px; font-weight: 600; }
+.lc-faixa p { margin: 4px 0 0; }
+.lc-faixa-when { text-align: right; font-size: 12px; line-height: 16px; white-space: nowrap; }
+.lc-faixa-when b { display: block; font-size: 14px; line-height: 20px; }
+.lc-faixa--andamento { background: var(--brand-soft); color: var(--brand-text); } .lc-faixa--andamento .lc-faixa-ico { background: var(--brand); color: var(--brand-ink); }
+.lc-faixa--neutral { background: var(--neutral-soft); color: var(--ink); } .lc-faixa--neutral .lc-faixa-ico { background: var(--neutral); }
+.lc-faixa--warn { border: 1px dashed color-mix(in srgb, var(--warn) 35%, transparent); background: var(--warn-soft); color: var(--warn-text); } .lc-faixa--warn .lc-faixa-ico { background: var(--warn); }
+.lc-faixa--danger { background: var(--danger-soft); color: var(--danger-text); } .lc-faixa--danger .lc-faixa-ico { background: var(--danger); }
+.lc-faixa--success { background: var(--success-soft); color: var(--success-text); } .lc-faixa--success .lc-faixa-ico { background: var(--success); }
+.lc-faixa p, .lc-faixa-when { color: inherit; opacity: .92; }
+.lc-aviso { display: inline-flex; align-items: center; gap: 6px; margin-top: 8px; padding: 3px 8px; border-radius: var(--radius-sm); background: var(--warn-soft); color: var(--warn-text); font-size: 12px; line-height: 16px; font-weight: 600; }
+
+/* ---------- etapas do ciclo ---------- */
+.lc-ciclo { list-style: none; margin: 0; padding: 0; display: grid; grid-template-columns: repeat(5, minmax(0, 1fr)); }
+.lc-step { position: relative; padding-top: 30px; padding-right: 8px; }
+.lc-step::before { content: ""; position: absolute; top: 11px; left: 24px; right: 0; height: 2px; background: var(--line); }
+.lc-step:last-child::before { display: none; }
+.lc-step.is-done::before { background: var(--brand); }
+.lc-step.is-skip::before { background: repeating-linear-gradient(90deg, var(--line-strong) 0 4px, transparent 4px 8px); }
+.lc-dot { position: absolute; top: 0; left: 0; width: 24px; height: 24px; border-radius: var(--radius-pill); display: grid; place-items: center;
+  border: 2px solid var(--line-strong); background: var(--surface-100); color: var(--surface-100); }
+.lc-step.is-done .lc-dot { background: var(--brand); border-color: var(--brand); color: var(--brand-ink); }
+.lc-step.is-current .lc-dot { border-color: var(--accent); box-shadow: 0 0 0 4px var(--brand-soft); }
+.lc-step.is-current .lc-dot::after { content: ""; width: 8px; height: 8px; border-radius: 50%; background: var(--accent); }
+.lc-step.is-stop .lc-dot { border-color: transparent; color: var(--surface-100); }
+.lc-step.is-stop.f-warn .lc-dot { background: var(--warn); } .lc-step.is-stop.f-danger .lc-dot { background: var(--danger); }
+.lc-step.is-stop.f-neutral .lc-dot { background: var(--neutral); } .lc-step.is-stop.f-success .lc-dot { background: var(--success); }
+.lc-step.is-after .lc-dot { border-style: dashed; border-color: var(--line); }
+.lc-step.is-skip .lc-dot { background: var(--surface-100); border-color: var(--line-strong); border-style: dashed; }
+.lc-step-name { font-weight: 600; }
+.lc-step.is-after .lc-step-name { color: var(--ink-muted); font-weight: 500; }
+.lc-step-sub { font-size: 12px; line-height: 16px; color: var(--ink-muted); }
+.lc-step.is-stop .lc-step-sub { font-weight: 600; }
+.lc-step.is-stop.f-warn .lc-step-sub { color: var(--warn-text); } .lc-step.is-stop.f-danger .lc-step-sub { color: var(--danger-text); }
+.lc-step.is-stop.f-success .lc-step-sub { color: var(--success-text); }
+.lc-step.is-current .lc-step-sub { color: var(--brand-text); font-weight: 600; }
+
+/* ---------- área fixa (faixa + ciclo) e corpo rolável ---------- */
+.lc-status { padding: 16px 24px 18px; display: grid; gap: 18px; border-bottom: 1px solid var(--line); }
+.lc-body { flex: 1; min-height: 0; overflow: auto; display: grid; grid-template-columns: minmax(0, 1fr) 300px; }
+.lc-main { padding: 20px 24px 24px; min-width: 0; }
+.lc-aside { padding: 20px 24px 24px 0; display: grid; gap: 14px; align-content: start; }
+.lc-sec-title { font-size: 11px; line-height: 14px; font-weight: 600; letter-spacing: .04em; text-transform: uppercase; color: var(--ink-muted); margin: 0 0 12px; display: flex; justify-content: space-between; align-items: baseline; }
+.lc-sec-title button { border: 0; background: none; color: var(--brand-text); font-size: 12px; font-weight: 600; letter-spacing: 0; text-transform: none; cursor: pointer; padding: 0; }
+
+/* ---------- linha do tempo ---------- */
+.lc-tl { position: relative; }
+.lc-tl-stage { position: relative; padding-left: 36px; padding-bottom: 6px; }
+.lc-tl-stage::before { content: ""; position: absolute; left: 11px; top: 26px; bottom: 0; width: 2px; background: var(--line); }
+.lc-tl-stage:last-child::before { display: none; }
+.lc-tl-stage-head { position: relative; display: flex; align-items: baseline; gap: 8px; min-height: 24px; margin-bottom: 8px; }
+.lc-tl-stage-head::before { content: ""; position: absolute; left: -31px; top: 4px; width: 14px; height: 14px; border-radius: var(--radius-sm); background: var(--surface-100); border: 2px solid var(--brand); }
+.lc-tl-stage-head h4 { margin: 0; font-size: 14px; line-height: 20px; font-weight: 600; }
+.lc-tl-stage-head span { font-size: 12px; color: var(--ink-muted); }
+.lc-ev { position: relative; display: grid; grid-template-columns: 28px minmax(0, 1fr) auto; gap: 10px; align-items: start; padding: 6px 0 10px; }
+.lc-av { width: 28px; height: 28px; border-radius: var(--radius-pill); display: grid; place-items: center; font-size: 11px; font-weight: 600; background: var(--brand-soft); color: var(--brand-text); }
+.lc-av--sys { background: transparent; border: 1.5px dashed var(--line-strong); color: var(--ink-muted); border-radius: var(--radius-md); }
+.lc-ev-txt { min-width: 0; }
+.lc-ev-txt .t { display: block; }
+.lc-ev-txt .m { display: block; font-size: 12px; line-height: 16px; color: var(--ink-muted); margin-top: 1px; }
+.lc-ev--sys .t { color: var(--ink-muted); font-style: italic; }
+.lc-ev-val { text-align: right; font-weight: 600; white-space: nowrap; padding-top: 1px; }
+.lc-ev-val small { display: block; font-weight: 400; font-size: 12px; color: var(--ink-muted); font-family: var(--font-sans); }
+.lc-tag-sys { display: inline-block; margin-left: 6px; padding: 0 6px; border-radius: var(--radius-sm); border: 1px solid var(--line); font-size: 11px; line-height: 16px; font-style: normal; color: var(--ink-muted); vertical-align: 1px; }
+
+/* grupo de salvamentos da cotação */
+.lc-grp { margin: 2px 0 8px 38px; border-radius: var(--radius-md); background: var(--surface-200); }
+.lc-grp > summary { list-style: none; cursor: pointer; display: flex; align-items: center; gap: 12px; padding: 10px 12px; }
+.lc-grp > summary::-webkit-details-marker { display: none; }
+.lc-grp-chev { color: var(--ink-muted); transition: transform .15s; }
+.lc-grp[open] .lc-grp-chev { transform: rotate(90deg); }
+.lc-grp-txt { flex: 1; min-width: 0; }
+.lc-grp-txt b { font-weight: 600; }
+.lc-grp-txt .m { display: block; font-size: 12px; line-height: 16px; color: var(--ink-muted); }
+.lc-spark { width: 96px; height: 28px; }
+.lc-spark path { fill: none; stroke: var(--accent); stroke-width: 1.5; }
+.lc-spark circle { fill: var(--accent); }
+.lc-grp-tbl { width: 100%; border-collapse: collapse; font-size: 13px; }
+.lc-grp-tbl th { text-align: left; font-size: 11px; font-weight: 600; letter-spacing: .04em; text-transform: uppercase; color: var(--ink-muted); padding: 6px 12px; border-top: 1px solid var(--line); }
+.lc-grp-tbl td { padding: 6px 12px; border-top: 1px solid var(--line); vertical-align: top; }
+.lc-grp-tbl td:last-child, .lc-grp-tbl th:last-child { text-align: right; }
+.lc-delta-up { color: var(--ink-muted); }
+
+/* desfecho no fim da linha do tempo */
+.lc-tl-end { position: relative; padding-left: 36px; padding-top: 4px; }
+.lc-tl-end-dot { position: absolute; left: 0; top: 4px; width: 24px; height: 24px; border-radius: var(--radius-pill); display: grid; place-items: center; color: var(--surface-100); background: var(--neutral); }
+.lc-tl-end.f-warn .lc-tl-end-dot { background: var(--warn); } .lc-tl-end.f-danger .lc-tl-end-dot { background: var(--danger); }
+.lc-tl-end.f-success .lc-tl-end-dot { background: var(--success); } .lc-tl-end.f-andamento .lc-tl-end-dot { background: var(--surface-100); border: 2px dashed var(--brand); }
+.lc-tl-end b { display: block; }
+.lc-tl-end .sub { font-size: 12px; color: var(--ink-muted); }
+
+/* ---------- lateral ---------- */
+.lc-card { border: 1px solid var(--line); border-radius: var(--radius-md); padding: 14px 16px; }
+.lc-card h5 { margin: 0 0 10px; font-size: 11px; line-height: 14px; font-weight: 600; letter-spacing: .04em; text-transform: uppercase; color: var(--ink-muted); }
+.lc-kv { display: grid; grid-template-columns: auto minmax(0, 1fr); gap: 6px 12px; margin: 0; }
+.lc-kv dt { color: var(--ink-muted); white-space: nowrap; }
+.lc-kv dd { margin: 0; text-align: right; font-weight: 600; }
+.lc-card--future { border-style: dashed; }
+.lc-card--future p { margin: 0; color: var(--ink-muted); font-size: 13px; }
+.lc-people { list-style: none; margin: 0; padding: 0; display: grid; gap: 8px; }
+.lc-people li { display: flex; align-items: center; gap: 8px; }
+.lc-people .lc-av { width: 24px; height: 24px; font-size: 10px; }
+.lc-people small { margin-left: auto; color: var(--ink-muted); font-size: 12px; }
+
+/* ---------- rodapé / ações ---------- */
+.lc-foot { display: flex; align-items: center; gap: 8px; padding: 12px 24px; border-top: 1px solid var(--line); background: var(--surface-100); }
+.lc-foot-note { margin-right: auto; display: inline-flex; align-items: center; gap: 6px; color: var(--ink-muted); font-size: 13px; }
+.lc-btn { color: var(--ink); display: inline-flex; align-items: center; gap: 6px; height: 36px; padding: 0 14px; border-radius: var(--radius-md); border: 1px solid var(--line-strong); background: var(--surface-100); font-weight: 500; cursor: pointer; white-space: nowrap; }
+.lc-btn:hover { background: var(--surface-200); }
+.lc-btn--primary { background: var(--brand); border-color: var(--brand); color: var(--brand-ink); }
+.lc-btn--primary:hover { background: var(--brand); filter: brightness(1.08); }
+.lc-btn--ghost { border-color: transparent; background: transparent; }
+.lc-btn--danger { border-color: transparent; background: transparent; color: var(--danger-text); }
+.lc-btn[disabled] { cursor: not-allowed; color: var(--ink-muted); border-style: dashed; background: transparent; }
+.lc-soon { font-size: 10px; font-weight: 600; letter-spacing: .04em; text-transform: uppercase; padding: 1px 5px; border-radius: var(--radius-sm); background: var(--surface-200); color: var(--ink-muted); }
+.lc :focus-visible { outline: 2px solid var(--brand); outline-offset: 2px; }
+
+/* ---------- notebook / telas estreitas ---------- */
+@container (max-width: 900px) {
+  .lc-facts { grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 12px; }
+  .lc-body { grid-template-columns: minmax(0, 1fr); }
+  .lc-aside { padding: 0 24px 24px; grid-template-columns: repeat(auto-fit, minmax(240px, 1fr)); }
+  .lc-head-links .lc-link span { display: none; }
+  .lc-foot-note .long { display: none; }
+}
+@container (max-width: 620px) {
+  .lc-step-sub { display: none; }
+  .lc-faixa { flex-wrap: wrap; } .lc-faixa-when { text-align: left; width: 100%; padding-left: 44px; }
+  .lc-foot { flex-wrap: wrap; } .lc-foot-note { width: 100%; }
+}
+
+/* ---------- moldura das prévias (não faz parte do produto) ---------- */
+.pv { font-family: var(--font-sans); color: var(--ink); background: var(--surface-000); min-height: 100vh; }
+.pv-bar { display: flex; flex-wrap: wrap; gap: 6px; padding: 12px 24px 0; align-items: center; }
+.pv-bar span { font-size: 12px; color: var(--ink-muted); margin-right: 4px; }
+.pv-tab { font: inherit; font-size: 13px; padding: 5px 10px; border-radius: var(--radius-pill); border: 1px solid var(--line-strong); background: var(--surface-100); color: var(--ink); cursor: pointer; }
+.pv-tab[aria-pressed="true"] { background: var(--ink); color: var(--surface-100); border-color: var(--ink); }
+.pv-tab em { font-style: normal; font-size: 10px; font-weight: 600; text-transform: uppercase; letter-spacing: .04em; opacity: .75; margin-left: 4px; }
+.pv-grid { display: grid; gap: 12px; padding: 16px; }
+.pv-label { font-size: 12px; color: var(--ink-muted); margin: 0 0 6px; }
+
+/* =====================================================================
+   Modal do processo ENCERRADO — uma tela só (lz-*)
+   ===================================================================== */
+.lz { width: 100%; height: 100%; display: flex; flex-direction: column; background: var(--surface-100); border-radius: var(--radius-lg); box-shadow: var(--shadow-modal); overflow: hidden; outline: none; min-height: 0; }
+.lz-head { position: relative; display: flex; gap: 24px; align-items: flex-start; padding: 14px 56px 12px 24px; border-bottom: 1px solid var(--line); }
+.lz-head-l { flex: 1; min-width: 0; }
+.lz-chips { display: flex; align-items: center; gap: 6px; flex-wrap: wrap; }
+.lz-chip { padding: 1px 8px; border-radius: var(--radius-sm); background: var(--surface-200); color: var(--ink-muted); font-size: 12px; line-height: 18px; white-space: nowrap; }
+.lz-chip b { color: var(--ink); font-weight: 600; }
+.lz-link { display: inline-flex; align-items: center; gap: 4px; margin-left: 6px; color: var(--brand-text); font-size: 12px; font-weight: 600; text-decoration: none; }
+.lz-link:hover { text-decoration: underline; }
+.lz-title { margin: 6px 0 0; font-size: 18px; line-height: 24px; font-weight: 700; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.lz-orgao { color: var(--ink-muted); font-size: 13px; line-height: 18px; }
+.lz-facts { display: grid; grid-template-columns: repeat(4, auto); gap: 4px 22px; margin: 2px 0 0; flex: none; }
+.lz-fact dt { font-size: 10.5px; line-height: 14px; font-weight: 600; letter-spacing: .04em; text-transform: uppercase; color: var(--ink-muted); white-space: nowrap; }
+.lz-fact dd { margin: 2px 0 0; font-weight: 600; font-size: 14px; white-space: nowrap; }
+.lz-x { position: absolute; top: 10px; right: 12px; width: 32px; height: 32px; border: 0; border-radius: var(--radius-md); background: none; color: var(--ink-muted); display: grid; place-items: center; cursor: pointer; }
+.lz-x:hover { background: var(--surface-200); color: var(--ink); }
+
+.lz-faixa { display: flex; align-items: center; gap: 12px; margin: 12px 24px 0; padding: 10px 14px; border-radius: var(--radius-md); }
+.lz-faixa-ico { flex: none; width: 30px; height: 30px; border-radius: var(--radius-pill); display: grid; place-items: center; color: var(--surface-100); }
+.lz-faixa-txt { flex: 1; min-width: 0; }
+.lz-faixa-txt b { font-size: 15px; line-height: 20px; }
+.lz-faixa-tag { margin-left: 10px; font-size: 11px; font-weight: 600; letter-spacing: .04em; text-transform: uppercase; opacity: .85; }
+.lz-faixa p { margin: 1px 0 0; font-size: 13px; line-height: 18px; }
+.lz-faixa-when { text-align: right; font-size: 12px; line-height: 16px; white-space: nowrap; }
+.lz-faixa-when b { display: block; font-size: 14px; line-height: 18px; }
+.lz-faixa.f-warn { background: var(--warn-soft); color: var(--warn-text); border: 1px dashed color-mix(in srgb, var(--warn) 35%, transparent); } .lz-faixa.f-warn .lz-faixa-ico { background: var(--warn); }
+.lz-faixa.f-danger { background: var(--danger-soft); color: var(--danger-text); } .lz-faixa.f-danger .lz-faixa-ico { background: var(--danger); }
+.lz-faixa.f-neutral { background: var(--neutral-soft); color: var(--ink); } .lz-faixa.f-neutral .lz-faixa-ico { background: var(--neutral); }
+.lz-faixa.f-success { background: var(--success-soft); color: var(--success-text); } .lz-faixa.f-success .lz-faixa-ico { background: var(--success); }
+
+/* linha de fases — cada fase é um botão */
+.lz-fases-wrap { padding: 12px 24px 0; }
+.lz-fases { display: grid; grid-template-columns: repeat(5, minmax(0, 1fr)); gap: 6px; }
+.lz-fase { position: relative; display: grid; grid-template-columns: 24px 1fr; column-gap: 8px; align-items: center; text-align: left; padding: 8px 10px; border: 1px solid var(--line); border-radius: var(--radius-md); background: var(--surface-100); cursor: pointer; color: var(--ink); font: inherit; }
+.lz-fase:hover { border-color: var(--line-strong); }
+.lz-fase:not(:last-child)::after { content: ""; position: absolute; right: -7px; top: 50%; width: 8px; height: 2px; background: var(--line); }
+.lz-fase.is-done:not(:last-child)::after { background: var(--brand); }
+.lz-fase-dot { grid-row: span 2; width: 24px; height: 24px; border-radius: var(--radius-pill); display: grid; place-items: center; border: 2px solid var(--line-strong); color: var(--surface-100); }
+.lz-fase-n { font-weight: 600; font-size: 13.5px; line-height: 18px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.lz-fase-s { font-size: 12px; line-height: 16px; color: var(--ink-muted); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.lz-fase.is-done .lz-fase-dot { background: var(--brand); border-color: var(--brand); color: var(--brand-ink); }
+.lz-fase.is-endok .lz-fase-dot { background: var(--success); border-color: var(--success); color: var(--surface-100); }
+.lz-fase.is-stop .lz-fase-dot { border-color: transparent; }
+.lz-fase.is-stop.f-warn .lz-fase-dot { background: var(--warn); } .lz-fase.is-stop.f-danger .lz-fase-dot { background: var(--danger); } .lz-fase.is-stop.f-neutral .lz-fase-dot { background: var(--neutral); }
+.lz-fase.is-stop.f-warn .lz-fase-s { color: var(--warn-text); font-weight: 600; } .lz-fase.is-stop.f-danger .lz-fase-s { color: var(--danger-text); font-weight: 600; }
+.lz-fase.is-stop.f-neutral .lz-fase-s { color: var(--ink); font-weight: 600; } .lz-fase.is-endok .lz-fase-s { color: var(--success-text); font-weight: 600; }
+.lz-fase.is-after, .lz-fase.is-skip { background: transparent; border-style: dashed; }
+.lz-fase.is-after .lz-fase-dot, .lz-fase.is-skip .lz-fase-dot { border-style: dashed; }
+.lz-fase.is-after .lz-fase-n { color: var(--ink-muted); font-weight: 500; }
+.lz-fase.is-sel { border: 2px solid var(--accent); padding: 7px 9px; background: var(--brand-soft); box-shadow: 0 6px 14px -8px var(--accent); }
+.lz-fase.is-sel::before { content: ""; position: absolute; left: 50%; bottom: -9px; width: 12px; height: 12px; margin-left: -6px; background: var(--brand-soft); border-right: 2px solid var(--accent); border-bottom: 2px solid var(--accent); transform: rotate(45deg); }
+
+/* corpo: linha do tempo (zigue-zague) + narração */
+.lz-body { flex: 1; min-height: 0; display: grid; grid-template-columns: minmax(0, 1fr) 340px; gap: 0; margin-top: 14px; border-top: 1px solid var(--line); }
+.lz-tl { position: relative; min-width: 0; min-height: 0; overflow: hidden; padding: 0; }
+.lz-tl-in { position: relative; transform-origin: top left; }
+.lz-svg { position: absolute; left: 0; top: 0; overflow: visible; }
+.lz-seg { fill: none; stroke: var(--line); stroke-width: 3; stroke-linecap: round; }
+.lz-seg.is-sel { stroke: var(--accent); stroke-width: 4; }
+.lz-seg.is-end { stroke-dasharray: 2 6; stroke-width: 3; }
+.lz-seg.is-end.f-warn { stroke: var(--warn); } .lz-seg.is-end.f-danger { stroke: var(--danger); } .lz-seg.is-end.f-neutral { stroke: var(--neutral); } .lz-seg.is-end.f-success { stroke: var(--success); stroke-dasharray: none; }
+.lz-node { position: absolute; width: 124px; margin-left: -62px; margin-top: -15px; display: flex; flex-direction: column; align-items: center; text-align: center; cursor: pointer; transition: opacity .15s; }
+.lz-node.is-off .lz-node-t, .lz-node.is-off .lz-node-m, .lz-node.is-off .lz-node-v, .lz-node.is-off .lz-node-et { color: var(--ink-muted); opacity: .7; }
+.lz-node.is-off .lz-m { background: var(--surface-200); color: var(--ink-muted); }
+.lz-node.is-off .lz-m--sys { background: var(--surface-100); }
+.lz-node.is-off .lz-m--grp { background: var(--line-strong); color: var(--surface-100); }
+.lz-node.is-off .lz-m--end { filter: saturate(.55); opacity: .85; }
+.lz-node.is-off:hover .lz-node-t { opacity: 1; }
+.lz-node-et { position: absolute; top: -26px; font-size: 10px; line-height: 14px; font-weight: 700; letter-spacing: .06em; text-transform: uppercase; color: var(--ink-muted); background: var(--surface-100); padding: 0 6px; white-space: nowrap; }
+.lz-node.is-on .lz-node-et { color: var(--brand-text); }
+.lz-m { width: 30px; height: 30px; border-radius: var(--radius-pill); display: grid; place-items: center; font-size: 11px; font-weight: 700; background: var(--brand-soft); color: var(--brand-text); border: 2px solid var(--surface-100); box-shadow: 0 0 0 1.5px var(--line-strong); }
+.lz-node.is-on .lz-m { box-shadow: 0 0 0 2px var(--accent); }
+.lz-m--sys { border-radius: var(--radius-md); background: var(--surface-100); color: var(--ink-muted); box-shadow: none; border: 1.5px dashed var(--line-strong); }
+.lz-node.is-on .lz-m--sys { box-shadow: none; border-color: var(--accent); }
+.lz-m--grp { background: var(--brand); color: var(--brand-ink); font-size: 11px; box-shadow: 3px -3px 0 -1px var(--surface-100), 3px -3px 0 0 var(--line-strong), 6px -6px 0 -1px var(--surface-100), 6px -6px 0 0 var(--line-strong); }
+.lz-node.is-on .lz-m--grp { box-shadow: 3px -3px 0 -1px var(--surface-100), 3px -3px 0 1px var(--accent), 6px -6px 0 -1px var(--surface-100), 6px -6px 0 1px var(--accent); }
+.lz-m--end { width: 34px; height: 34px; margin-top: -2px; color: var(--surface-100); box-shadow: none; border: 0; }
+.lz-m--end.f-warn { background: var(--warn); } .lz-m--end.f-danger { background: var(--danger); } .lz-m--end.f-neutral { background: var(--neutral); } .lz-m--end.f-success { background: var(--success); }
+.lz-node-t { margin-top: 5px; font-size: 12.5px; line-height: 16px; font-weight: 500; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; }
+.lz-node.is-sys .lz-node-t { font-style: italic; color: var(--ink-muted); }
+.lz-node-m { font-size: 11.5px; line-height: 15px; color: var(--ink-muted); white-space: nowrap; }
+.lz-node-v { font-size: 12px; line-height: 16px; font-weight: 600; white-space: nowrap; }
+
+.lz-narr { border-left: 1px solid var(--line); padding: 16px 20px; display: flex; flex-direction: column; min-height: 0; overflow: auto; background: var(--surface-100); }
+.lz-narr-head { display: flex; flex-wrap: wrap; align-items: center; gap: 4px 8px; }
+.lz-narr-k { width: 100%; font-size: 11px; font-weight: 600; letter-spacing: .04em; text-transform: uppercase; color: var(--ink-muted); }
+.lz-narr-head h3 { margin: 0; font-size: 18px; line-height: 24px; font-weight: 700; }
+.lz-narr-per { width: 100%; font-size: 12px; color: var(--ink-muted); }
+.lz-pill { font-size: 11px; line-height: 18px; font-weight: 600; padding: 0 8px; border-radius: var(--radius-pill); background: var(--surface-200); color: var(--ink-muted); }
+.lz-pill.is-done { background: var(--brand-soft); color: var(--brand-text); }
+.lz-pill.is-stop.f-warn { background: var(--warn-soft); color: var(--warn-text); } .lz-pill.is-stop.f-danger { background: var(--danger-soft); color: var(--danger-text); }
+.lz-pill.is-stop.f-neutral { background: var(--neutral-soft); color: var(--ink); } .lz-pill.f-success { background: var(--success-soft); color: var(--success-text); }
+.lz-pts { margin: 12px 0 0; padding: 0; list-style: none; counter-reset: pt; display: grid; gap: 8px; }
+.lz-pts li { counter-increment: pt; position: relative; padding-left: 28px; font-size: 13.5px; line-height: 19px; }
+@media (max-height: 820px) { .lz-narr-nav { display: none; } .lz-pts { gap: 6px; margin-top: 8px; } .lz-pts li { font-size: 13px; line-height: 18px; } .lz-narr { padding: 12px 18px; } .lz-narr-k { display: none; } .lz-porque { margin-top: 8px; padding: 8px 10px; font-size: 12.5px; } }
+.lz-pts li::before { content: counter(pt); position: absolute; left: 0; top: 0; width: 19px; height: 19px; border-radius: var(--radius-pill); background: var(--surface-200); color: var(--ink-muted); font-size: 11px; font-weight: 700; display: grid; place-items: center; }
+.lz-porque { margin-top: 12px; padding: 10px 12px; border-radius: var(--radius-md); font-size: 13px; line-height: 18px; }
+.lz-porque b { display: block; font-size: 11px; letter-spacing: .04em; text-transform: uppercase; margin-bottom: 2px; }
+.lz-porque.f-warn { background: var(--warn-soft); color: var(--warn-text); } .lz-porque.f-danger { background: var(--danger-soft); color: var(--danger-text); }
+.lz-porque.f-neutral { background: var(--neutral-soft); color: var(--ink); } .lz-porque.f-success { background: var(--success-soft); color: var(--success-text); }
+.lz-narr-nav { margin-top: auto; padding-top: 12px; display: flex; justify-content: space-between; }
+.lz-nav { display: inline-flex; align-items: center; gap: 4px; height: 30px; padding: 0 10px; border: 1px solid var(--line); border-radius: var(--radius-md); background: none; color: var(--ink); font: inherit; font-size: 13px; cursor: pointer; }
+.lz-nav:hover:not([disabled]) { background: var(--surface-200); }
+.lz-nav[disabled] { opacity: .4; cursor: default; }
+
+.lz-foot { display: flex; align-items: center; gap: 8px; padding: 10px 24px; border-top: 1px solid var(--line); }
+.lz-foot-note { margin-right: auto; display: inline-flex; align-items: center; gap: 6px; color: var(--ink-muted); font-size: 13px; white-space: nowrap; overflow: hidden; }
+.lz-kbd { margin-left: 12px; padding-left: 12px; border-left: 1px solid var(--line); font-size: 12px; }
+.lz-btn { display: inline-flex; align-items: center; gap: 6px; height: 34px; padding: 0 14px; border-radius: var(--radius-md); border: 1px solid var(--line-strong); background: var(--surface-100); color: var(--ink); font: inherit; font-weight: 500; cursor: pointer; white-space: nowrap; }
+.lz-btn:hover { background: var(--surface-200); }
+.lz-btn--primary { background: var(--brand); border-color: var(--brand); color: var(--brand-ink); }
+.lz-btn--primary:hover { background: var(--brand); filter: brightness(1.1); }
+.lz-btn--ghost { border-style: dashed; background: none; }
+.lz-btn[disabled] { color: var(--ink-muted); cursor: not-allowed; }
+.lz-soon { font-size: 10px; font-weight: 600; letter-spacing: .04em; text-transform: uppercase; padding: 1px 5px; border-radius: var(--radius-sm); background: var(--surface-200); }
+.lz :focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+
+/* telas menores (notebook 1280–1366) */
+@media (max-width: 1400px) {
+  .lz-facts { grid-template-columns: repeat(2, auto); }
+  .lz-body { grid-template-columns: minmax(0, 1fr) 300px; }
+  .lz-kbd { display: none; }
+}
+@media (max-height: 760px) {
+  .lz-orgao { display: none; }
+  .lz-faixa { margin-top: 8px; padding: 8px 12px; }
+  .lz-fases-wrap { padding-top: 8px; }
+  .lz-fase { padding-top: 6px; padding-bottom: 6px; }
+  .lz-narr-nav { display: none; }
+  .lz-body { margin-top: 10px; }
+}
+
+/* moldura da página de demonstração */
+.lzp { height: 100vh; display: flex; flex-direction: column; background: var(--surface-000); font-family: var(--font-sans); color: var(--ink); }
+.lzp .pv-bar { padding: 10px 24px 0; }
+.lzp-stage { flex: 1; min-height: 0; padding: 12px 24px 16px; }
+.pv-sep { margin-left: 10px; padding-left: 12px; border-left: 1px solid var(--line-strong); }
+.pv-tab--ok { border-color: var(--success); color: var(--success-text); }
+.pv-tab--ok[aria-pressed="true"] { background: var(--success); border-color: var(--success); color: var(--surface-100); }
+
+/* ---------- variante com linha do tempo vertical e rolagem (lz--v) ---------- */
+.lz--v { height: auto; max-height: 100%; }
+.lz-scroll { flex: 1; min-height: 0; overflow: auto; scroll-behavior: smooth; }
+.lz--v .lz-fases-wrap { position: sticky; top: 0; z-index: 3; background: var(--surface-100); padding: 12px 24px 14px; border-bottom: 1px solid var(--line); }
+.lz-vbody { display: grid; grid-template-columns: minmax(0, 1fr) 340px; align-items: start; }
+.lz-vtl { padding: 20px 24px 28px; min-width: 0; }
+.lz--v .lz-narr { position: sticky; top: 92px; border-left: 1px solid var(--line); max-height: none; overflow: visible; padding: 20px; }
+.lz--v .lz-narr-nav { display: flex; margin-top: 16px; }
+.lz-vtl .lc-tl-stage { border-radius: var(--radius-md); margin-left: -12px; padding: 10px 12px 6px 48px; transition: background .15s, opacity .15s; cursor: pointer; }
+.lz-vtl .lc-tl-stage::before { left: 23px; top: 36px; }
+.lz-vtl .lc-tl-stage-head::before { left: -31px; }
+.lz-vtl .lc-tl-stage.is-sel { background: var(--brand-soft); box-shadow: inset 3px 0 0 var(--accent); }
+.lz-vtl .lc-tl-stage.is-sel .lc-tl-stage-head::before { border-color: var(--accent); background: var(--accent); }
+.lz-vtl .lc-tl-stage.is-dim { opacity: .55; }
+.lz-vtl .lc-tl-stage.is-dim:hover { opacity: .85; }
+.lz-vtl .lc-tl-stage.is-sel .lc-grp { background: var(--surface-100); }
+.lz-vtl .lc-tl-end { margin-top: 6px; }
+.lz-vtl .lc-tl-end.is-dim { opacity: .7; }
+.lz-v-status { margin-left: auto; }
+.lz-vtl .lc-grp > summary { cursor: pointer; }
+@media (max-width: 1400px) { .lz-vbody { grid-template-columns: minmax(0, 1fr) 300px; } }
+.lz-vtl .lc-tl-stage.is-sel .lc-av:not(.lc-av--sys) { background: var(--surface-100); box-shadow: 0 0 0 1.5px var(--accent); }
+.lz-vtl .lc-tl-stage.is-sel .lc-av--sys { background: var(--surface-100); }
+
+/* ---------- telas estreitas (por largura do próprio modal) ---------- */
+.lz { container: lz / inline-size; }
+@container lz (max-width: 1000px) {
+  .lz-head { flex-direction: column; gap: 10px; padding-right: 52px; }
+  .lz-title { white-space: normal; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; }
+  .lz-facts { grid-template-columns: repeat(4, minmax(0, auto)); justify-content: start; gap: 4px 24px; }
+  .lz-vbody { grid-template-columns: minmax(0, 1fr); }
+  .lz--v .lz-narr { position: static; order: -1; border-left: 0; border-bottom: 1px solid var(--line); background: var(--surface-200); padding: 16px 24px; }
+  .lz--v .lz-narr-nav { display: none; }
+  .lz-fase-n { font-size: 13px; }
+  .lz-fase-s { display: none; }
+  .lz-foot-note > span { display: none; }
+}
+@container lz (max-width: 720px) {
+  .lz-head { padding: 14px 48px 12px 16px; }
+  .lz-link { margin-left: 0; }
+  .lz-facts { grid-template-columns: repeat(2, minmax(0, 1fr)); width: 100%; gap: 8px 16px; }
+  .lz-fact dd { white-space: normal; }
+  .lz-faixa { margin: 12px 16px 0; flex-wrap: wrap; align-items: flex-start; }
+  .lz-faixa-txt { flex-basis: calc(100% - 42px); }
+  .lz-faixa-tag { display: block; margin: 0; }
+  .lz-faixa-when { width: 100%; text-align: left; padding-left: 42px; }
+  .lz-faixa-when b { display: inline; margin-right: 6px; }
+  .lz--v .lz-fases-wrap { padding: 10px 12px 12px; }
+  /* fases viram um stepper compacto: ponto em cima, nome embaixo */
+  .lz-fases { gap: 0; }
+  .lz-fase { grid-template-columns: 1fr; justify-items: center; text-align: center; row-gap: 4px; padding: 6px 2px; border: 0; background: none; border-radius: var(--radius-md); }
+  .lz-fase.is-after, .lz-fase.is-skip { background: none; }
+  .lz-fase-dot { grid-row: auto; }
+  .lz-fase-n { font-size: 11.5px; line-height: 14px; max-width: 100%; }
+  .lz-fase:not(:last-child)::after { right: -50%; left: auto; width: calc(100% - 28px); top: 18px; margin-right: 14px; transform: translateX(50%); right: 0; }
+  .lz-fase.is-sel { border: 0; padding: 6px 2px; background: var(--brand-soft); box-shadow: none; }
+  .lz-fase.is-sel::before { bottom: -6px; width: 10px; height: 10px; margin-left: -5px; border-width: 0; }
+  .lz-fase.is-sel .lz-fase-dot { box-shadow: 0 0 0 3px var(--surface-100), 0 0 0 5px var(--accent); }
+  .lz--v .lz-narr { padding: 14px 16px; }
+  .lz-vtl { padding: 16px 16px 24px; }
+  .lz-vtl .lc-tl-stage { padding-left: 40px; }
+  .lz-vtl .lc-tl-stage::before { left: 19px; }
+  .lz-vtl .lc-tl-stage-head { flex-wrap: wrap; }
+  .lz-vtl .lc-tl-stage-head::before { left: -27px; }
+  .lz-v-status { margin-left: 0; width: 100%; }
+  .lz-vtl .lc-ev { grid-template-columns: 28px minmax(0, 1fr); }
+  .lz-vtl .lc-ev-val { grid-column: 2; text-align: left; padding-top: 0; }
+  .lz-vtl .lc-ev-val small { display: inline; margin-left: 6px; }
+  .lz-vtl .lc-grp { margin-left: 0; }
+  .lz-vtl .lc-grp > summary { flex-wrap: wrap; gap: 4px 10px; }
+  .lz-vtl .lc-grp .lc-spark { display: none; }
+  .lz-vtl .lc-grp > summary > .num { width: 100%; padding-left: 26px; font-size: 12.5px; }
+  .lz-vtl .lc-grp-tbl th:nth-child(3), .lz-vtl .lc-grp-tbl td:nth-child(3) { display: none; }
+  .lz-foot { flex-wrap: wrap; padding: 10px 16px; }
+  .lz-foot-note { width: 100%; }
+  .lz-foot-note > span { display: inline; }
+  .lz-foot .lz-btn { flex: 1; justify-content: center; }
+  .lz-foot .lz-btn--ghost { display: none; }
+}
+@media (max-width: 720px) {
+  .lzp .pv-bar { padding: 8px 12px 0; flex-wrap: nowrap; overflow-x: auto; scrollbar-width: none; }
+  .lzp .pv-bar > * { flex: none; }
+  .lzp-stage { padding: 8px 8px 8px; }
+  .lz { border-radius: var(--radius-md); }
+}
+@container lz (max-width: 720px) {
+  .lz-fase-i, .lz-kbd { display: none !important; }
+}
+@container lz (max-width: 400px) {
+  .lz-fase-n { font-size: 10.5px; }
+}
+</style>
+<div class="lzp"><div class="pv-bar" role="group" aria-label="Exemplos de encerramento"><span>Encerrou em:</span>
+<button class="pv-tab" data-k="prazoCotacao">Cotação <em>prazo perdido</em></button>
+<button class="pv-tab" data-k="desclassificada">Proposta <em>desclassificada</em></button>
+<button class="pv-tab" data-k="disputa">Disputa <em>não venceu</em></button>
+<button class="pv-tab" data-k="empenhoFalhou">Empenho <em>cancelado</em></button>
+<button class="pv-tab pv-tab--ok" data-k="concluido">Concluída com êxito</button>
+<span class="pv-sep">Outros:</span>
+<button class="pv-tab" data-k="descartado">Descartada</button>
+<button class="pv-tab" data-k="semCotacao">Prazo perdido sem cotação</button></div>
+<div class="lzp-stage" id="stage"></div></div>
+<script>
+/* Licita — renderizador do modal do processo (vanilla, sem dependências). */
+(function () {
+  var ETAPAS = [
+    { id: 'oportunidade', nome: 'Oportunidade' },
+    { id: 'cotacao', nome: 'Cotação' },
+    { id: 'proposta', nome: 'Proposta' },
+    { id: 'disputa', nome: 'Disputa' },
+    { id: 'empenho', nome: 'Empenho' }
+  ];
+  var DESFECHOS = {
+    descartado:        { fam: 'neutral', nome: 'Descartado',               curto: 'Descartado',    ico: 'trash' },
+    prazo_sem_cotacao: { fam: 'warn',    nome: 'Prazo perdido sem cotação', curto: 'Prazo perdido', ico: 'clock' },
+    prazo_cotacao:     { fam: 'warn',    nome: 'Prazo perdido na cotação',  curto: 'Prazo perdido', ico: 'clock' },
+    desclassificada:   { fam: 'danger',  nome: 'Proposta desclassificada',  curto: 'Desclassificada', ico: 'x' },
+    perdido_disputa:   { fam: 'danger',  nome: 'Não venceu na disputa',     curto: 'Não venceu',    ico: 'x' },
+    falhou_empenho:    { fam: 'danger',  nome: 'Falhou no empenho',         curto: 'Empenho falhou', ico: 'x' },
+    concluido:         { fam: 'success', nome: 'Concluído',                 curto: 'Concluído',     ico: 'check' }
+  };
+  var P = {
+    x: 'M6 6l12 12M18 6L6 18', check: 'M5 12.5l4.5 4.5L19 7', clock: 'M12 7v5l3 2M12 21a9 9 0 1 0 0-18 9 9 0 0 0 0 18z',
+    trash: 'M4 7h16M9 7V4h6v3M6 7l1 13h10l1-13', alert: 'M12 9v4M12 17h.01M10.3 3.9L2.5 18a2 2 0 0 0 1.7 3h15.6a2 2 0 0 0 1.7-3L13.7 3.9a2 2 0 0 0-3.4 0z',
+    ext: 'M14 4h6v6M20 4l-9 9M18 14v5a1 1 0 0 1-1 1H5a1 1 0 0 1-1-1V7a1 1 0 0 1 1-1h5', close: 'M6 6l12 12M18 6L6 18',
+    chev: 'M9 6l6 6-6 6', down: 'M12 4v11M7 10l5 5 5-5M5 20h14', doc: 'M7 3h7l5 5v13H7zM14 3v5h5M10 13h6M10 17h6',
+    lock: 'M7 11V8a5 5 0 0 1 10 0v3M5 11h14v10H5z', redo: 'M4 12a8 8 0 1 0 2.3-5.6M4 4v4h4', gear: 'M12 15a3 3 0 1 0 0-6 3 3 0 0 0 0 6zM12 2v3M12 19v3M2 12h3M19 12h3M4.9 4.9l2.1 2.1M17 17l2.1 2.1M4.9 19.1L7 17M17 7l2.1-2.1',
+    arrow: 'M5 12h14M13 6l6 6-6 6', flag: 'M5 21V4h11l-1.5 4L16 12H5'
+  };
+  function ico(n, s) { s = s || 16; return '<svg width="' + s + '" height="' + s + '" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="' + P[n] + '"/></svg>'; }
+  function esc(s) { return String(s == null ? '' : s).replace(/[&<>"]/g, function (c) { return { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]; }); }
+  function brl(v) { return 'R$ ' + v.toFixed(2).replace('.', ',').replace(/\B(?=(\d{3})+(?!\d))/g, '.'); }
+  function d(iso) { return iso.slice(8, 10) + '/' + iso.slice(5, 7); }
+  function dAno(iso) { return d(iso) + '/' + iso.slice(0, 4); }
+  function h(iso) { return iso.slice(11, 16); }
+  function dias(a, b) { return Math.round((new Date(b.slice(0, 10)) - new Date(a.slice(0, 10))) / 864e5); }
+  function ini(n) { return n.split(' ').map(function (x) { return x[0]; }).slice(0, 2).join(''); }
+  function idx(id) { for (var i = 0; i < ETAPAS.length; i++) if (ETAPAS[i].id === id) return i; return -1; }
+  function evsDe(p, etapa) { return p.eventos.filter(function (e) { return e.etapa === etapa; }); }
+
+  /* ---------- cabeçalho ---------- */
+  function cabecalho(p) {
+    var cot = ultimoValor(p);
+    var prazoTxt = dAno(p.prazo) + ' · ' + h(p.prazo);
+    var prazoSub = '', prazoCls = '';
+    if (!p.desfecho) { var n = dias(p.hoje, p.prazo); prazoSub = n <= 0 ? 'hoje' : 'em ' + n + (n === 1 ? ' dia' : ' dias'); if (n <= 3) prazoCls = 'is-warn'; }
+    else if (p.prazo < p.hoje) prazoSub = 'encerrado';
+    return '<header class="lc-head"><div class="lc-head-top">' +
+      '<span class="lc-chip"><b>' + esc(p.modalidade) + '</b> ' + esc(p.numero) + '</span>' +
+      '<span class="lc-chip">UASG <b>' + esc(p.uasg) + '</b></span>' +
+      '<span class="lc-chip">' + esc(p.cidade) + '/' + esc(p.uf) + '</span>' +
+      '<div class="lc-head-links"><a class="lc-link" href="#" title="Abrir no PNCP">' + ico('ext', 14) + ' <span>PNCP</span></a>' +
+      '<a class="lc-link" href="#" title="Abrir na plataforma">' + ico('ext', 14) + ' <span>' + esc(p.plataforma) + '</span></a>' +
+      '<button class="lc-icon-btn" aria-label="Fechar">' + ico('close', 18) + '</button></div></div>' +
+      '<h2 class="lc-title">' + esc(p.objeto) + '</h2><div class="lc-orgao">' + esc(p.orgao) + '</div>' +
+      '<dl class="lc-facts">' +
+      '<div class="lc-fact"><dt>Prazo da proposta</dt><dd class="' + prazoCls + '">' + prazoTxt + '<small>' + prazoSub + '</small></dd></div>' +
+      '<div class="lc-fact"><dt>Valor estimado</dt><dd class="num">' + (p.valorEstimado ? brl(p.valorEstimado) : '—') + '<small>' + (p.valorEstimado ? 'do edital' : 'sigiloso') + '</small></dd></div>' +
+      '<div class="lc-fact"><dt>Valor cotado</dt><dd class="num">' + (cot ? brl(cot.valor) : '—') + '<small>' + (cot ? 'em ' + d(cot.data) + ' por ' + esc(cot.autor) : 'sem cotação') + '</small></dd></div>' +
+      '<div class="lc-fact"><dt>Responsável</dt><dd>' + esc(p.responsavel || '—') + '<small>salvo em ' + d(p.eventos[0].data) + '</small></dd></div>' +
+      '</dl></header>';
+  }
+  function ultimoValor(p) { var r = null; p.eventos.forEach(function (e) { if (/^cotacao_/.test(e.tipo)) r = e; }); return r; }
+
+  /* ---------- faixa de situação ---------- */
+  function faixa(p) {
+    var x = p.desfecho, cls, tag, tit, txt, when, icon;
+    if (!x) {
+      var et = ETAPAS[idx(p.etapa)].nome, primeiro = evsDe(p, p.etapa)[0], u = p.eventos[p.eventos.length - 1];
+      cls = 'andamento'; icon = 'arrow'; tag = 'Em andamento'; tit = et + ' em andamento';
+      txt = 'Última ação: ' + esc(u.texto.toLowerCase()) + ' por ' + esc(u.autor) + ' em ' + d(u.data) + ', ' + h(u.data) + '.';
+      var n = dias(p.hoje, p.prazo);
+      if (n <= 3) txt += '<br><span class="lc-aviso">' + ico('alert', 14) + ' Prazo da proposta ' + (n <= 0 ? 'hoje' : 'em ' + n + ' dias') + ' — ' + dAno(p.prazo) + ', ' + h(p.prazo) + '. Ainda não há proposta.</span>';
+      when = '<b>' + et + '</b>desde ' + d(primeiro.data);
+    } else {
+      var D = DESFECHOS[x.tipo]; cls = D.fam; icon = D.ico;
+      tag = x.tipo === 'concluido' ? 'Concluído' : 'Encerrada';
+      tit = x.tipo === 'concluido' ? 'Empenhado e entregue' : D.nome;
+      txt = x.porque; var n2 = dias(x.data, p.hoje);
+      when = '<b>' + dAno(x.data) + '</b>' + (n2 === 0 ? 'hoje' : 'há ' + n2 + (n2 === 1 ? ' dia' : ' dias'));
+    }
+    return '<section class="lc-faixa lc-faixa--' + cls + '" role="status"><div class="lc-faixa-ico">' + ico(icon, 18) + '</div>' +
+      '<div class="lc-faixa-txt"><div class="lc-faixa-tag">' + tag + (x && x.tipo !== 'concluido' ? ' · parou em ' + ETAPAS[idx(p.etapa)].nome : '') + '</div><h3>' + tit + '</h3><p>' + txt + '</p></div>' +
+      '<div class="lc-faixa-when">' + when + '</div></section>';
+  }
+
+  /* ---------- etapas do ciclo ---------- */
+  function ciclo(p) {
+    var at = idx(p.etapa), x = p.desfecho, D = x && DESFECHOS[x.tipo];
+    return '<ol class="lc-ciclo" aria-label="Ciclo de licitação">' + ETAPAS.map(function (E, i) {
+      var evs = evsDe(p, E.id), c = '', dot = '', sub = '', label = '';
+      if (i < at) {
+        if (evs.length) { c = 'is-done'; dot = ico('check', 14); sub = d(evs[0].data); label = 'concluída'; }
+        else { c = 'is-done is-skip'; sub = 'sem registro'; label = 'pulada'; }
+      } else if (i === at) {
+        if (!x) { c = 'is-current'; sub = 'atual · desde ' + d(evs[0].data); label = 'atual'; }
+        else { c = 'is-stop f-' + D.fam; dot = ico(D.ico, 14); sub = D.curto + ' · ' + d(x.data); label = D.nome; }
+      } else {
+        c = 'is-after'; label = 'não alcançada';
+        if (!x && i === at + 1 && E.id === 'proposta') sub = 'prazo ' + d(p.prazo);
+        else sub = x ? 'não alcançada' : '';
+      }
+      return '<li class="lc-step ' + c + '" aria-label="' + E.nome + ': ' + label + '"><span class="lc-dot">' + dot + '</span>' +
+        '<div class="lc-step-name">' + E.nome + '</div><div class="lc-step-sub">' + (sub || '&nbsp;') + '</div></li>';
+    }).join('') + '</ol>';
+  }
+
+  /* ---------- linha do tempo ---------- */
+  function evento(e) {
+    var sys = !e.autor;
+    var val = e.valor != null ? '<div class="lc-ev-val num">' + brl(e.valor) + (e.valorNota ? '<small>' + esc(e.valorNota) + '</small>' : '') + '</div>' : '<div></div>';
+    return '<div class="lc-ev' + (sys ? ' lc-ev--sys' : '') + '">' +
+      (sys ? '<span class="lc-av lc-av--sys" title="Sistema">' + ico('gear', 14) + '</span>' : '<span class="lc-av" title="' + esc(e.autor) + '">' + ini(e.autor) + '</span>') +
+      '<div class="lc-ev-txt"><span class="t">' + esc(e.texto) + (sys ? '<span class="lc-tag-sys">sistema</span>' : '') + '</span>' +
+      '<span class="m">' + d(e.data) + ' · ' + h(e.data) + (sys ? '' : ' · ' + esc(e.autor)) + (e.nota ? ' · ' + esc(e.nota) : '') + '</span></div>' + val + '</div>';
+  }
+  function spark(vals) {
+    var w = 96, hgt = 28, mn = Math.min.apply(0, vals), mx = Math.max.apply(0, vals), pts = vals.map(function (v, i) {
+      return [(i / (vals.length - 1)) * (w - 4) + 2, hgt - 3 - ((v - mn) / (mx - mn || 1)) * (hgt - 6)];
+    });
+    var last = pts[pts.length - 1];
+    return '<svg class="lc-spark" viewBox="0 0 ' + w + ' ' + hgt + '" aria-hidden="true"><path d="M' + pts.map(function (p) { return p[0].toFixed(1) + ' ' + p[1].toFixed(1); }).join('L') + '"/><circle cx="' + last[0] + '" cy="' + last[1] + '" r="2.5"/></svg>';
+  }
+  function grupo(run, aberto) {
+    var autores = []; run.forEach(function (e) { if (autores.indexOf(e.autor) < 0) autores.push(e.autor); });
+    var porDia = {}, ordem = [];
+    run.forEach(function (e) { var k = e.data.slice(0, 10); if (!porDia[k]) { porDia[k] = []; ordem.push(k); } porDia[k].push(e); });
+    var rows = ordem.map(function (k) {
+      var es = porDia[k], au = []; es.forEach(function (e) { if (au.indexOf(e.autor) < 0) au.push(e.autor); });
+      return '<tr><td>' + d(k) + '</td><td>' + es.length + '×</td><td>' + au.map(esc).join(', ') + '</td><td class="num">' + brl(es[es.length - 1].valor) + '</td></tr>';
+    }).join('');
+    return '<details class="lc-grp"' + (aberto ? ' open' : '') + '><summary><span class="lc-grp-chev">' + ico('chev', 16) + '</span>' +
+      '<span class="lc-grp-txt"><b>' + run.length + ' atualizações intermediárias</b><span class="m">' + d(run[0].data) + ' – ' + d(run[run.length - 1].data) + ' · em ' + ordem.length + ' dias · ' + autores.map(esc).join(', ') + '</span></span>' +
+      spark(run.map(function (e) { return e.valor; })) +
+      '<span class="num" style="white-space:nowrap">' + brl(run[0].valor) + ' → ' + brl(run[run.length - 1].valor) + '</span></summary>' +
+      '<table class="lc-grp-tbl"><thead><tr><th>Dia</th><th>Salvamentos</th><th>Por</th><th>Valor ao fim do dia</th></tr></thead><tbody>' + rows + '</tbody></table></details>';
+  }
+  function linhaDoTempo(p, opts) {
+    opts = opts || {};
+    var stages = [], by = {};
+    p.eventos.forEach(function (e) { if (!by[e.etapa]) { by[e.etapa] = []; stages.push(e.etapa); } by[e.etapa].push(e); });
+    var html = stages.map(function (s) {
+      var evs = by[s], out = '', i = 0;
+      while (i < evs.length) {
+        if (evs[i].tipo === 'cotacao_atualizada') {
+          var j = i; while (j < evs.length && evs[j].tipo === 'cotacao_atualizada') j++;
+          var run = evs.slice(i, j);
+          if (run.length >= 3) { var last = run.pop(); out += grupo(run, opts.abrirGrupo); last = Object.assign({}, last, { texto: 'Última atualização da cotação' }); out += evento(last); }
+          else run.forEach(function (e) { out += evento(e); });
+          i = j;
+        } else { out += evento(evs[i]); i++; }
+      }
+      var a = evs[0].data, b = evs[evs.length - 1].data;
+      return '<div class="lc-tl-stage"><div class="lc-tl-stage-head"><h4>' + ETAPAS[idx(s)].nome + '</h4><span>' + d(a) + (d(a) !== d(b) ? ' – ' + d(b) : '') + ' · ' + evs.length + (evs.length === 1 ? ' evento' : ' eventos') + '</span></div>' + out + '</div>';
+    }).join('');
+    var x = p.desfecho, end;
+    if (x) { var D = DESFECHOS[x.tipo]; end = '<div class="lc-tl-end f-' + D.fam + '"><span class="lc-tl-end-dot">' + ico(D.ico, 14) + '</span><b>' + (x.tipo === 'concluido' ? 'Concluído' : 'Encerrada · ' + D.nome) + '</b><span class="sub">' + dAno(x.data) + (x.por ? ' · por ' + esc(x.por) : ' · registrado pelo sistema') + '</span></div>'; }
+    else { var nx = ETAPAS[idx(p.etapa) + 1]; end = '<div class="lc-tl-end f-andamento"><span class="lc-tl-end-dot"></span><b>Próximo: ' + (nx ? nx.nome : '—') + '</b><span class="sub">' + (nx && nx.id === 'proposta' ? 'enviar até ' + dAno(p.prazo) + ', ' + h(p.prazo) : '') + '</span></div>'; }
+    return '<div class="lc-tl">' + html + end + '</div>';
+  }
+
+  /* ---------- lateral ---------- */
+  function lateral(p) {
+    var out = '', cots = p.eventos.filter(function (e) { return /^cotacao_/.test(e.tipo); });
+    if (p.disputa) {
+      var r = p.disputa;
+      if (r.posicao === 1) out += '<div class="lc-card"><h5>Resultado da disputa</h5><dl class="lc-kv">' +
+        '<dt>Vencedor</dt><dd>Nós</dd><dt>Nosso lance final</dt><dd class="num">' + brl(r.nossoLance) + '</dd>' +
+        '<dt>2º colocado</dt><dd>' + esc(r.segundo) + '</dd><dt>Lance do 2º</dt><dd class="num">' + brl(r.precoSegundo) + '</dd>' +
+        '<dt>Participantes</dt><dd>' + r.participantes + '</dd></dl></div>';
+      else out += '<div class="lc-card"><h5>Resultado da disputa</h5><dl class="lc-kv">' +
+        '<dt>Vencedor</dt><dd>' + esc(r.vencedor) + '</dd><dt>Preço vencedor</dt><dd class="num">' + brl(r.precoVencedor) + '</dd>' +
+        '<dt>Nosso lance final</dt><dd class="num">' + brl(r.nossoLance) + '</dd><dt>Diferença</dt><dd class="num">+' + brl(r.nossoLance - r.precoVencedor) + ' (' + ((r.nossoLance / r.precoVencedor - 1) * 100).toFixed(1).replace('.', ',') + '%)</dd>' +
+        '<dt>Nossa posição</dt><dd>' + r.posicao + 'º de ' + r.participantes + '</dd></dl></div>';
+    }
+    if (p.empenho) {
+      var em = p.empenho;
+      out += '<div class="lc-card"><h5>Empenho</h5><dl class="lc-kv"><dt>Nota</dt><dd>' + esc(em.numero || '—') + '</dd><dt>Valor</dt><dd class="num">' + brl(em.valor) + '</dd>' +
+        '<dt>Situação</dt><dd>' + esc(em.situacao) + '</dd>' + (em.obs ? '<dt>Motivo</dt><dd style="font-weight:400">' + esc(em.obs) + '</dd>' : '') + '</dl></div>';
+    }
+    if (cots.length) {
+      var f = cots[cots.length - 1];
+      out += '<div class="lc-card"><h5>Cotação</h5><dl class="lc-kv"><dt>Valor cotado</dt><dd class="num">' + brl(f.valor) + '</dd>' +
+        (p.valorEstimado ? '<dt>Do estimado</dt><dd class="num">' + Math.round(f.valor / p.valorEstimado * 100) + '%</dd>' : '') +
+        '<dt>Salvamentos</dt><dd>' + cots.length + '</dd><dt>Última edição</dt><dd>' + d(f.data) + ', ' + h(f.data) + '</dd></dl></div>';
+    }
+    if (p.desfecho && p.desfecho.tipo === 'descartado') {
+      out += '<div class="lc-card"><h5>Descarte</h5><dl class="lc-kv"><dt>Por</dt><dd>' + esc(p.desfecho.por) + '</dd><dt>Quando</dt><dd>' + d(p.desfecho.data) + ', ' + h(p.desfecho.data) + '</dd>' +
+        '<dt>Motivo</dt><dd style="font-weight:400;color:var(--ink-muted)">' + esc(p.desfecho.motivo || 'não informado') + '</dd></dl></div>';
+    }
+    var pes = {}, ord = []; p.eventos.forEach(function (e) { if (e.autor) { if (!pes[e.autor]) { pes[e.autor] = 0; ord.push(e.autor); } pes[e.autor]++; } });
+    out += '<div class="lc-card"><h5>Pessoas</h5><ul class="lc-people">' + ord.map(function (n) { return '<li><span class="lc-av">' + ini(n) + '</span>' + esc(n) + '<small>' + pes[n] + (pes[n] === 1 ? ' ação' : ' ações') + '</small></li>'; }).join('') + '</ul></div>';
+    return out;
+  }
+
+  /* ---------- rodapé ---------- */
+  function rodape(p) {
+    var x = p.desfecho, temCot = p.eventos.some(function (e) { return /^cotacao_/.test(e.tipo); });
+    var reabrir = '<button class="lc-btn lc-btn--ghost" disabled title="Disponível em breve">' + ico('redo', 16) + ' Reabrir processo <span class="lc-soon">em breve</span></button>';
+    var exp = '<button class="lc-btn">' + ico('down', 16) + ' Exportar planilha</button>';
+    if (!x) return '<footer class="lc-foot"><button class="lc-btn lc-btn--danger">' + ico('trash', 16) + ' Descartar</button><span class="lc-foot-note"></span>' + exp +
+      '<button class="lc-btn lc-btn--primary">' + ico('doc', 16) + ' Abrir cotação</button></footer>';
+    var note = 'Somente consulta<span class="long"> — processo ' + (x.tipo === 'concluido' ? 'concluído' : 'encerrado') + (temCot ? '; a cotação abre só para leitura' : '') + '.</span>';
+    return '<footer class="lc-foot"><span class="lc-foot-note">' + ico('lock', 14) + ' <span>' + note + '</span></span>' + (x.tipo === 'concluido' ? '' : reabrir) + (temCot ? exp + '<button class="lc-btn lc-btn--primary">' + ico('doc', 16) + ' Ver cotação</button>' : '<button class="lc-btn lc-btn--primary">' + ico('ext', 16) + ' Abrir edital no PNCP</button>') + '</footer>';
+  }
+
+  function modal(p, opts) {
+    opts = opts || {};
+    return '<div class="lc lc-modal' + (opts.estatico ? ' is-static' : '') + '" role="dialog" aria-modal="true" aria-label="' + esc(p.objeto) + '">' + cabecalho(p) +
+      '<div class="lc-status">' + faixa(p) + ciclo(p) + '</div>' +
+      '<div class="lc-body"><div class="lc-main"><div class="lc-sec-title">Linha do tempo</div>' + linhaDoTempo(p, opts) + '</div><aside class="lc-aside">' + lateral(p) + '</aside></div>' +
+      rodape(p) + '</div>';
+  }
+
+  window.LC = { ETAPAS: ETAPAS, DESFECHOS: DESFECHOS, modal: modal, faixa: faixa, ciclo: ciclo, linhaDoTempo: linhaDoTempo, ico: ico };
+})();
+
+/* Exemplos para as prévias. Fazenda Rio Grande = caso real do briefing; os demais campos/casos são ilustrativos. */
+(function () {
+  var ANA = 'Ana Souza', BRUNO = 'Bruno Lima';
+  // 1 criação + 22 atualizações (31/08 → 13/09)
+  var saves = [
+    ['2026-08-31T10:58', 4923.97, ANA, 'cotacao_criada'],
+    ['2026-08-31T15:20', 18410.50, ANA], ['2026-08-31T17:44', 31877.12, ANA],
+    ['2026-09-01T09:31', 52300.00, ANA], ['2026-09-01T14:05', 66912.40, BRUNO],
+    ['2026-09-02T10:12', 88140.75, BRUNO], ['2026-09-02T16:48', 97355.10, ANA],
+    ['2026-09-03T11:03', 121480.00, ANA], ['2026-09-04T09:47', 140215.66, ANA], ['2026-09-04T18:10', 152990.31, BRUNO],
+    ['2026-09-08T10:22', 171402.80, ANA], ['2026-09-08T15:37', 189733.05, ANA],
+    ['2026-09-09T09:15', 214860.90, BRUNO], ['2026-09-09T17:02', 228114.47, ANA],
+    ['2026-09-10T11:40', 251390.00, ANA], ['2026-09-10T16:55', 263018.25, ANA],
+    ['2026-09-11T10:08', 279644.12, BRUNO], ['2026-09-11T14:30', 298114.50, ANA],
+    ['2026-09-12T10:21', 309870.00, ANA],
+    ['2026-09-13T09:44', 322415.38, ANA], ['2026-09-13T11:26', 334902.61, BRUNO], ['2026-09-13T16:03', 342777.90, ANA], ['2026-09-13T18:41', 351296.23, ANA]
+  ];
+  function cot(list) { return list.map(function (s) { return { tipo: s[3] || 'cotacao_atualizada', etapa: 'cotacao', texto: s[3] ? 'Cotação criada' : 'Cotação atualizada', autor: s[2], data: s[0], valor: s[1] }; }); }
+  var base = {
+    objeto: 'Registro de preços para aquisição de equipamentos médico-hospitalares para as unidades de saúde do município',
+    orgao: 'Prefeitura Municipal de Fazenda Rio Grande', uasg: '987412', cidade: 'Fazenda Rio Grande', uf: 'PR',
+    modalidade: 'Pregão Eletrônico', numero: 'nº 45/2026', plataforma: 'Compras.gov.br', prazo: '2026-09-14T09:00',
+    valorEstimado: 389740.00, responsavel: ANA, etapa: 'cotacao'
+  };
+  var salva = { tipo: 'oportunidade_salva', etapa: 'oportunidade', texto: 'Oportunidade salva', autor: ANA, data: '2026-08-31T09:14' };
+
+  var andamento = Object.assign({}, base, { hoje: '2026-09-12T11:00', desfecho: null,
+    eventos: [salva].concat(cot(saves.slice(0, 19))) });
+
+  var prazoCotacao = Object.assign({}, base, { hoje: '2026-10-04T10:00',
+    eventos: [salva].concat(cot(saves), [{ tipo: 'prazo_encerrado', etapa: 'cotacao', texto: 'Prazo de proposta encerrado sem proposta', autor: null, data: '2026-09-14T09:00' }]),
+    desfecho: { tipo: 'prazo_cotacao', data: '2026-09-14T09:00',
+      porque: 'A cotação estava pronta (R$ 351.296,23, última edição em 13/09 por Ana Souza), mas nenhuma proposta foi registrada até o prazo de 14/09, 09:00.' } });
+
+  var descartado = { objeto: 'Aquisição de gêneros alimentícios para a merenda escolar da rede municipal de ensino',
+    orgao: 'Prefeitura Municipal de Campo Largo', uasg: '987331', cidade: 'Campo Largo', uf: 'PR', modalidade: 'Pregão Eletrônico', numero: 'nº 112/2026',
+    plataforma: 'BLL Compras', prazo: '2026-09-18T09:00', valorEstimado: 612380.00, responsavel: BRUNO, etapa: 'oportunidade', hoje: '2026-10-04T10:00',
+    eventos: [
+      { tipo: 'oportunidade_salva', etapa: 'oportunidade', texto: 'Oportunidade salva', autor: BRUNO, data: '2026-09-02T08:51' },
+      { tipo: 'removida', etapa: 'oportunidade', texto: 'Removida da lista de Salvas', autor: ANA, data: '2026-09-03T14:12' }
+    ],
+    desfecho: { tipo: 'descartado', data: '2026-09-03T14:12', por: ANA, motivo: null,
+      porque: 'Ana Souza tirou o processo da lista em 03/09, às 14:12, ainda em Oportunidade. Nenhuma cotação foi feita.' } };
+
+  var disputa = { objeto: 'Aquisição de material de consumo odontológico para os centros de especialidades',
+    orgao: 'Consórcio Intermunicipal de Saúde do Vale do Iguaçu', uasg: '926540', cidade: 'União da Vitória', uf: 'PR', modalidade: 'Pregão Eletrônico', numero: 'nº 31/2026',
+    plataforma: 'Compras.gov.br', prazo: '2026-08-18T08:00', valorEstimado: 134900.00, responsavel: BRUNO, etapa: 'disputa', hoje: '2026-10-04T10:00',
+    eventos: [
+      { tipo: 'oportunidade_salva', etapa: 'oportunidade', texto: 'Oportunidade salva', autor: BRUNO, data: '2026-08-03T16:20' },
+      { tipo: 'cotacao_criada', etapa: 'cotacao', texto: 'Cotação criada', autor: BRUNO, data: '2026-08-04T09:02', valor: 41220.00 },
+      { tipo: 'cotacao_atualizada', etapa: 'cotacao', texto: 'Cotação atualizada', autor: BRUNO, data: '2026-08-05T14:40', valor: 88310.00 },
+      { tipo: 'cotacao_atualizada', etapa: 'cotacao', texto: 'Cotação atualizada', autor: ANA, data: '2026-08-06T10:15', valor: 119700.00 },
+      { tipo: 'cotacao_atualizada', etapa: 'cotacao', texto: 'Cotação atualizada', autor: BRUNO, data: '2026-08-07T17:30', valor: 127950.00 },
+      { tipo: 'cotacao_atualizada', etapa: 'cotacao', texto: 'Cotação atualizada', autor: BRUNO, data: '2026-08-10T11:05', valor: 128400.00 },
+      { tipo: 'proposta_enviada', etapa: 'proposta', texto: 'Proposta enviada na plataforma', autor: BRUNO, data: '2026-08-11T15:22', valor: 128400.00 },
+      { tipo: 'sessao_aberta', etapa: 'disputa', texto: 'Sessão pública aberta', autor: null, data: '2026-08-18T09:00' },
+      { tipo: 'lance', etapa: 'disputa', texto: 'Lance final registrado', autor: BRUNO, data: '2026-08-18T09:47', valor: 119850.00, valorNota: '9 lances' },
+      { tipo: 'resultado', etapa: 'disputa', texto: 'Item arrematado por Odontomed Distribuidora Ltda', autor: null, data: '2026-08-18T10:05', valor: 116230.00, valorNota: 'preço vencedor' }
+    ],
+    disputa: { vencedor: 'Odontomed Distribuidora Ltda', precoVencedor: 116230.00, nossoLance: 119850.00, posicao: 2, participantes: 7 },
+    desfecho: { tipo: 'perdido_disputa', data: '2026-08-18T10:05',
+      porque: 'Terminamos em 2º de 7. Odontomed Distribuidora Ltda venceu com R$ 116.230,00 — R$ 3.620,00 (3,1%) abaixo do nosso lance final.' } };
+
+  var semCotacao = { objeto: 'Contratação de serviços contínuos de manutenção predial preventiva e corretiva',
+    orgao: 'Prefeitura Municipal de Araucária', uasg: '987205', cidade: 'Araucária', uf: 'PR', modalidade: 'Pregão Eletrônico', numero: 'nº 78/2026',
+    plataforma: 'Compras.gov.br', prazo: '2026-08-28T09:00', valorEstimado: 248600.00, responsavel: BRUNO, etapa: 'oportunidade', hoje: '2026-10-04T10:00',
+    eventos: [
+      { tipo: 'oportunidade_salva', etapa: 'oportunidade', texto: 'Oportunidade salva', autor: BRUNO, data: '2026-08-20T11:37' },
+      { tipo: 'prazo_encerrado', etapa: 'oportunidade', texto: 'Prazo de proposta encerrado sem cotação', autor: null, data: '2026-08-28T09:00' }
+    ],
+    desfecho: { tipo: 'prazo_sem_cotacao', data: '2026-08-28T09:00',
+      porque: 'Salva por Bruno Lima em 20/08, mas nenhuma cotação foi criada nos 8 dias até o prazo da proposta (28/08, 09:00).' } };
+
+  function trilha(cot0, cot1, prop, lance, d) {
+    return [
+      { tipo: 'oportunidade_salva', etapa: 'oportunidade', texto: 'Oportunidade salva', autor: ANA, data: d[0] },
+      { tipo: 'cotacao_criada', etapa: 'cotacao', texto: 'Cotação criada', autor: ANA, data: d[1], valor: cot0 },
+      { tipo: 'cotacao_atualizada', etapa: 'cotacao', texto: 'Cotação atualizada', autor: BRUNO, data: d[2], valor: (cot0 + cot1) / 2 },
+      { tipo: 'cotacao_atualizada', etapa: 'cotacao', texto: 'Cotação atualizada', autor: ANA, data: d[3], valor: cot1 * 0.97 },
+      { tipo: 'cotacao_atualizada', etapa: 'cotacao', texto: 'Cotação atualizada', autor: ANA, data: d[4], valor: cot1 },
+      { tipo: 'proposta_enviada', etapa: 'proposta', texto: 'Proposta enviada na plataforma', autor: ANA, data: d[5], valor: prop },
+      { tipo: 'sessao_aberta', etapa: 'disputa', texto: 'Sessão pública aberta', autor: null, data: d[6] },
+      { tipo: 'lance', etapa: 'disputa', texto: 'Lance final registrado', autor: ANA, data: d[7], valor: lance, valorNota: '6 lances' },
+      { tipo: 'resultado', etapa: 'disputa', texto: 'Item arrematado pela nossa empresa', autor: null, data: d[8], valor: lance, valorNota: 'preço vencedor' }
+    ];
+  }
+  var empenhoFalhou = { objeto: 'Aquisição de mobiliário escolar (conjuntos aluno e mesas de professor) para a rede estadual',
+    orgao: 'Secretaria de Estado da Educação do Paraná', uasg: '925011', cidade: 'Curitiba', uf: 'PR', modalidade: 'Pregão Eletrônico', numero: 'nº 204/2026',
+    plataforma: 'Compras.gov.br', prazo: '2026-09-08T09:00', valorEstimado: 398000.00, responsavel: ANA, etapa: 'empenho', hoje: '2026-10-04T10:00',
+    eventos: trilha(96400, 352300, 352300, 342100, ['2026-08-24T10:02','2026-08-25T09:15','2026-08-27T16:40','2026-09-02T11:05','2026-09-03T17:20','2026-09-04T14:48','2026-09-08T09:00','2026-09-08T09:52','2026-09-08T10:30']).concat([
+      { tipo: 'homologado', etapa: 'empenho', texto: 'Resultado homologado pelo órgão', autor: null, data: '2026-09-15T16:10' },
+      { tipo: 'empenho_cancelado', etapa: 'empenho', texto: 'Nota de empenho cancelada pelo órgão', autor: null, data: '2026-09-30T16:00', nota: 'dotação orçamentária insuficiente' }
+    ]),
+    disputa: { posicao: 1, nossoLance: 342100, segundo: 'Escolar Sul Móveis Ltda', precoSegundo: 349800, participantes: 9 },
+    empenho: { numero: '2026NE001342', valor: 342100, situacao: 'Cancelado em 30/09', obs: 'Dotação orçamentária insuficiente' },
+    desfecho: { tipo: 'falhou_empenho', data: '2026-09-30T16:00',
+      porque: 'Vencemos a disputa com R$ 342.100,00 e o resultado foi homologado em 15/09, mas o órgão cancelou a nota de empenho em 30/09 por dotação orçamentária insuficiente.' } };
+
+  var concluido = { objeto: 'Aquisição de insumos e reagentes para o laboratório de análises clínicas',
+    orgao: 'Hospital Municipal de São José dos Pinhais', uasg: '987560', cidade: 'São José dos Pinhais', uf: 'PR', modalidade: 'Pregão Eletrônico', numero: 'nº 52/2026',
+    plataforma: 'BLL Compras', prazo: '2026-08-14T09:00', valorEstimado: 187500.00, responsavel: ANA, etapa: 'empenho', hoje: '2026-10-04T10:00',
+    eventos: trilha(38200, 171900, 171900, 164750, ['2026-07-30T08:40','2026-07-31T10:10','2026-08-04T15:00','2026-08-10T11:30','2026-08-11T18:05','2026-08-12T10:20','2026-08-14T09:00','2026-08-14T09:41','2026-08-14T10:12']).concat([
+      { tipo: 'empenho_emitido', etapa: 'empenho', texto: 'Nota de empenho 2026NE000871 registrada', autor: BRUNO, data: '2026-08-22T14:30', valor: 164750 },
+      { tipo: 'entrega', etapa: 'empenho', texto: 'Entrega confirmada pelo órgão', autor: ANA, data: '2026-09-05T11:30', nota: 'nota fiscal 18.442' }
+    ]),
+    disputa: { posicao: 1, nossoLance: 164750, segundo: 'LabMais Diagnósticos Ltda', precoSegundo: 167200, participantes: 6 },
+    empenho: { numero: '2026NE000871', valor: 164750, situacao: 'Entregue em 05/09' },
+    desfecho: { tipo: 'concluido', data: '2026-09-05T11:30', por: ANA,
+      porque: 'Vencemos a disputa com R$ 164.750,00 (5,8% abaixo da proposta), o empenho saiu em 22/08 e a entrega foi confirmada em 05/09.' } };
+
+  var desclassificada = { objeto: 'Aquisição de notebooks e monitores para os gabinetes e setores administrativos',
+    orgao: 'Câmara Municipal de Londrina', uasg: '987620', cidade: 'Londrina', uf: 'PR', modalidade: 'Pregão Eletrônico', numero: 'nº 19/2026',
+    plataforma: 'Compras.gov.br', prazo: '2026-09-22T09:00', valorEstimado: 286400.00, responsavel: BRUNO, etapa: 'proposta', hoje: '2026-10-04T10:00',
+    eventos: [
+      { tipo: 'oportunidade_salva', etapa: 'oportunidade', texto: 'Oportunidade salva', autor: BRUNO, data: '2026-09-08T09:25' },
+      { tipo: 'cotacao_criada', etapa: 'cotacao', texto: 'Cotação criada', autor: BRUNO, data: '2026-09-09T10:40', valor: 61200.00 },
+      { tipo: 'cotacao_atualizada', etapa: 'cotacao', texto: 'Cotação atualizada', autor: ANA, data: '2026-09-11T15:12', valor: 189450.00 },
+      { tipo: 'cotacao_atualizada', etapa: 'cotacao', texto: 'Cotação atualizada', autor: BRUNO, data: '2026-09-15T11:03', valor: 251300.00 },
+      { tipo: 'cotacao_atualizada', etapa: 'cotacao', texto: 'Cotação atualizada', autor: BRUNO, data: '2026-09-17T17:48', valor: 263980.00 },
+      { tipo: 'proposta_enviada', etapa: 'proposta', texto: 'Proposta enviada na plataforma', autor: BRUNO, data: '2026-09-19T14:05', valor: 263980.00 },
+      { tipo: 'desclassificada', etapa: 'proposta', texto: 'Proposta desclassificada pelo pregoeiro', autor: null, data: '2026-09-22T10:40', nota: 'catálogo técnico do monitor não anexado' }
+    ],
+    desfecho: { tipo: 'desclassificada', data: '2026-09-22T10:40',
+      porque: 'A proposta (R$ 263.980,00) foi enviada no prazo, mas o pregoeiro a desclassificou em 22/09, antes da disputa: faltou o catálogo técnico do monitor exigido no item 7.3 do edital.' } };
+
+  window.LC_DATA = { andamento: andamento, prazoCotacao: prazoCotacao, descartado: descartado, disputa: disputa, semCotacao: semCotacao, empenhoFalhou: empenhoFalhou, concluido: concluido, desclassificada: desclassificada };
+})();
+
+/* Licita — modal do processo encerrado, numa tela só: fases clicáveis + linha do tempo em zigue-zague. */
+(function () {
+  var ETAPAS = [
+    { id: 'oportunidade', nome: 'Oportunidade' }, { id: 'cotacao', nome: 'Cotação' }, { id: 'proposta', nome: 'Proposta' },
+    { id: 'disputa', nome: 'Disputa' }, { id: 'empenho', nome: 'Empenho' }
+  ];
+  var DESF = {
+    descartado:        { fam: 'neutral', nome: 'Descartado', curto: 'Descartado', ico: 'trash' },
+    prazo_sem_cotacao: { fam: 'warn', nome: 'Prazo perdido sem cotação', curto: 'Prazo perdido', ico: 'clock' },
+    prazo_cotacao:     { fam: 'warn', nome: 'Prazo perdido na cotação', curto: 'Prazo perdido', ico: 'clock' },
+    desclassificada:   { fam: 'danger', nome: 'Proposta desclassificada', curto: 'Desclassificada', ico: 'x' },
+    perdido_disputa:   { fam: 'danger', nome: 'Não venceu na disputa', curto: 'Não venceu', ico: 'x' },
+    falhou_empenho:    { fam: 'danger', nome: 'Falhou no empenho', curto: 'Empenho falhou', ico: 'x' },
+    concluido:         { fam: 'success', nome: 'Concluído', curto: 'Concluído', ico: 'check' }
+  };
+  var P = {
+    x: 'M6 6l12 12M18 6L6 18', check: 'M5 12.5l4.5 4.5L19 7', clock: 'M12 7v5l3 2M12 21a9 9 0 1 0 0-18 9 9 0 0 0 0 18z',
+    trash: 'M4 7h16M9 7V4h6v3M6 7l1 13h10l1-13', ext: 'M14 4h6v6M20 4l-9 9M18 14v5a1 1 0 0 1-1 1H5a1 1 0 0 1-1-1V7a1 1 0 0 1 1-1h5',
+    close: 'M6 6l12 12M18 6L6 18', down: 'M12 4v11M7 10l5 5 5-5M5 20h14', doc: 'M7 3h7l5 5v13H7zM14 3v5h5M10 13h6M10 17h6',
+    lock: 'M7 11V8a5 5 0 0 1 10 0v3M5 11h14v10H5z', redo: 'M4 12a8 8 0 1 0 2.3-5.6M4 4v4h4',
+    gear: 'M12 15a3 3 0 1 0 0-6 3 3 0 0 0 0 6zM12 2v3M12 19v3M2 12h3M19 12h3M4.9 4.9l2.1 2.1M17 17l2.1 2.1M4.9 19.1L7 17M17 7l2.1-2.1',
+    left: 'M15 6l-6 6 6 6', right: 'M9 6l6 6-6 6', stack: 'M4 8l8-4 8 4-8 4zM4 12l8 4 8-4M4 16l8 4 8-4'
+  };
+  function ico(n, s) { s = s || 16; return '<svg width="' + s + '" height="' + s + '" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="' + P[n] + '"/></svg>'; }
+  function esc(s) { return String(s == null ? '' : s).replace(/[&<>"]/g, function (c) { return { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]; }); }
+  function brl(v) { return 'R$ ' + v.toFixed(2).replace('.', ',').replace(/\B(?=(\d{3})+(?!\d))/g, '.'); }
+  function d(i) { return i.slice(8, 10) + '/' + i.slice(5, 7); }
+  function dA(i) { return d(i) + '/' + i.slice(0, 4); }
+  function h(i) { return i.slice(11, 16); }
+  function dh(i) { return d(i) + ', ' + h(i); }
+  function dias(a, b) { return Math.round((new Date(b.slice(0, 10)) - new Date(a.slice(0, 10))) / 864e5); }
+  function ini(n) { return n.split(' ').map(function (x) { return x[0]; }).slice(0, 2).join(''); }
+  function idx(id) { for (var i = 0; i < ETAPAS.length; i++) if (ETAPAS[i].id === id) return i; return -1; }
+  function de(p, e) { return p.eventos.filter(function (x) { return x.etapa === e; }); }
+  function pct(a, b) { return Math.round(a / b * 100) + '%'; }
+  function uniq(a) { var o = []; a.forEach(function (x) { if (x && o.indexOf(x) < 0) o.push(x); }); return o; }
+  function dd(n) { return n + (n === 1 ? ' dia' : ' dias'); }
+  function lista(a) { return a.length < 2 ? a.join('') : a.slice(0, -1).join(', ') + ' e ' + a[a.length - 1]; }
+
+  /* ---------- estado de cada fase ---------- */
+  function estado(p, i) {
+    var at = idx(p.etapa), x = p.desfecho, D = DESF[x.tipo], evs = de(p, ETAPAS[i].id);
+    if (i < at) return evs.length ? { c: 'done', sub: d(evs[0].data), rot: 'Concluída' } : { c: 'skip', sub: 'sem registro', rot: 'Sem registro' };
+    if (i === at) return x.tipo === 'concluido' ? { c: 'done end-ok', sub: 'Concluído · ' + d(x.data), rot: 'Concluída', fam: 'success' }
+      : { c: 'stop', sub: D.curto + ' · ' + d(x.data), rot: 'Parou aqui', fam: D.fam };
+    return { c: 'after', sub: 'não alcançada', rot: 'Não alcançada' };
+  }
+
+  /* ---------- cabeçalho ---------- */
+  function cabecalho(p) {
+    var cots = p.eventos.filter(function (e) { return /^cotacao_/.test(e.tipo); }), c = cots[cots.length - 1];
+    function f(l, v, s) { return '<div class="lz-fact"><dt>' + l + '</dt><dd>' + v + (s ? '<small>' + s + '</small>' : '') + '</dd></div>'; }
+    return '<header class="lz-head"><div class="lz-head-l"><div class="lz-chips">' +
+      '<span class="lz-chip"><b>' + esc(p.modalidade) + '</b> ' + esc(p.numero) + '</span><span class="lz-chip">UASG <b>' + esc(p.uasg) + '</b></span>' +
+      '<span class="lz-chip">' + esc(p.cidade) + '/' + esc(p.uf) + '</span>' +
+      '<a class="lz-link" href="#">' + ico('ext', 13) + 'PNCP</a><a class="lz-link" href="#">' + ico('ext', 13) + esc(p.plataforma) + '</a></div>' +
+      '<h2 class="lz-title" title="' + esc(p.objeto) + '">' + esc(p.objeto) + '</h2><div class="lz-orgao">' + esc(p.orgao) + '</div></div>' +
+      '<dl class="lz-facts">' + f('Prazo da proposta', dA(p.prazo) + ' · ' + h(p.prazo)) +
+      f('Valor estimado', '<span class="num">' + brl(p.valorEstimado) + '</span>') +
+      f('Valor cotado', c ? '<span class="num">' + brl(c.valor) + '</span>' : '—') +
+      f('Responsável', esc(p.responsavel)) + '</dl>' +
+      '<button class="lz-x" aria-label="Fechar">' + ico('close', 18) + '</button></header>';
+  }
+
+  /* ---------- faixa ---------- */
+  function faixa(p) {
+    var x = p.desfecho, D = DESF[x.tipo], n = dias(x.data, p.hoje);
+    var tag = x.tipo === 'concluido' ? '' : 'Encerrada em ' + ETAPAS[idx(p.etapa)].nome;
+    return '<section class="lz-faixa f-' + D.fam + '" role="status"><span class="lz-faixa-ico">' + ico(D.ico, 16) + '</span>' +
+      '<div class="lz-faixa-txt"><b>' + (x.tipo === 'concluido' ? 'Concluído — empenhado e entregue' : D.nome) + '</b>' + (tag ? '<span class="lz-faixa-tag">' + tag + '</span>' : '') +
+      '<p>' + esc(x.porque) + '</p></div><div class="lz-faixa-when"><b>' + dA(x.data) + '</b>' + (n === 0 ? 'hoje' : 'há ' + n + (n === 1 ? ' dia' : ' dias')) + '</div></section>';
+  }
+
+  /* ---------- linha de fases (clicável) ---------- */
+  function fases(p, sel) {
+    return '<div class="lz-fases" role="tablist" aria-label="Fases do ciclo">' + ETAPAS.map(function (E, i) {
+      var s = estado(p, i), D = s.fam ? ' f-' + s.fam : '';
+      var dot = s.c.indexOf('done') === 0 ? ico('check', 13) : s.c === 'stop' ? ico(DESF[p.desfecho.tipo].ico, 13) : '';
+      return '<button class="lz-fase is-' + s.c.split(' ')[0] + (s.c.indexOf('end-ok') > 0 ? ' is-endok' : '') + D + (i === sel ? ' is-sel' : '') + '" role="tab" aria-selected="' + (i === sel) + '" data-i="' + i + '">' +
+        '<span class="lz-fase-dot">' + dot + '</span><span class="lz-fase-n"><span class="lz-fase-i">' + (i + 1) + '. </span>' + E.nome + '</span><span class="lz-fase-s">' + s.sub + '</span></button>';
+    }).join('') + '</div>';
+  }
+
+  /* ---------- nós da linha do tempo (salvamentos agrupados) ---------- */
+  function nos(p) {
+    var out = [], ev = p.eventos, i = 0;
+    while (i < ev.length) {
+      if (ev[i].tipo === 'cotacao_atualizada') {
+        var j = i; while (j < ev.length && ev[j].tipo === 'cotacao_atualizada') j++;
+        var run = ev.slice(i, j);
+        if (run.length >= 3) {
+          var last = run.pop();
+          out.push({ k: 'grp', etapa: 'cotacao', n: run.length, a: run[0], b: run[run.length - 1], autores: uniq(run.map(function (e) { return e.autor; })) });
+          out.push({ k: 'ev', etapa: last.etapa, e: Object.assign({}, last, { texto: 'Última atualização' }) });
+        } else run.forEach(function (e) { out.push({ k: 'ev', etapa: e.etapa, e: e }); });
+        i = j;
+      } else { out.push({ k: 'ev', etapa: ev[i].etapa, e: ev[i] }); i++; }
+    }
+    out.push({ k: 'end', etapa: p.etapa });
+    return out;
+  }
+
+  function serpentina(p, sel, W, H) {
+    var N = nos(p), n = N.length;
+    var RMIN = 128, avail = W - 2 * 96;
+    var rows = Math.max(1, Math.ceil(n / 5)), maxRows = Math.max(1, Math.floor((H - 110) / RMIN) + 1);
+    var maxPer = Math.max(2, Math.floor(avail / 126) + 1);
+    if (rows > maxRows) rows = maxRows;
+    var per = Math.ceil(n / rows);
+    if (per > maxPer) { per = maxPer; rows = Math.ceil(n / per); }
+    var step = per > 1 ? Math.min(280, avail / (per - 1)) : 0;
+    var padX = (W - (per - 1) * step) / 2;
+    var rowH = rows > 1 ? Math.max(RMIN, Math.min(160, (H - 120) / (rows - 1))) : RMIN;
+    var contentH = (rows - 1) * rowH + 110, top = Math.max(44, (H - contentH) / 2 + 30);
+    var pos = N.map(function (_, k) {
+      var r = Math.floor(k / per), c = k % per;
+      return { x: r % 2 === 0 ? padX + c * step : W - padX - c * step, y: top + r * rowH, r: r };
+    });
+    var selId = ETAPAS[sel].id, D = DESF[p.desfecho.tipo];
+    var svg = '';
+    for (var k = 1; k < n; k++) {
+      var a = pos[k - 1], b = pos[k], et = N[k].k === 'end' ? N[k - 1].etapa : N[k].etapa;
+      var cls = 'lz-seg' + (et === selId ? ' is-sel' : '') + (N[k].k === 'end' ? ' is-end f-' + D.fam : '');
+      var dpath = a.r === b.r ? 'M' + a.x + ' ' + a.y + 'L' + b.x + ' ' + b.y
+        : 'M' + a.x + ' ' + a.y + 'A' + rowH / 2 + ' ' + rowH / 2 + ' 0 0 ' + (a.r % 2 === 0 ? 1 : 0) + ' ' + b.x + ' ' + b.y;
+      svg += '<path class="' + cls + '" d="' + dpath + '"/>';
+    }
+    var lastEt = null, html = '';
+    N.forEach(function (o, k) {
+      var q = pos[k], on = o.etapa === selId || o.k === 'end' && p.etapa === selId, cls = 'lz-node' + (on ? ' is-on' : ' is-off');
+      var chip = '';
+      if (o.k !== 'end' && o.etapa !== lastEt) { chip = '<span class="lz-node-et">' + ETAPAS[idx(o.etapa)].nome + '</span>'; lastEt = o.etapa; }
+      var mark, t1, t2, t3 = '';
+      if (o.k === 'ev') {
+        var e = o.e, sys = !e.autor;
+        mark = sys ? '<span class="lz-m lz-m--sys">' + ico('gear', 14) + '</span>' : '<span class="lz-m">' + ini(e.autor) + '</span>';
+        t1 = esc(e.texto); t2 = d(e.data) + ' · ' + (sys ? 'sistema' : esc(e.autor.split(' ')[0]));
+        if (e.valor != null) t3 = '<span class="num">' + brl(e.valor) + '</span>';
+        if (sys) cls += ' is-sys';
+      } else if (o.k === 'grp') {
+        mark = '<span class="lz-m lz-m--grp">' + o.n + '×</span>';
+        t1 = o.n + ' atualizações'; t2 = d(o.a.data) + '–' + d(o.b.data) + ' · ' + o.autores.map(function (a) { return a.split(' ')[0]; }).join(', ');
+        t3 = '<span class="num">→ ' + brl(o.b.valor) + '</span>';
+      } else {
+        mark = '<span class="lz-m lz-m--end f-' + D.fam + '">' + ico(D.ico, 16) + '</span>';
+        t1 = '<b>' + (p.desfecho.tipo === 'concluido' ? 'Concluído' : D.nome) + '</b>'; t2 = dA(p.desfecho.data); cls += ' is-end';
+      }
+      html += '<div class="' + cls + '" style="left:' + q.x + 'px;top:' + q.y + 'px" data-et="' + idx(o.etapa) + '">' + chip + mark +
+        '<span class="lz-node-t">' + t1 + '</span><span class="lz-node-m">' + t2 + '</span>' + (t3 ? '<span class="lz-node-v">' + t3 + '</span>' : '') + '</div>';
+    });
+    var hgt = top + (rows - 1) * rowH + 100;
+    return { html: '<svg class="lz-svg" width="' + W + '" height="' + hgt + '" aria-hidden="true">' + svg + '</svg>' + html, h: hgt };
+  }
+
+  /* ---------- narração da fase selecionada ---------- */
+  function pontos(p, i) {
+    var E = ETAPAS[i], evs = de(p, E.id), s = estado(p, i), x = p.desfecho, out = [];
+    function find(t) { for (var k = 0; k < evs.length; k++) if (evs[k].tipo === t) return evs[k]; }
+    if (s.c === 'after') return { pts: ['Etapa não alcançada.', 'O processo encerrou em <b>' + ETAPAS[idx(p.etapa)].nome + '</b> — ' + DESF[x.tipo].nome.toLowerCase() + ', em ' + dA(x.data) + '.'] };
+    if (s.c === 'skip') return { pts: ['Nenhum registro nesta etapa.', 'O processo seguiu direto para a etapa seguinte — o sistema avisa, mas não trava.'] };
+    var nx = ETAPAS[i + 1] && de(p, ETAPAS[i + 1].id)[0];
+    if (E.id === 'oportunidade') {
+      var sv = find('oportunidade_salva'), rm = find('removida'), pz = find('prazo_encerrado');
+      out.push('Edital salvo por <b>' + esc(sv.autor) + '</b> em ' + dh(sv.data) + '.');
+      out.push('Prazo da proposta: <b>' + dA(p.prazo) + ', ' + h(p.prazo) + '</b> — ' + dias(sv.data, p.prazo) + ' dias depois de salvo.');
+      if (rm) out.push('Removido da lista por <b>' + esc(rm.autor) + '</b> em ' + dh(rm.data) + ', ' + dd(dias(sv.data, rm.data)) + ' depois. Motivo não informado.');
+      if (pz) out.push('Ficou ' + dd(dias(sv.data, pz.data)) + ' sem cotação até o prazo vencer.');
+      if (nx) out.push('Seguiu para Cotação em ' + d(nx.data) + (dias(sv.data, nx.data) ? ', ' + dd(dias(sv.data, nx.data)) + ' depois.' : ', no mesmo dia.'));
+    }
+    if (E.id === 'cotacao') {
+      var cs = evs.filter(function (e) { return /^cotacao_/.test(e.tipo); }), c0 = cs[0], cf = cs[cs.length - 1], pz2 = find('prazo_encerrado');
+      out.push('Cotação criada por <b>' + esc(c0.autor) + '</b> em ' + dh(c0.data) + ' com <span class="num">' + brl(c0.valor) + '</span>.');
+      out.push('<b>' + cs.length + ' salvamentos</b> em ' + (dias(c0.data, cf.data) + 1) + ' dias, por ' + lista(uniq(cs.map(function (e) { return e.autor; }))) + '.');
+      out.push('Valor final <b class="num">' + brl(cf.valor) + '</b> — ' + pct(cf.valor, p.valorEstimado) + ' do estimado, em ' + dh(cf.data) + '.');
+      if (pz2) out.push('Prazo venceu ' + dd(dias(cf.data, pz2.data)) + ' após a última edição, sem proposta.');
+      if (nx) out.push('Virou proposta em ' + d(nx.data) + '.');
+    }
+    if (E.id === 'proposta') {
+      var pr = find('proposta_enviada');
+      out.push('Proposta enviada por <b>' + esc(pr.autor) + '</b> em ' + dh(pr.data) + ': <span class="num">' + brl(pr.valor) + '</span> (' + pct(pr.valor, p.valorEstimado) + ' do estimado).');
+      out.push('Dentro do prazo — ' + dd(dias(pr.data, p.prazo)) + ' antes de ' + dA(p.prazo) + ', ' + h(p.prazo) + '.');
+      var dc = find('desclassificada'); if (dc) out.push('<b>Desclassificada</b> pelo pregoeiro em ' + dh(dc.data) + (dc.nota ? ' — ' + esc(dc.nota) : '') + '.');
+    }
+    if (E.id === 'disputa') {
+      var se = find('sessao_aberta'), la = find('lance'), r = p.disputa;
+      if (se) out.push('Sessão pública aberta em ' + dh(se.data) + '.');
+      if (la) out.push('Lance final de <b class="num">' + brl(la.valor) + '</b> por ' + esc(la.autor) + (la.valorNota ? ' (' + la.valorNota + ')' : '') + '.');
+      if (r && r.posicao === 1) out.push('<b>Vencemos</b> entre ' + r.participantes + ' participantes. 2º colocado: ' + esc(r.segundo) + ' com <span class="num">' + brl(r.precoSegundo) + '</span>.');
+      else if (r) out.push('Vencedor: <b>' + esc(r.vencedor) + '</b> com <span class="num">' + brl(r.precoVencedor) + '</span> — ' + brl(r.nossoLance - r.precoVencedor) + ' (' + ((r.nossoLance / r.precoVencedor - 1) * 100).toFixed(1).replace('.', ',') + '%) abaixo do nosso lance. Ficamos em ' + r.posicao + 'º de ' + r.participantes + '.');
+    }
+    if (E.id === 'empenho') {
+      evs.forEach(function (e) { out.push(esc(e.texto) + ' em ' + dh(e.data) + (e.autor ? ' por <b>' + esc(e.autor) + '</b>' : ' (sistema)') + (e.nota ? ' — ' + esc(e.nota) : '') + (e.valor ? ': <span class="num">' + brl(e.valor) + '</span>' : '') + '.'); });
+    }
+    return { pts: out, porque: s.c === 'stop' || s.c.indexOf('end-ok') > 0 ? x.porque : null, fam: s.fam };
+  }
+  function narracao(p, i) {
+    var E = ETAPAS[i], s = estado(p, i), evs = de(p, E.id), r = pontos(p, i);
+    var per = evs.length ? d(evs[0].data) + (d(evs[0].data) !== d(evs[evs.length - 1].data) ? ' – ' + d(evs[evs.length - 1].data) : '') + ' · ' + evs.length + (evs.length === 1 ? ' evento' : ' eventos') : '';
+    return '<div class="lz-narr-head"><span class="lz-narr-k">Fase ' + (i + 1) + ' de 5</span><h3>' + E.nome + '</h3>' +
+      '<span class="lz-pill is-' + s.c.split(' ')[0] + (s.fam ? ' f-' + s.fam : '') + '">' + s.rot + '</span>' + (per ? '<span class="lz-narr-per">' + per + '</span>' : '') + '</div>' +
+      '<ol class="lz-pts">' + r.pts.map(function (t) { return '<li>' + t + '</li>'; }).join('') + '</ol>' +
+      (r.porque ? '<div class="lz-porque f-' + r.fam + '"><b>' + (p.desfecho.tipo === 'concluido' ? 'Como terminou' : 'Por que parou aqui') + '</b>' + esc(r.porque) + '</div>' : '') +
+      '<div class="lz-narr-nav"><button class="lz-nav" data-go="-1"' + (i === 0 ? ' disabled' : '') + '>' + ico('left', 16) + ' Anterior</button>' +
+      '<button class="lz-nav" data-go="1"' + (i === 4 ? ' disabled' : '') + '>Próxima ' + ico('right', 16) + '</button></div>';
+  }
+
+  function rodape(p) {
+    var temCot = p.eventos.some(function (e) { return /^cotacao_/.test(e.tipo); }), fim = p.desfecho.tipo === 'concluido';
+    return '<footer class="lz-foot"><span class="lz-foot-note">' + ico('lock', 14) + ' Somente consulta' + (temCot ? ' · a cotação abre só para leitura' : '') + '<span class="lz-kbd">← → navegam pelas fases</span></span>' +
+      (fim ? '' : '<button class="lz-btn lz-btn--ghost" disabled title="Disponível em breve">' + ico('redo', 16) + ' Reabrir processo <span class="lz-soon">em breve</span></button>') +
+      (temCot ? '<button class="lz-btn">' + ico('down', 16) + ' Exportar planilha</button><button class="lz-btn lz-btn--primary">' + ico('doc', 16) + ' Ver cotação</button>'
+        : '<button class="lz-btn lz-btn--primary">' + ico('ext', 16) + ' Abrir edital no PNCP</button>') + '</footer>';
+  }
+
+  function montar(root, p) {
+    var sel = idx(p.etapa);
+    root.innerHTML = '<div class="lc lz lz--v" role="dialog" aria-modal="true" aria-label="' + esc(p.objeto) + '" tabindex="-1">' + cabecalho(p) +
+      '<div class="lz-scroll">' + faixa(p) + '<div class="lz-fases-wrap"></div>' +
+      '<div class="lz-vbody"><div class="lz-vtl"><div class="lc-sec-title">Linha do tempo</div>' + LC.linhaDoTempo(p) + '</div>' +
+      '<aside class="lz-narr" aria-live="polite"></aside></div></div>' + rodape(p) + '</div>';
+    var M = root.firstChild, sc = M.querySelector('.lz-scroll'), fw = M.querySelector('.lz-fases-wrap');
+    var secs = [].slice.call(M.querySelectorAll('.lc-tl-stage'));
+    secs.forEach(function (el) {
+      var nome = el.querySelector('h4').textContent;
+      for (var i = 0; i < ETAPAS.length; i++) if (ETAPAS[i].nome === nome) el.dataset.et = i;
+      el.querySelector('.lc-tl-stage-head').insertAdjacentHTML('beforeend', '<span class="lz-v-status"></span>');
+    });
+    function draw(rolar) {
+      fw.innerHTML = fases(p, sel);
+      M.querySelector('.lz-narr').innerHTML = narracao(p, sel);
+      var alvo = null;
+      secs.forEach(function (el) {
+        var on = +el.dataset.et === sel; el.classList.toggle('is-sel', on); el.classList.toggle('is-dim', !on);
+        var st = estado(p, +el.dataset.et); el.querySelector('.lz-v-status').innerHTML = '<span class="lz-pill is-' + st.c.split(' ')[0] + (st.fam ? ' f-' + st.fam : '') + '">' + st.rot + '</span>';
+        if (on) alvo = el;
+      });
+      var end = M.querySelector('.lc-tl-end'); if (end) end.classList.toggle('is-dim', sel !== idx(p.etapa));
+      if (rolar) {
+        var y = alvo ? alvo.getBoundingClientRect().top - sc.getBoundingClientRect().top + sc.scrollTop - fw.offsetHeight - 16
+          : M.querySelector('.lz-vbody').offsetTop - fw.offsetHeight - 8;
+        sc.scrollTo({ top: Math.max(0, y), behavior: 'smooth' });
+      }
+    }
+    function go(i) { sel = Math.max(0, Math.min(4, i)); draw(true); }
+    M.addEventListener('click', function (ev) {
+      if (ev.target.closest('summary')) return;
+      var b = ev.target.closest('[data-i]'); if (b) return go(+b.dataset.i);
+      var g = ev.target.closest('[data-go]'); if (g) return go(sel + +g.dataset.go);
+      var s2 = ev.target.closest('.lc-tl-stage[data-et]'); if (s2 && +s2.dataset.et !== sel) { sel = +s2.dataset.et; draw(false); }
+    });
+    M.addEventListener('keydown', function (ev) { if (ev.key === 'ArrowRight') go(sel + 1); if (ev.key === 'ArrowLeft') go(sel - 1); });
+    draw(false);
+    M.focus({ preventScroll: true });
+    return M;
+  }
+
+  window.LZ = { montar: montar };
+})();
+
+function show(k){ LZ.montar(document.getElementById('stage'), LC_DATA[k]);
+  document.querySelectorAll('.pv-tab').forEach(function(b){ b.setAttribute('aria-pressed', String(b.dataset.k===k)); }); }
+document.querySelectorAll('.pv-tab').forEach(function(b){ b.onclick=function(){ show(b.dataset.k); }; });
+show(location.hash.slice(1) || 'prazoCotacao');
+</script>
+</html>

@@ -65,7 +65,11 @@ class CotacoesView(APIView):
                 f"Cotação {'criada' if not existente else 'atualizada'} por "
                 f"{nome_de_usuario(usuario)} — valor cotado R$ {cotacao.valor_cotado}."
             ),
-            dados={"cotacao_id": cotacao.pk},
+            dados={
+                "cotacao_id": cotacao.pk,
+                "criada": not existente,
+                "valor_cotado": float(cotacao.valor_cotado),
+            },
         )
 
         resposta = CotacaoSerializer(_com_relacionados(Cotacao.objects).get(pk=cotacao.pk)).data
@@ -95,6 +99,10 @@ class CotacaoView(APIView):
 
     def delete(self, request: Request, pk: int) -> Response:
         cotacao = get_object_or_404(Cotacao.objects, pk=pk)
+        if hasattr(cotacao.oportunidade, "proposta"):
+            return Response(
+                {"detail": "A proposta já foi gerada a partir desta cotação."}, status=409
+            )
         # Só a cotação: a oportunidade continua salva. Quem quiser tirá-la
         # da lista faz isso no módulo de salvas — apagar as duas juntas
         # descartaria trabalho que ninguém pediu para descartar.

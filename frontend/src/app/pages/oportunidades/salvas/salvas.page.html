@@ -1,7 +1,7 @@
 <h1>Oportunidades salvas</h1>
 <p class="muted">
-  O que a equipe salvou na busca fica aqui — a lista é compartilhada por todos os usuários. As
-  linhas destacadas em vermelho perderam o prazo de envio de proposta.
+  O que a equipe salvou na busca fica aqui — a lista é compartilhada por todos os usuários. As que
+  perdem o prazo de envio de proposta saem daqui e vão para Encerradas.
 </p>
 
 @if (erro()) {
@@ -15,7 +15,6 @@
   [estado]="estado()"
   [carregando]="carregando()"
   [chaveDe]="chaveDe"
-  [destacada]="estaExpirada"
   rotuloBusca="Buscar"
   placeholderBusca="Busca na descrição e nos itens…"
   mensagemVazia="Nenhuma oportunidade salva. Salve uma na busca (Oportunidades / Pesquisar)."

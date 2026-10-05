@@ -18,25 +18,16 @@ import {
   CotadorModalData,
   CotadorModalResultado,
 } from '../cotador-modal/cotador-modal.component';
-import { formatarData, formatarMoeda, normalizarTitulo } from '../edital-card/edital-card.utils';
+import {
+  cidadeComUf,
+  formatarData,
+  formatarMoeda,
+  normalizarTitulo,
+} from '../edital-card/edital-card.utils';
 import {
   OportunidadeModalComponent,
   OportunidadeModalResultado,
 } from './oportunidade-modal/oportunidade-modal.component';
-
-/** Quantos caracteres do município cabem sem esticar a coluna. O nome é
- * cortado (com reticências) e a UF vem sempre depois — a sigla é o que não
- * pode sumir de "Bom Jesus da Lapa / BA". O nome inteiro fica no `title`. */
-const MAX_MUNICIPIO = 24;
-
-function cidadeComUf(salva: OportunidadeSalvaResponse): string {
-  const municipio = salva.municipio || '—';
-  const encurtado =
-    municipio.length > MAX_MUNICIPIO
-      ? `${municipio.slice(0, MAX_MUNICIPIO - 1).trimEnd()}…`
-      : municipio;
-  return salva.uf ? `${encurtado} / ${salva.uf}` : encurtado;
-}
 
 /** As chaves das colunas são contrato com o backend (`ORDENACOES` em
  * `apps/licitacoes/views.py`) — é o que vai no `ordering` do endpoint. */
@@ -45,11 +36,13 @@ const COLUNAS: readonly ColunaTabela<OportunidadeSalvaResponse>[] = [
     chave: 'uasg',
     titulo: 'UASG',
     valor: (salva) => salva.uasg || '—',
+    secundario: (salva) => salva.orgao_nome || null,
     // O objeto saiu da tabela (gastava a largura toda), mas continua sendo
     // o que identifica a oportunidade — fica na dica da primeira coluna e
     // inteiro no modal.
     dica: (salva) => salva.objeto || null,
-    umaLinha: true,
+    // Sem `umaLinha`: o nome da unidade embaixo precisa quebrar, senão
+    // estica a tabela (igual a Encerradas).
   },
   { chave: 'modalidade', titulo: 'Modalidade', valor: (salva) => salva.modalidade || '—' },
   {
@@ -67,16 +60,13 @@ const COLUNAS: readonly ColunaTabela<OportunidadeSalvaResponse>[] = [
   },
   {
     chave: 'prazo',
-    titulo: 'Prazo da proposta',
+    titulo: 'Prazo',
     valor: (salva) => formatarData(salva.data_encerramento_proposta) ?? '—',
     umaLinha: true,
-    // Prazo vencido é o dado mais importante da linha: vira pílula vermelha
-    // (a linha inteira também fica destacada, ver `expirada` no template).
-    tom: (salva) => (salva.expirada ? 'perigo' : null),
   },
   {
     chave: 'valor',
-    titulo: 'Valor estimado',
+    titulo: 'Estimado',
     valor: (salva) => formatarMoeda(salva.valor_total_estimado) ?? '—',
     numerica: true,
     umaLinha: true,
@@ -104,21 +94,15 @@ export class SalvasPage implements OnInit {
   protected readonly colunas = COLUNAS;
 
   protected readonly estado = signal<EstadoTabela>(
-    // Mais recentes primeiro — mesma ordem padrão do endpoint.
-    estadoInicialTabela({ ordenarPor: 'criada_em', direcao: 'desc' }),
+    // O prazo que vence primeiro vem primeiro — é por onde o dia começa.
+    estadoInicialTabela({ ordenarPor: 'prazo', direcao: 'asc' }),
   );
   protected readonly linhas = signal<readonly OportunidadeSalvaResponse[]>([]);
   protected readonly total = signal(0);
   protected readonly carregando = signal(false);
   protected readonly erro = signal(false);
 
-  /** Quantas expiradas o último aviso anunciou. Guardado para não repetir o
-   * mesmo toast a cada troca de página/ordenação — o aviso é sobre a lista,
-   * não sobre a consulta. */
-  private ultimoAviso: number | null = null;
-
   protected readonly chaveDe = (salva: OportunidadeSalvaResponse) => salva.id;
-  protected readonly estaExpirada = (salva: OportunidadeSalvaResponse) => salva.expirada;
 
   ngOnInit(): void {
     this.carregar();
@@ -199,30 +183,6 @@ export class SalvasPage implements OnInit {
       });
   }
 
-  protected excluirExpiradas(quantidade: number): void {
-    this.modal
-      .confirmar({
-        titulo: 'Excluir oportunidades vencidas',
-        mensagem:
-          `${quantidade} oportunidade(s) sem prazo para proposta serão retiradas da lista. ` +
-          'Esta ação não poderá ser desfeita. Deseja continuar?',
-        confirmarLabel: 'Excluir',
-        variantConfirmar: 'danger',
-      })
-      .subscribe((confirmou) => {
-        if (!confirmou) return;
-
-        this.service.removerExpiradas().subscribe({
-          next: ({ removidas }) => {
-            this.toast.sucesso(`${removidas} oportunidade(s) vencida(s) excluída(s).`);
-            this.estado.update((atual) => ({ ...atual, pagina: 1 }));
-            this.carregar();
-          },
-          error: () => this.toast.erro('Não foi possível excluir as vencidas agora.'),
-        });
-      });
-  }
-
   private carregar(): void {
     const estado = this.estado();
     this.carregando.set(true);
@@ -240,7 +200,6 @@ export class SalvasPage implements OnInit {
           this.linhas.set(pagina.results);
           this.total.set(pagina.count);
           this.carregando.set(false);
-          this.avisarExpiradas(pagina.expiradas);
         },
         error: () => {
           this.carregando.set(false);
@@ -249,24 +208,6 @@ export class SalvasPage implements OnInit {
           this.total.set(0);
         },
       });
-  }
-
-  /** O aviso amarelo da tela: quantas já não dão mais para virar proposta, e
-   * o atalho para tirá-las da lista de uma vez. */
-  private avisarExpiradas(expiradas: number): void {
-    if (expiradas === 0) {
-      this.ultimoAviso = 0;
-      return;
-    }
-    if (expiradas === this.ultimoAviso) return;
-
-    this.ultimoAviso = expiradas;
-    this.toast.alerta(
-      expiradas === 1
-        ? '1 oportunidade salva não tem mais prazo para gerar proposta.'
-        : `${expiradas} oportunidades salvas não têm mais prazo para gerar proposta.`,
-      { acao: { rotulo: 'Apagar as vencidas', executar: () => this.excluirExpiradas(expiradas) } },
-    );
   }
 
   /** Excluir o último item de uma página deixaria a tabela vazia com um

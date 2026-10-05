@@ -165,6 +165,82 @@ class OportunidadeSalvaSerializer(serializers.ModelSerializer):
         return obj.salva_por_nome or None
 
 
+class EncerradaSerializer(OportunidadeSalvaSerializer):
+    """Uma linha de Encerradas: a salva mais o porquê e quando saiu do ciclo
+    (anotados por `encerradas.encerradas`) e a cotação, se chegou a ter."""
+
+    encerrada_em = serializers.DateField(read_only=True)
+    motivo = serializers.CharField(read_only=True)
+    motivo_label = serializers.SerializerMethodField()
+    cotacao_id = serializers.SerializerMethodField()
+    valor_cotado = serializers.SerializerMethodField()
+    removida_em = serializers.DateTimeField(read_only=True)
+    removida_por = serializers.SerializerMethodField()
+
+    class Meta(OportunidadeSalvaSerializer.Meta):
+        fields = OportunidadeSalvaSerializer.Meta.fields + [
+            "encerrada_em",
+            "motivo",
+            "motivo_label",
+            "cotacao_id",
+            "valor_cotado",
+            "removida_em",
+            "removida_por",
+        ]
+
+    def get_motivo_label(self, obj: OportunidadeSalva) -> str:
+        from .encerradas import MOTIVOS
+
+        return MOTIVOS[obj.motivo]
+
+    def _cotacao(self, obj: OportunidadeSalva):
+        return getattr(obj, "cotacao", None) if obj.tem_cotacao else None
+
+    def get_cotacao_id(self, obj: OportunidadeSalva) -> int | None:
+        cotacao = self._cotacao(obj)
+        return cotacao.pk if cotacao else None
+
+    def get_valor_cotado(self, obj: OportunidadeSalva) -> float | None:
+        cotacao = self._cotacao(obj)
+        return float(cotacao.valor_cotado) if cotacao else None
+
+    def get_removida_por(self, obj: OportunidadeSalva) -> str | None:
+        return obj.removida_por_nome or None
+
+
+class EmCotacaoSerializer(OportunidadeSalvaSerializer):
+    """Uma linha do Cotador: a salva mais a cotação dela e a situação — o
+    mesmo selo e as mesmas faltas do cartão do quadro (`ciclo.py`)."""
+
+    cotacao_id = serializers.IntegerField(source="cotacao.pk", read_only=True)
+    valor_cotado = serializers.SerializerMethodField()
+    cotacao_atualizada_em = serializers.DateTimeField(
+        source="cotacao.atualizada_em", read_only=True
+    )
+    pendencias = serializers.SerializerMethodField()
+    selo = serializers.SerializerMethodField()
+
+    class Meta(OportunidadeSalvaSerializer.Meta):
+        fields = OportunidadeSalvaSerializer.Meta.fields + [
+            "cotacao_id",
+            "valor_cotado",
+            "cotacao_atualizada_em",
+            "pendencias",
+            "selo",
+        ]
+
+    def get_valor_cotado(self, obj: OportunidadeSalva) -> float:
+        return float(obj.cotacao.valor_cotado)
+
+    def get_pendencias(self, obj: OportunidadeSalva) -> int:
+        return obj.cotacao.totais().pendencias
+
+    def get_selo(self, obj: OportunidadeSalva) -> dict:
+        from .ciclo import situacao_da_cotacao
+
+        return situacao_da_cotacao(obj)
+
+
 class OportunidadeSalvaCriacaoSerializer(serializers.Serializer):
     """Payload de `POST /api/licitacoes/salvas/`: o próprio resultado da
     busca daquele edital (`itens`), mais o que o card já tinha resolvido à

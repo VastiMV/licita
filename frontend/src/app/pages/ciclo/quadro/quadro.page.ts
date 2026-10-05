@@ -6,6 +6,12 @@ import {
   NivelAlertaCiclo,
   QuadroCiclo,
 } from '../../../contracts/licitacoes/ciclo.contracts';
+import {
+  PropostaModalComponent,
+  PropostaModalData,
+  PropostaModalResultado,
+} from '../propostas/proposta-modal/proposta-modal.component';
+import { PropostasService } from '../../../services/propostas/propostas.service';
 import { CotadorService } from '../../../services/cotador/cotador.service';
 import { CicloService } from '../../../services/licitacoes/ciclo.service';
 import { OportunidadesSalvasService } from '../../../services/licitacoes/oportunidades-salvas.service';
@@ -73,6 +79,7 @@ export class QuadroPage implements OnInit {
   private readonly modal = inject(ModalService);
   private readonly salvas = inject(OportunidadesSalvasService);
   private readonly cotador = inject(CotadorService);
+  private readonly propostas = inject(PropostasService);
   private readonly toast = inject(ToastService);
 
   protected readonly quadro = signal<QuadroCiclo | null>(null);
@@ -168,9 +175,9 @@ export class QuadroPage implements OnInit {
   protected dado(cartao: CartaoCiclo): string {
     const prazo = formatarData(cartao.data_encerramento_proposta);
     const valor =
-      cartao.etapa === 'cotacao' && cartao.valor_cotado !== null
-        ? `cotado ${formatarMoeda(cartao.valor_cotado)}`
-        : formatarMoeda(cartao.valor_total_estimado);
+      cartao.valor_cotado === null
+        ? formatarMoeda(cartao.valor_total_estimado)
+        : `${cartao.etapa === 'proposta' ? 'proposto' : 'cotado'} ${formatarMoeda(cartao.valor_cotado)}`;
     return [prazo && `propostas até ${prazo}`, valor].filter(Boolean).join(' · ');
   }
 
@@ -197,6 +204,42 @@ export class QuadroPage implements OnInit {
       return;
     }
     if (cartao.etapa === 'cotacao') this.cotar(cartao);
+    if (cartao.etapa === 'proposta' && cartao.proposta_id !== null) {
+      this.modal
+        .abrir<PropostaModalResultado, PropostaModalData>(PropostaModalComponent, {
+          propostaId: cartao.proposta_id,
+        })
+        .subscribe((mudou) => {
+          if (mudou) this.carregar();
+        });
+    }
+  }
+
+  /** Leva a licitação da coluna Cotação para a coluna Proposta. O sistema
+   * avisa o que falta na cotação, mas não trava. */
+  protected gerarProposta(cartao: CartaoCiclo): void {
+    const aviso =
+      cartao.alerta.nivel === 'ok' ? '' : ` Atenção: ${cartao.faltas[0] ?? cartao.alerta.texto}.`;
+    this.modal
+      .confirmar({
+        titulo: 'Gerar proposta',
+        mensagem:
+          `A proposta de "${normalizarTitulo(cartao.objeto)}" será gerada com o valor cotado de ` +
+          `${formatarMoeda(cartao.valor_cotado)}, e a licitação passa para a etapa Proposta.` +
+          aviso,
+        confirmarLabel: 'Gerar proposta',
+      })
+      .subscribe((confirmou) => {
+        if (!confirmou) return;
+
+        this.propostas.gerar(cartao.id).subscribe({
+          next: () => {
+            this.toast.sucesso('Proposta gerada — a licitação passou para Proposta.');
+            this.carregar();
+          },
+          error: () => this.toast.erro('Não foi possível gerar a proposta agora.'),
+        });
+      });
   }
 
   /** Abre o Cotador: em branco, com os itens do edital, na etapa

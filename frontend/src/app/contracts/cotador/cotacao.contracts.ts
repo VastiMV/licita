@@ -22,6 +22,11 @@ export interface OfertaRequest {
   /** Id do fornecedor cadastrado. Nulo = digitado à mão nesta cotação. */
   readonly fornecedor: number | null;
   readonly nome: string;
+  /** O produto ofertado (ver `apps/produtos`); o backend completa marca e
+   * fabricante a partir do modelo. */
+  readonly fabricante?: number | null;
+  readonly marca?: number | null;
+  readonly modelo?: number | null;
   readonly custo_produto: number;
   readonly frete: number;
   readonly outros: number;
@@ -64,6 +69,9 @@ export interface OfertaResponse extends Omit<OfertaRequest, 'custo_produto' | 'f
   readonly frete: string;
   readonly outros: string;
   readonly custo_unitario: string;
+  readonly fabricante_nome?: string;
+  readonly marca_nome?: string;
+  readonly modelo_nome?: string;
 }
 
 export interface ItemCotacaoResponse extends Omit<

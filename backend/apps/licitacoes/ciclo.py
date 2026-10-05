@@ -6,13 +6,14 @@ etapas —
 
 - **Oportunidade** — salva e ainda sem cotação;
 - **Cotação** — com cotação salva no Cotador;
+- **Proposta** — com proposta gerada no Cotador (`apps.propostas`);
 
-— e as outras três colunas (Proposta, Disputa, Empenho) ficam vazias até as
-telas delas existirem. Quando existirem, a regra cresce aqui, num lugar só.
+— e as outras duas colunas (Disputa, Empenho) ficam vazias até as telas
+delas existirem. Quando existirem, a regra cresce aqui, num lugar só.
 
 **Prazo de proposta vencido sem proposta enviada sai do quadro.** É o
-"prazo perdido": a licitação vai para Encerradas. Como ainda não há
-proposta no sistema, toda salva com prazo vencido cai aí.
+"prazo perdido": a licitação vai para Encerradas. Com proposta gerada, o
+prazo vencer é o caminho normal e ela continua na coluna Proposta.
 
 O limite de "salva há muito tempo sem cotação" é parâmetro da empresa na
 proposta do fluxo; enquanto a tela de Parâmetros não existe, o padrão mora
@@ -41,7 +42,7 @@ ETAPAS = [
 ]
 
 # As etapas cuja tela ainda não existe — a coluna aparece, vazia.
-ETAPAS_A_CONSTRUIR = {"proposta", "disputa", "empenho"}
+ETAPAS_A_CONSTRUIR = {"disputa", "empenho"}
 
 
 @dataclass(frozen=True)
@@ -60,9 +61,18 @@ def _cotacao_de(salva: OportunidadeSalva):
         return None
 
 
+def _proposta_de(salva: OportunidadeSalva):
+    try:
+        return salva.proposta
+    except OportunidadeSalva.proposta.RelatedObjectDoesNotExist:
+        return None
+
+
 def etapa_de(salva: OportunidadeSalva, hoje: dt.date) -> str:
     """"encerrada" ou uma das chaves de `ETAPAS`."""
 
+    if _proposta_de(salva):
+        return "proposta"
     if salva.expirada(hoje):
         return "encerrada"
     return "cotacao" if _cotacao_de(salva) else "oportunidade"
@@ -134,6 +144,28 @@ def _faltas_da_cotacao(cotacao) -> tuple[list[str], Alerta]:
     return faltas, alerta
 
 
+def situacao_da_cotacao(salva: OportunidadeSalva, hoje: dt.date | None = None) -> dict:
+    """O selo e as faltas de uma salva na etapa Cotação — o mesmo do cartão
+    do quadro, para a lista do Cotador não divergir dele."""
+
+    hoje = hoje or timezone.localdate()
+    faltas, alerta = _faltas_da_cotacao(salva.cotacao)
+    alerta = _alerta_do_prazo(salva.data_encerramento_proposta, alerta, hoje)
+    return {"nivel": alerta.nivel, "texto": alerta.texto, "faltas": faltas}
+
+
+def _alerta_do_prazo(prazo: dt.date | None, alerta: Alerta, hoje: dt.date) -> Alerta:
+    """Prazo de proposta até amanhã passa à frente de qualquer outro aviso
+    (menos de outro alerta)."""
+
+    if prazo:
+        restantes = _dias(hoje, prazo)
+        if 0 <= restantes <= 1 and alerta.nivel != "alerta":
+            quando = "hoje" if restantes == 0 else "amanhã"
+            return Alerta("alerta", f"propostas até {quando}")
+    return alerta
+
+
 def _cartao(salva: OportunidadeSalva, etapa: str, hoje: dt.date) -> dict:
     prazo = salva.data_encerramento_proposta
     cotacao = _cotacao_de(salva)
@@ -151,16 +183,25 @@ def _cartao(salva: OportunidadeSalva, etapa: str, hoje: dt.date) -> dict:
             faltas.append("edital salvo sem itens — conferir no PNCP")
         valor_cotado = None
         pendencias = None
+    elif etapa == "proposta":
+        proposta = _proposta_de(salva)
+        gerada = timezone.localtime(proposta.gerada_em)
+        alerta = Alerta("ok", f"proposta gerada em {gerada:%d/%m}")
+        gerado = any(a.origem == "gerado" for a in proposta.arquivos.all())
+        faltas = [
+            *([] if proposta.empresa_id else ["escolher a empresa (CNPJ) da proposta"]),
+            *([] if gerado else ["gerar a proposta comercial (Word)"]),
+            "enviar a proposta na plataforma",
+        ]
+        valor_cotado = float(proposta.valor)
+        pendencias = None
     else:
         pendencias = cotacao.totais().pendencias
         valor_cotado = float(cotacao.valor_cotado)
         faltas, alerta = _faltas_da_cotacao(cotacao)
 
-    if prazo and etapa != "encerrada":
-        restantes = _dias(hoje, prazo)
-        if restantes <= 1 and alerta.nivel != "alerta":
-            quando = "hoje" if restantes == 0 else "amanhã"
-            alerta = Alerta("alerta", f"propostas até {quando}")
+    if etapa != "encerrada":
+        alerta = _alerta_do_prazo(prazo, alerta, hoje)
 
     return {
         "id": salva.pk,
@@ -174,6 +215,7 @@ def _cartao(salva: OportunidadeSalva, etapa: str, hoje: dt.date) -> dict:
             float(salva.valor_total_estimado) if salva.valor_total_estimado is not None else None
         ),
         "cotacao_id": cotacao.pk if cotacao else None,
+        "proposta_id": proposta.pk if (proposta := _proposta_de(salva)) else None,
         # Na etapa Oportunidade o cartão abre o visualizador da salva, que
         # precisa do registro inteiro (o snapshot do edital). Com cotação, o
         # Cotador carrega a dele pelo id.
@@ -193,8 +235,8 @@ def montar_quadro(hoje: dt.date | None = None) -> dict:
     hoje = hoje or timezone.localdate()
     salvas = (
         OportunidadeSalva.objects.ativas()
-        .select_related("cotacao")
-        .prefetch_related("cotacao__itens__ofertas")
+        .select_related("cotacao", "proposta")
+        .prefetch_related("cotacao__itens__ofertas", "proposta__arquivos")
     )
 
     por_etapa: dict[str, list[dict]] = {chave: [] for chave, _ in ETAPAS}

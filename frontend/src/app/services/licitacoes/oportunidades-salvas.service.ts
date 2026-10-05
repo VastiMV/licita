@@ -44,10 +44,4 @@ export class OportunidadesSalvasService {
   remover(id: number): Observable<void> {
     return this.api.delete<void>(ENDPOINTS.licitacoes.salva(id));
   }
-
-  /** Apaga de uma vez todas as que perderam o prazo — é o link do aviso que
-   * a tela mostra ao abrir. */
-  removerExpiradas(): Observable<{ removidas: number }> {
-    return this.api.delete<{ removidas: number }>(ENDPOINTS.licitacoes.salvasExpiradas);
-  }
 }

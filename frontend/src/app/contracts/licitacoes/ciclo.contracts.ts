@@ -21,6 +21,8 @@ export interface CartaoCiclo {
   readonly data_encerramento_proposta: string | null;
   readonly valor_total_estimado: number | null;
   readonly cotacao_id: number | null;
+  /** Na etapa Proposta, abre o modal da proposta. */
+  readonly proposta_id: number | null;
   readonly valor_cotado: number | null;
   readonly pendencias: number | null;
   readonly alerta: { readonly nivel: NivelAlertaCiclo; readonly texto: string };

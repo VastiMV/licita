@@ -46,8 +46,14 @@ const CAMPOS = [
   'cidade',
   'uf',
   'responsavel_legal',
+  'responsavel_cpf',
+  'responsavel_rg',
+  'responsavel_qualificacao',
   'email',
   'telefone',
+  'banco',
+  'agencia',
+  'conta',
   'observacoes',
   'ativa',
 ] as const;
@@ -125,6 +131,13 @@ export class EmpresaModalComponent {
     responsavel_legal: [this.empresa?.responsavel_legal ?? ''],
     email: [this.empresa?.email ?? '', Validators.email],
     telefone: [this.empresa ? mascararTelefone(this.empresa.telefone) : ''],
+    responsavel_cpf: [this.empresa?.responsavel_cpf ?? ''],
+    responsavel_rg: [this.empresa?.responsavel_rg ?? ''],
+    responsavel_qualificacao: [this.empresa?.responsavel_qualificacao ?? ''],
+
+    banco: [this.empresa?.banco ?? ''],
+    agencia: [this.empresa?.agencia ?? ''],
+    conta: [this.empresa?.conta ?? ''],
 
     observacoes: [this.empresa?.observacoes ?? ''],
   });

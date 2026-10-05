@@ -1,0 +1,102 @@
+:host {
+  display: block;
+  min-width: 0;
+}
+
+.combo {
+  position: relative;
+
+  input {
+    width: 100%;
+    font: inherit;
+    font-size: var(--font-size-sm);
+    padding: 0.35rem 1.6rem 0.35rem 0.5rem;
+    border: 1px solid var(--color-border);
+    border-radius: var(--radius-sm);
+    background: var(--color-surface);
+    color: var(--color-fg);
+
+    &::placeholder {
+      color: var(--color-placeholder);
+    }
+
+    &.tem-valor::placeholder {
+      color: var(--color-fg);
+    }
+
+    &:focus-visible {
+      outline: 2px solid var(--color-blue);
+      outline-offset: 1px;
+    }
+
+    &:disabled {
+      background: var(--color-bg);
+      color: var(--color-muted);
+    }
+  }
+}
+
+.limpar {
+  position: absolute;
+  right: 4px;
+  top: 50%;
+  transform: translateY(-50%);
+  width: 20px;
+  height: 20px;
+  border: 0;
+  background: none;
+  color: var(--color-muted);
+  font-size: 16px;
+  line-height: 1;
+  cursor: pointer;
+}
+
+.lista {
+  position: absolute;
+  z-index: 20;
+  left: 0;
+  right: 0;
+  top: calc(100% + 2px);
+  max-height: 240px;
+  overflow: auto;
+  margin: 0;
+  padding: 4px 0;
+  list-style: none;
+  background: var(--color-surface);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-sm);
+  box-shadow: var(--shadow-md);
+
+  li {
+    display: flex;
+    flex-direction: column;
+    padding: 0.4rem 0.6rem;
+    font-size: var(--font-size-sm);
+    cursor: pointer;
+
+    &.ativa {
+      background: var(--color-blue-soft);
+    }
+
+    &.destaque .nome::after {
+      content: ' ★';
+      color: var(--color-blue);
+    }
+
+    small {
+      color: var(--color-muted);
+      font-size: var(--font-size-xs);
+    }
+  }
+
+  .criar {
+    color: var(--color-blue);
+    font-weight: var(--font-weight-semibold);
+    border-top: 1px solid var(--color-border);
+  }
+
+  .vazio {
+    color: var(--color-muted);
+    cursor: default;
+  }
+}

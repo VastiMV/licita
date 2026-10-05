@@ -15,6 +15,7 @@ cada arquivo. Aqui é só o "como", quebrado em pedaço entregável.
 | [`proposta`](feat-proposta.md) | A proposta comercial em si (ainda sem desenho de produto) | `documentos-processo` |
 | [`remover-legado`](feat-remover-legado.md) | O que sai do produto: Filtros, a tela de Alertas de hoje, o cotador antigo e o "Cotar" direto da busca | — |
 | [`usuario`](feat-usuario.md) | Configurações → Usuários: quem acessa, e o super usuário como o único que vê Configurações | — |
+| [`produtos`](feat-produtos.md) | Cadastros › Produtos: Fabricante › Marca › Modelo, afinidade com fornecedor e tabela de preços no Cotador | — |
 
 ## As duas famílias de documento
 

@@ -91,7 +91,9 @@
 thead th {
   text-align: left;
   white-space: nowrap;
-  padding: var(--space-2) var(--space-4);
+  // Padding horizontal enxuto: com --space-4 a tabela de Encerradas já
+  // rolava de lado num monitor de 17".
+  padding: var(--space-2) var(--space-3);
   background: var(--color-blue-soft);
   border-bottom: 1px solid var(--color-border);
   @include uppercase-label;
@@ -136,7 +138,7 @@ th.numerica .ordenar {
 }
 
 tbody td {
-  padding: var(--space-3) var(--space-4);
+  padding: var(--space-3) var(--space-3);
   border-bottom: 1px solid var(--color-border);
   vertical-align: top;
 

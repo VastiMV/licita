@@ -48,12 +48,22 @@ export const TETO_TRIBUTOS = 0.9;
  * fornecedor por meio centavo de arredondamento. */
 export const TOLERANCIA = 0.005;
 
+/** Um nível do produto escolhido na oferta (ver `apps/produtos`). */
+export interface RefProduto {
+  readonly id: number;
+  readonly nome: string;
+}
+
 export interface OfertaCotador {
   /** Id local (não do banco): o item pode ter ofertas ainda não salvas. */
   readonly id: string;
   /** Fornecedor do cadastro. Nulo = digitado à mão nesta cotação. */
   readonly fornecedorId: number | null;
   readonly nome: string;
+  /** O produto ofertado: Fabricante › Marca › Modelo. */
+  readonly fabricante?: RefProduto | null;
+  readonly marca?: RefProduto | null;
+  readonly modelo?: RefProduto | null;
   readonly custoProduto: number;
   readonly frete: number;
   readonly outros: number;

@@ -1,15 +1,23 @@
-<app-modal-shell titulo="Cotador" largura="cheia" (fechar)="fechar()">
+<app-modal-shell
+  [titulo]="dados.somenteLeitura ? 'Cotador — somente leitura' : 'Cotador'"
+  largura="cheia"
+  (fechar)="fechar()"
+>
   <div class="cotador">
     <!-- ---------- Cabeçalho: título da cotação + composição do custo ---------- -->
     <header class="topo">
       <div class="topo-identidade">
-        <input
+        <!-- O título vem do objeto do edital, que costuma ser longo: textarea
+             na largura toda, crescendo com o texto. -->
+        <textarea
           class="campo-titulo"
+          rows="1"
           [value]="titulo()"
           (input)="titulo.set($any($event.target).value)"
+          (keydown.enter)="$event.preventDefault()"
           placeholder="Título da cotação"
           aria-label="Título da cotação"
-        />
+        ></textarea>
         <p class="topo-sub">
           {{
             cotacaoId() === null
@@ -121,13 +129,17 @@
               <span class="item-indice">{{ indice(i) }}</span>
 
               <div class="item-descricao">
-                <input
+                <!-- textarea que cresce com o texto: a descrição do edital é longa
+                     e num input de uma linha ficava cortada. Enter ainda cria
+                     o próximo item; Shift+Enter quebra a linha. -->
+                <textarea
+                  rows="1"
                   [value]="item.descricao"
                   (input)="alterarDescricao(item, $any($event.target).value)"
-                  (keydown.enter)="adicionarItem(item.id)"
+                  (keydown.enter)="novoItemNoEnter($any($event), item.id)"
                   placeholder="ex.: Papel A4 75g — resma"
                   [attr.aria-label]="'Descrição do item ' + indice(i)"
-                />
+                ></textarea>
                 <div class="chips">
                   <button type="button" class="chip chip-fornecedor" (click)="alternar(item)">
                     <span class="ponto"></span>{{ rotuloDoFornecedor(item) }}
@@ -243,29 +255,16 @@
                           [attr.aria-label]="'Usar ' + (nomeDaOferta(oferta) || 'este fornecedor')"
                           (change)="escolherOferta(item, oferta)"
                         />
-                        <select
-                          [value]="oferta.fornecedorId ?? ''"
-                          (change)="vincularFornecedor(item, oferta, $any($event.target).value)"
-                          aria-label="Fornecedor do cadastro"
-                        >
-                          <option value="">Escolher fornecedor…</option>
-                          @for (fornecedor of fornecedores(); track fornecedor.id) {
-                            <option [value]="fornecedor.id">
-                              {{ fornecedor.nome }}
-                              @if (fornecedor.situacao !== 'ativo') {
-                                ({{ fornecedor.situacao_label }})
-                              }
-                            </option>
-                          }
-                        </select>
-                        <button
-                          type="button"
-                          class="icone"
-                          title="Cadastrar um fornecedor novo"
-                          (click)="cadastrarFornecedor(item, oferta)"
-                        >
-                          <app-icon name="plus" />
-                        </button>
+                        <app-combobox
+                          class="oferta-fornecedor"
+                          rotulo="Fornecedor"
+                          placeholder="Fornecedor…"
+                          rotuloCriar="Cadastrar fornecedor"
+                          [selecionado]="fornecedorDe(oferta)"
+                          [buscar]="buscarFornecedor"
+                          [criar]="criarFornecedor(item, oferta)"
+                          (escolheu)="escolherFornecedor(item, oferta, $event)"
+                        />
                         <button
                           type="button"
                           class="icone perigo"
@@ -276,6 +275,51 @@
                           <app-icon name="close" />
                         </button>
                       </div>
+
+                      <!-- O produto ofertado: cada nível depende do de cima, e todos
+                           pesquisam e criam na hora (sem duplicar — ver apps/produtos). -->
+                      <div class="oferta-produto">
+                        <app-combobox
+                          rotulo="Fabricante"
+                          placeholder="Fabricante…"
+                          [selecionado]="oferta.fabricante ?? null"
+                          [buscar]="buscarFabricante(oferta)"
+                          [criar]="criarFabricante(oferta)"
+                          (escolheu)="escolherFabricante(item, oferta, $event)"
+                        />
+                        <app-combobox
+                          rotulo="Marca"
+                          [placeholder]="oferta.fabricante ? 'Marca…' : 'Escolha o fabricante'"
+                          [desabilitado]="!oferta.fabricante"
+                          [selecionado]="oferta.marca ?? null"
+                          [buscar]="buscarMarca(oferta)"
+                          [criar]="criarMarca(oferta)"
+                          (escolheu)="escolherMarca(item, oferta, $event)"
+                        />
+                        <app-combobox
+                          rotulo="Modelo"
+                          [placeholder]="oferta.marca ? 'Modelo…' : 'Escolha a marca'"
+                          [desabilitado]="!oferta.marca"
+                          [selecionado]="oferta.modelo ?? null"
+                          [buscar]="buscarModelo(oferta)"
+                          [criar]="criarModelo(oferta)"
+                          (escolheu)="escolherModelo(item, oferta, $event)"
+                        />
+                      </div>
+                      @if (sugestoes()[oferta.id]; as preco) {
+                        <p class="oferta-sugestao">
+                          Último custo deste fornecedor para o modelo:
+                          <b>{{ moeda(+preco.custo) }}</b>
+                          em {{ preco.registrado_em.slice(8, 10) }}/{{
+                            preco.registrado_em.slice(5, 7)
+                          }}/{{ preco.registrado_em.slice(0, 4) }}
+                          @if (+preco.custo !== oferta.custoProduto) {
+                            <button type="button" (click)="usarSugestao(item, oferta, preco)">
+                              usar
+                            </button>
+                          }
+                        </p>
+                      }
 
                       <div class="oferta-custos">
                         <label class="campo-numero">
@@ -658,7 +702,9 @@
     <app-icon name="spreadsheet" />
     {{ exportando() ? 'Gerando…' : 'Exportar' }}
   </app-button>
-  <app-button modalFooter [disabled]="salvando() || carregando()" (click)="salvar()">
-    {{ salvando() ? 'Salvando…' : 'Salvar cotação' }}
-  </app-button>
+  @if (!dados.somenteLeitura) {
+    <app-button modalFooter [disabled]="salvando() || carregando()" (click)="salvar()">
+      {{ salvando() ? 'Salvando…' : 'Salvar cotação' }}
+    </app-button>
+  }
 </app-modal-shell>

@@ -47,11 +47,8 @@ describe('OportunidadesSalvasService', () => {
     expect(api.post).toHaveBeenCalledWith(ENDPOINTS.licitacoes.salvas, payload);
   });
 
-  it('remover() e removerExpiradas() batem nas rotas de exclusão', () => {
+  it('remover() bate na rota de exclusão', () => {
     service.remover(7).subscribe();
     expect(api.delete).toHaveBeenCalledWith(ENDPOINTS.licitacoes.salva(7));
-
-    service.removerExpiradas().subscribe();
-    expect(api.delete).toHaveBeenCalledWith(ENDPOINTS.licitacoes.salvasExpiradas);
   });
 });
