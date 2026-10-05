@@ -42,6 +42,7 @@ describe('PropostaModalComponent', () => {
       detalhe: vi.fn(() => of(proposta)),
       atualizar: vi.fn(() => of(proposta)),
       documento: vi.fn(() => of({ conteudo: new Blob(['x']), nome: 'p.docx' })),
+      pasta: vi.fn(() => of({ conteudo: new Blob(['x']), nome: 'p.zip' })),
       enviarArquivo: vi.fn(),
       removerArquivo: vi.fn(() => of(undefined)),
       urlDoArquivo: vi.fn(),
@@ -105,6 +106,16 @@ describe('PropostaModalComponent', () => {
 
     expect(service['documento']).toHaveBeenCalledWith(8);
     expect(service['detalhe']).toHaveBeenCalledTimes(2);
+  });
+
+  it('baixar pasta pede o .zip da proposta', () => {
+    montar();
+    URL.createObjectURL = vi.fn(() => 'blob:x');
+    URL.revokeObjectURL = vi.fn();
+
+    (fixture.componentInstance as never as { baixarPasta: () => void }).baixarPasta();
+
+    expect(service['pasta']).toHaveBeenCalledWith(8);
   });
 
   it('formata o CNPJ', () => {

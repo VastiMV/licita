@@ -146,7 +146,8 @@ class ModuloPropostasTests(APITestCase):
         self.assertIn("Inside Solutions Ltda", texto)
         self.assertIn("11.222.333/0001-81", texto)
         self.assertIn("Edital 1", texto)
-        self.assertIn("Vasti Marucci", texto)
+        self.assertIn("VASTI MARUCCI", texto)
+        self.assertIn("reais", texto)  # valor por extenso
         self.assertNotIn("{{", texto)
         self.assertEqual(
             ArquivoProposta.objects.filter(origem=ArquivoProposta.Origem.GERADO).count(), 1
@@ -206,3 +207,30 @@ class ModuloPropostasTests(APITestCase):
 
     def test_o_modelo_padrao_existe(self):
         self.assertTrue(MODELO_PADRAO.exists())
+
+    def test_pasta_zip_traz_proposta_e_arquivos_da_licitacao(self):
+        import zipfile
+
+        upload = SimpleUploadedFile("catalogo.pdf", b"%PDF-1.4 x", content_type="application/pdf")
+        self.client.post(f"/api/propostas/{self.proposta_id}/arquivos/", {"arquivo": upload})
+
+        resposta = self.client.get(f"/api/propostas/{self.proposta_id}/pasta/")
+
+        self.assertEqual(resposta.status_code, 200)
+        nomes = zipfile.ZipFile(io.BytesIO(resposta.content)).namelist()
+        self.assertTrue(any(n.startswith("1 Proposta comercial/") for n in nomes))
+        self.assertIn("3 Arquivos da licitação/catalogo.pdf", nomes)
+
+
+class ExtensoTests(APITestCase):
+    def test_valor_por_extenso(self):
+        from decimal import Decimal
+
+        from .documento import valor_por_extenso
+
+        self.assertEqual(
+            valor_por_extenso(Decimal("53312.08")),
+            "Cinquenta e três mil, trezentos e doze reais e oito centavos",
+        )
+        self.assertEqual(valor_por_extenso(Decimal("1100")), "Mil e cem reais")
+        self.assertEqual(valor_por_extenso(Decimal("2000000")), "Dois milhões de reais")

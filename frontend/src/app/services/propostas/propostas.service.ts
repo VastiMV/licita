@@ -47,6 +47,12 @@ export class PropostasService {
     return this.baixar(ENDPOINTS.propostas.documento(id));
   }
 
+  /** Tudo o que sobe na plataforma num .zip: a proposta comercial, os
+   * documentos de habilitação da empresa e os arquivos da licitação. */
+  pasta(id: number): Observable<PlanilhaBaixada> {
+    return this.baixar(ENDPOINTS.propostas.pasta(id));
+  }
+
   enviarArquivo(id: number, arquivo: File): Observable<ArquivoProposta> {
     return this.enviar<ArquivoProposta>(ENDPOINTS.propostas.arquivos(id), arquivo);
   }

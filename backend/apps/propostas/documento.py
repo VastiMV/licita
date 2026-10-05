@@ -14,8 +14,13 @@ dentro do Word). Quem monta o modelo escreve, no lugar do dado:
   ``{{ item.descricao }}``, ``{{ item.marca }}``, ``{{ item.modelo }}``,
   ``{{ item.fabricante }}``, ``{{ item.unidade }}``, ``{{ item.quantidade }}``,
   ``{{ item.valor_unitario }}``, ``{{ item.valor_total }}``;
-- ``{{ valor_total }}``, ``{{ validade_dias }}``, ``{{ data }}`` (por extenso)
-  e ``{{ cidade_data }}`` ("Curitiba, 4 de outubro de 2026").
+- ``{{ empresa.cep }}``, ``{{ empresa.banco }}``, ``{{ empresa.agencia }}``,
+  ``{{ empresa.conta }}``, ``{{ empresa.responsavel_cpf }}``,
+  ``{{ empresa.responsavel_rg }}``, ``{{ empresa.responsavel_qualificacao }}``;
+- ``{{ valor_total }}`` e ``{{ valor_total_extenso }}`` ("cinquenta e três mil
+  … reais e oito centavos"), ``{{ validade_dias }}`` e ``{{ validade_extenso }}``,
+  ``{{ data }}`` (por extenso) e ``{{ cidade_data }}`` ("São Roque, 4 de
+  outubro de 2026").
 
 Os valores já chegam formatados em real; o modelo não faz conta. O preço de
 cada item é o preço final do Cotador — a proposta é a formatação, não outra
@@ -49,6 +54,65 @@ def brl(valor: Decimal | float | None) -> str:
     return f"R$ {inteiro.replace(',', '.')},{centavos}"
 
 
+UNIDADES = ["", "um", "dois", "três", "quatro", "cinco", "seis", "sete", "oito", "nove",
+            "dez", "onze", "doze", "treze", "quatorze", "quinze", "dezesseis", "dezessete",
+            "dezoito", "dezenove"]
+DEZENAS = ["", "", "vinte", "trinta", "quarenta", "cinquenta", "sessenta", "setenta",
+           "oitenta", "noventa"]
+CENTENAS = ["", "cento", "duzentos", "trezentos", "quatrocentos", "quinhentos",
+            "seiscentos", "setecentos", "oitocentos", "novecentos"]
+
+
+def _ate_mil(n: int) -> str:
+    if n == 100:
+        return "cem"
+    partes = []
+    if n >= 100:
+        partes.append(CENTENAS[n // 100])
+        n %= 100
+    if n >= 20:
+        partes.append(DEZENAS[n // 10])
+        n %= 10
+    if n:
+        partes.append(UNIDADES[n])
+    return " e ".join(partes)
+
+
+def extenso(n: int) -> str:
+    """Inteiro por extenso, até centenas de milhões: "cinquenta e três mil,
+    trezentos e doze", "mil e cem", "dois milhões"."""
+
+    if n == 0:
+        return "zero"
+    grupos = []
+    for divisor, singular, plural in [(1_000_000, "milhão", "milhões"), (1000, "mil", "mil"), (1, "", "")]:
+        g, n = divmod(n, divisor)
+        if g:
+            nome = singular if g == 1 else plural
+            texto = "mil" if divisor == 1000 and g == 1 else f"{_ate_mil(g)} {nome}".strip()
+            grupos.append((g, texto))
+    if len(grupos) == 1:
+        return grupos[0][1]
+    *primeiros, (ultimo_valor, ultimo) = grupos
+    # O último grupo leva "e" quando é menor que cem ou uma centena redonda.
+    ligacao = " e " if ultimo_valor < 100 or ultimo_valor % 100 == 0 else ", "
+    return ", ".join(t for _, t in primeiros) + ligacao + ultimo
+
+
+def valor_por_extenso(valor: Decimal) -> str:
+    valor = Decimal(valor).quantize(Decimal("0.01"))
+    reais, centavos = int(valor), int((valor % 1) * 100)
+    partes = []
+    if reais:
+        sufixo = "real" if reais == 1 else "reais"
+        de = " de" if reais % 1_000_000 == 0 else ""
+        partes.append(f"{extenso(reais)}{de} {sufixo}")
+    if centavos:
+        partes.append(f"{extenso(centavos)} {'centavo' if centavos == 1 else 'centavos'}")
+    texto = " e ".join(partes) or "zero reais"
+    return texto[0].upper() + texto[1:]
+
+
 def _quantidade(valor: Decimal) -> str:
     texto = f"{valor.normalize():f}" if valor == valor.to_integral() else f"{valor:f}".rstrip("0")
     return texto.replace(".", ",")
@@ -58,6 +122,20 @@ def _cnpj(digitos: str) -> str:
     if len(digitos) != 14:
         return digitos
     return f"{digitos[:2]}.{digitos[2:5]}.{digitos[5:8]}/{digitos[8:12]}-{digitos[12:]}"
+
+
+def _cep(digitos: str) -> str:
+    return f"{digitos[:2]}.{digitos[2:5]}-{digitos[5:]}" if len(digitos) == 8 else digitos
+
+
+def _numero_da_compra(salva) -> str:
+    """O número do pregão como o órgão publica ("112"), do snapshot da busca;
+    sem ele, o sequencial do PNCP."""
+
+    for item in salva.itens or []:
+        if numero := item.get("contratacao_numero_compra") or item.get("numero_compra"):
+            return str(numero)
+    return salva.sequencial_compra
 
 
 def _endereco(empresa) -> str:
@@ -107,6 +185,13 @@ def contexto(proposta: Proposta) -> dict:
             "email": empresa.email if empresa else "",
             "telefone": empresa.telefone if empresa else "",
             "inscricao_estadual": empresa.inscricao_estadual if empresa else "",
+            "cep": _cep(empresa.cep) if empresa else "",
+            "banco": empresa.banco if empresa else "",
+            "agencia": empresa.agencia if empresa else "",
+            "conta": empresa.conta if empresa else "",
+            "responsavel_cpf": empresa.responsavel_cpf if empresa else "",
+            "responsavel_rg": empresa.responsavel_rg if empresa else "",
+            "responsavel_qualificacao": empresa.responsavel_qualificacao if empresa else "",
         },
         "orgao": {
             "nome": salva.orgao_nome,
@@ -114,7 +199,7 @@ def contexto(proposta: Proposta) -> dict:
             "cidade": " / ".join(p for p in [salva.municipio, salva.uf] if p),
         },
         "edital": {
-            "numero": f"{salva.sequencial_compra}/{salva.ano_compra}",
+            "numero": f"{_numero_da_compra(salva)}/{salva.ano_compra}",
             "modalidade": salva.modalidade,
             "objeto": " ".join((salva.objeto or "").split()),
             "prazo": f"{salva.data_encerramento_proposta:%d/%m/%Y}"
@@ -123,7 +208,9 @@ def contexto(proposta: Proposta) -> dict:
         },
         "itens": itens,
         "valor_total": brl(total if itens else proposta.valor),
+        "valor_total_extenso": valor_por_extenso(total if itens else proposta.valor),
         "validade_dias": proposta.validade_dias,
+        "validade_extenso": extenso(proposta.validade_dias),
         "data": data,
         "cidade_data": f"{cidade}, {data}" if cidade else data,
     }

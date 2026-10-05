@@ -14,5 +14,6 @@ urlpatterns = [
     ),
     path("<int:pk>/", views.PropostaView.as_view(), name="proposta"),
     path("<int:pk>/documento/", views.DocumentoView.as_view(), name="proposta-documento"),
+    path("<int:pk>/pasta/", views.PastaView.as_view(), name="proposta-pasta"),
     path("<int:pk>/arquivos/", views.ArquivosView.as_view(), name="proposta-arquivos"),
 ]

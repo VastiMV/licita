@@ -70,6 +70,7 @@ export class PropostaModalComponent implements OnInit {
   protected readonly carregando = signal(true);
   protected readonly erro = signal(false);
   protected readonly gerando = signal(false);
+  protected readonly baixandoPasta = signal(false);
   protected readonly enviando = signal('');
   protected readonly enviandoModelo = signal(false);
   private mudou = false;
@@ -175,6 +176,22 @@ export class PropostaModalComponent implements OnInit {
       error: (erro) => {
         this.gerando.set(false);
         this.toast.erro(mensagemDe(erro, 'Não foi possível gerar a proposta agora.'));
+      },
+    });
+  }
+
+  protected baixarPasta(): void {
+    const p = this.proposta();
+    if (!p) return;
+    this.baixandoPasta.set(true);
+    this.service.pasta(p.id).subscribe({
+      next: ({ conteudo, nome }) => {
+        this.baixandoPasta.set(false);
+        salvarArquivo(conteudo, nome);
+      },
+      error: (erro) => {
+        this.baixandoPasta.set(false);
+        this.toast.erro(mensagemDe(erro, 'Não foi possível montar a pasta agora.'));
       },
     });
   }

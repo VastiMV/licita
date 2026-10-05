@@ -276,6 +276,64 @@ def _guardar_gerado(request: Request, proposta: Proposta, conteudo: bytes, nome:
         )
 
 
+class PastaView(APIView):
+    """`GET /<id>/pasta/` — tudo o que sobe na plataforma num .zip só:
+
+    - ``1 Proposta comercial/`` — o Word, gerado agora (com o dado de agora);
+    - ``2 Habilitação/`` — a versão atual de cada documento da empresa;
+    - ``3 Arquivos da licitação/`` — o que a equipe subiu.
+
+    Sem empresa escolhida, sai sem as duas primeiras pastas.
+    """
+
+    def get(self, request: Request, pk: int) -> HttpResponse:
+        import zipfile
+
+        from apps.armazenamento.caminhos import limpar
+        from apps.documentos.models import Documento
+
+        proposta = _proposta(pk)
+        try:
+            armazenamento = _armazenamento(request)
+            modelo = _ler_modelo(request)
+        except ErroArmazenamento as erro:
+            return Response({"detail": str(erro)}, status=503)
+
+        saida = io.BytesIO()
+        with zipfile.ZipFile(saida, "w", zipfile.ZIP_DEFLATED) as pasta:
+            if proposta.empresa:
+                pasta.writestr(
+                    f"1 Proposta comercial/{nome_do_arquivo(proposta)}",
+                    gerar_docx(proposta, modelo),
+                )
+                documentos = (
+                    Documento.objects.da_empresa(proposta.empresa).ativos().com_versao_atual()
+                )
+                for documento in documentos:
+                    versao = documento.versao_atual
+                    if versao is None:
+                        continue
+                    with armazenamento.abrir(versao.arquivo) as lido:
+                        pasta.writestr(
+                            f"2 Habilitação/{limpar(documento.nome)}.{versao.extensao}",
+                            lido.read(),
+                        )
+            vistos: set[str] = set()
+            for arquivo in proposta.arquivos.filter(origem=ArquivoProposta.Origem.SUBIDO):
+                nome = arquivo.nome_original
+                if nome in vistos:
+                    nome = f"{arquivo.pk}-{nome}"
+                vistos.add(nome)
+                with armazenamento.abrir(arquivo.arquivo) as lido:
+                    pasta.writestr(f"3 Arquivos da licitação/{nome}", lido.read())
+
+        nome = nome_do_arquivo(proposta).replace("Proposta", "Pasta").replace(".docx", ".zip")
+        resposta = HttpResponse(saida.getvalue(), content_type="application/zip")
+        resposta["Content-Disposition"] = f'attachment; filename="{nome}"'
+        resposta["Access-Control-Expose-Headers"] = "Content-Disposition"
+        return resposta
+
+
 # ---------- arquivos desta licitação ----------
 
 

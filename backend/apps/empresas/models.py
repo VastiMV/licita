@@ -113,8 +113,23 @@ class Empresa(models.Model):
         blank=True,
         help_text="Quem assina proposta e contrato — é o nome que entra nas declarações geradas.",
     )
+    responsavel_cpf = models.CharField("CPF do responsável", max_length=14, blank=True)
+    responsavel_rg = models.CharField("RG do responsável", max_length=40, blank=True)
+    responsavel_qualificacao = models.TextField(
+        "qualificação do responsável",
+        blank=True,
+        help_text=(
+            "Nacionalidade, estado civil, profissão, endereço — o parágrafo do representante "
+            "na proposta comercial."
+        ),
+    )
     email = models.EmailField("e-mail", blank=True)
     telefone = models.CharField("telefone", max_length=20, blank=True)
+
+    # Dados bancários para pagamento — entram na proposta comercial.
+    banco = models.CharField("banco", max_length=80, blank=True)
+    agencia = models.CharField("agência", max_length=20, blank=True)
+    conta = models.CharField("conta-corrente", max_length=30, blank=True)
 
     observacoes = models.TextField("observações", blank=True)
 

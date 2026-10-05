@@ -88,6 +88,7 @@ export const ENDPOINTS = {
     lista: 'propostas/',
     detalhe: (id: number) => `propostas/${id}/`,
     documento: (id: number) => `propostas/${id}/documento/`,
+    pasta: (id: number) => `propostas/${id}/pasta/`,
     arquivos: (id: number) => `propostas/${id}/arquivos/`,
     arquivo: (id: number) => `propostas/arquivos/${id}/`,
     arquivoDownload: (id: number) => `propostas/arquivos/${id}/download/`,

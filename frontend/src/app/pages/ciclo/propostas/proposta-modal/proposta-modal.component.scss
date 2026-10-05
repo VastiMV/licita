@@ -29,6 +29,21 @@ h4 {
   gap: var(--space-2);
 }
 
+.pasta {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-3);
+  margin-bottom: var(--space-3);
+
+  p {
+    max-width: 60ch;
+    margin: 0;
+    font-size: var(--font-size-xs);
+  }
+}
+
 .checklist {
   display: grid;
   grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));

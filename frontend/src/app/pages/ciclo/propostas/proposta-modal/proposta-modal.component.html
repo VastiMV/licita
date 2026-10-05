@@ -16,6 +16,17 @@
       · proposto {{ moeda(p.valor) }}
     </p>
 
+    <div class="pasta">
+      <p class="muted">
+        A pasta desta proposta: a proposta comercial, os documentos de habilitação da empresa e os
+        arquivos da licitação — cada um baixa sozinho aqui embaixo, ou tudo de uma vez.
+      </p>
+      <app-button variant="ghost" [disabled]="baixandoPasta()" (click)="baixarPasta()">
+        <app-icon name="download" />
+        {{ baixandoPasta() ? 'Montando a pasta…' : 'Baixar pasta (.zip)' }}
+      </app-button>
+    </div>
+
     <ul class="checklist" aria-label="O que falta para subir a proposta">
       @for (item of checklist(); track item.texto) {
         <li [class.ok]="item.ok">
