@@ -1,8 +1,12 @@
 """Gera `apps/propostas/modelo_padrao.docx` — a proposta comercial timbrada.
 
 O texto segue o modelo que a equipe usava (docs/MODELO DE DOCUMENTO
-PROPOSTA.docx); o timbrado é o logo da Inside Solutions (`timbrado.jpg`,
-recortado do mesmo Word). Os campos `{{ }}` e `{%tr %}` são do docxtpl —
+PROPOSTA.docx) e **o arquivo parte dele**: o conteúdo é limpo e reescrito,
+mas configurações e estilos são os do Word da equipe — um .docx comum, que
+não pede para salvar o Normal.dotm ao fechar. Nenhum estilo é alterado:
+fonte, tamanho e cor vão em cada trecho.
+
+O timbrado é a marca do sistema (`logo.png`, ver `gerar_logo.py`). Os campos `{{ }}` e `{%tr %}` são do docxtpl —
 ver a lista em `apps/propostas/documento.py`.
 
     python apps/propostas/assets/gerar_modelo.py
@@ -20,16 +24,19 @@ from docx.enum.text import WD_ALIGN_PARAGRAPH
 from docx.oxml import OxmlElement
 from docx.oxml.ns import qn
 from docx.shared import Cm, Pt, RGBColor
-from PIL import Image
 
 AQUI = Path(__file__).parent
 DESTINO = AQUI.parent / "modelo_padrao.docx"
+BASE = AQUI.parents[3] / "docs" / "MODELO DE DOCUMENTO PROPOSTA.docx"
+FONTE = "Calibri"
+TAMANHO = 10
 
-NAVY = RGBColor(0x02, 0x0E, 0x26)
-AZUL = RGBColor(0x1E, 0x8B, 0xF0)
+# As cores da marca (`--color-navy`, `--color-blue` em `_tokens.scss`).
+NAVY = RGBColor(0x16, 0x29, 0x4D)
+AZUL = RGBColor(0x2B, 0x7C, 0xC4)
 CINZA = RGBColor(0x5B, 0x67, 0x7A)
 TEXTO = RGBColor(0x1F, 0x29, 0x37)
-FUNDO_NAVY = "020E26"
+FUNDO_NAVY = "16294D"
 FUNDO_ZEBRA = "F2F6FB"
 FUNDO_TOTAL = "E6F0FC"
 
@@ -37,22 +44,15 @@ LARGURA_PAGINA = Cm(21)
 MARGEM = Cm(2)
 
 
-def faixa_do_timbrado() -> Path:
-    """O logo numa faixa navy da largura da página — o fundo do logo já é
-    navy, então a faixa continua o fundo e o logo fica à esquerda."""
+def limpar(parte) -> None:
+    """Tira todo o conteúdo de um corpo, cabeçalho ou rodapé, deixando um
+    parágrafo vazio (e, no corpo, as propriedades da seção)."""
 
-    logo = Image.open(AQUI / "timbrado.jpg").convert("RGB")
-    altura = 300
-    logo = logo.resize((round(logo.width * altura / logo.height), altura), Image.LANCZOS)
-    faixa = Image.new("RGB", (2480, altura + 40), logo.getpixel((3, 3)))
-    faixa.paste(logo, (150, 20))
-    # Filete azul embaixo, a cor de "licitações públicas" no logo.
-    for y in range(faixa.height - 8, faixa.height):
-        for x in range(faixa.width):
-            faixa.putpixel((x, y), (30, 139, 240))
-    destino = AQUI / "_faixa.png"
-    faixa.save(destino)
-    return destino
+    elemento = parte.element.body if hasattr(parte, "inline_shapes") else parte._element
+    for filho in list(elemento):
+        if filho.tag.endswith("}sectPr"):
+            continue
+        elemento.remove(filho)
 
 
 def sombrear(celula, cor: str) -> None:
@@ -89,7 +89,7 @@ def repetir_cabecalho(linha) -> None:
     propriedades.append(elemento)
 
 
-def filete(paragrafo, cor: str = "1E8BF0", tamanho: str = "6") -> None:
+def filete(paragrafo, cor: str = "2B7CC4", tamanho: str = "6") -> None:
     propriedades = paragrafo._p.get_or_add_pPr()
     borda = OxmlElement("w:pBdr")
     baixo = OxmlElement("w:top")
@@ -103,11 +103,11 @@ def filete(paragrafo, cor: str = "1E8BF0", tamanho: str = "6") -> None:
 
 def texto(paragrafo, conteudo: str, *, negrito=False, cor=TEXTO, tamanho=None, italico=False):
     run = paragrafo.add_run(conteudo)
+    run.font.name = FONTE
+    run.font.size = Pt(tamanho or TAMANHO)
     run.bold = negrito
     run.italic = italico
     run.font.color.rgb = cor
-    if tamanho:
-        run.font.size = Pt(tamanho)
     return run
 
 
@@ -131,28 +131,33 @@ def secao(doc, numero: str, titulo: str):
 
 
 def gerar() -> None:
-    doc = Document()
-    normal = doc.styles["Normal"]
-    normal.font.name = "Calibri"
-    normal.font.size = Pt(10)
-    normal.font.color.rgb = TEXTO
-    normal.element.rPr.rFonts.set(qn("w:eastAsia"), "Calibri")
+    doc = Document(str(BASE))
+    limpar(doc)
 
     secao_doc = doc.sections[0]
     secao_doc.page_width, secao_doc.page_height = LARGURA_PAGINA, Cm(29.7)
     secao_doc.left_margin = secao_doc.right_margin = MARGEM
-    secao_doc.top_margin = Cm(4.2)
+    secao_doc.top_margin = Cm(3.8)
     secao_doc.bottom_margin = Cm(2.6)
-    secao_doc.header_distance = Cm(0)
     secao_doc.footer_distance = Cm(0.8)
 
-    # ---------- timbrado: a faixa sangra até as bordas ----------
-    cabecalho = secao_doc.header.paragraphs[0]
-    cabecalho.paragraph_format.left_indent = -MARGEM
-    cabecalho.paragraph_format.right_indent = -MARGEM
-    cabecalho.add_run().add_picture(str(faixa_do_timbrado()), width=LARGURA_PAGINA)
+    # ---------- timbrado: a marca à esquerda, filete navy e azul embaixo ----------
+    secao_doc.header_distance = Cm(1)
+    limpar(secao_doc.header)
+    cabecalho = secao_doc.header.add_paragraph()
+    cabecalho.paragraph_format.space_after = Pt(0)
+    cabecalho.add_run().add_picture(str(AQUI / "logo.png"), height=Cm(1.5))
+    linha = secao_doc.header.add_paragraph()
+    linha.paragraph_format.space_after = Pt(0)
+    filete(linha, "16294D", "18")
+    linha_azul = secao_doc.header.add_paragraph()
+    filete(linha_azul, "2B7CC4", "6")
+    for p in (linha, linha_azul):
+        for run in p.runs:
+            run.font.size = Pt(1)
 
-    rodape = secao_doc.footer.paragraphs[0]
+    limpar(secao_doc.footer)
+    rodape = secao_doc.footer.add_paragraph()
     rodape.alignment = WD_ALIGN_PARAGRAPH.CENTER
     filete(rodape, "D5DEEA", "4")
     texto(rodape, "{{ empresa.nome }}", negrito=True, cor=NAVY, tamanho=8)
@@ -317,8 +322,14 @@ def gerar() -> None:
         p.paragraph_format.keep_with_next = True
         texto(p, conteudo, **estilo)
 
+    # A imagem do cabeçalho antigo ficaria empacotada sem uso.
+    for parte in (secao_doc.header.part, secao_doc.footer.part, doc.part):
+        xml = parte.element.xml
+        for rid, rel in list(parte.rels.items()):
+            if "image" in rel.reltype and f'"{rid}"' not in xml:
+                parte.drop_rel(rid)
+
     doc.save(DESTINO)
-    (AQUI / "_faixa.png").unlink()
 
 
 if __name__ == "__main__":
