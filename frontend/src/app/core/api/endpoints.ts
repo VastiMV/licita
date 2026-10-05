@@ -83,9 +83,16 @@ export const ENDPOINTS = {
     opcoes: 'fornecedores/opcoes/',
   },
   /** O Cotador (`apps/cotador`). */
-  /** Gerar a proposta de uma licitação em cotação (`apps/propostas`). */
+  /** Propostas (`apps/propostas`): a lista, gerar, o Word e os arquivos. */
   propostas: {
-    gerar: 'propostas/',
+    lista: 'propostas/',
+    detalhe: (id: number) => `propostas/${id}/`,
+    documento: (id: number) => `propostas/${id}/documento/`,
+    arquivos: (id: number) => `propostas/${id}/arquivos/`,
+    arquivo: (id: number) => `propostas/arquivos/${id}/`,
+    arquivoDownload: (id: number) => `propostas/arquivos/${id}/download/`,
+    modelo: 'propostas/modelo/',
+    modeloDownload: 'propostas/modelo/download/',
   },
   cotador: {
     cotacoes: 'cotador/cotacoes/',

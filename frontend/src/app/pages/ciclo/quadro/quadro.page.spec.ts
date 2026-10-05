@@ -12,6 +12,7 @@ import { ToastService } from '../../../shared/ui/toast/toast.service';
 import { ModalService } from '../../../shared/overlay/modal.service';
 import { CotadorModalComponent } from '../../oportunidades/cotador-modal/cotador-modal.component';
 import { OportunidadeModalComponent } from '../../oportunidades/salvas/oportunidade-modal/oportunidade-modal.component';
+import { PropostaModalComponent } from '../propostas/proposta-modal/proposta-modal.component';
 import { QuadroPage, formatarMil } from './quadro.page';
 
 const CARTAO: CartaoCiclo = {
@@ -24,6 +25,7 @@ const CARTAO: CartaoCiclo = {
   data_encerramento_proposta: '2026-10-06',
   valor_total_estimado: 48600,
   cotacao_id: null,
+  proposta_id: null,
   valor_cotado: null,
   pendencias: null,
   alerta: { nivel: 'aviso', texto: 'salva há 3 dias, sem cotação' },
@@ -58,6 +60,7 @@ const EM_PROPOSTA: CartaoCiclo = {
   id: 11,
   etapa: 'proposta',
   objeto: 'Toner',
+  proposta_id: 3,
   alerta: { nivel: 'ok', texto: 'proposta gerada em 26/09' },
   faltas: ['enviar a proposta na plataforma'],
 };
@@ -214,13 +217,10 @@ describe('QuadroPage', () => {
     expect(ciclo.quadro).toHaveBeenCalledTimes(2);
   });
 
-  it('cartão em Proposta abre a cotação só para leitura e não tem excluir', () => {
+  it('cartão em Proposta abre o modal da proposta e não tem excluir', () => {
     cartoes()[2].nativeElement.click();
 
-    expect(modal.abrir).toHaveBeenLastCalledWith(
-      CotadorModalComponent,
-      expect.objectContaining({ oportunidadeId: 11, somenteLeitura: true }),
-    );
+    expect(modal.abrir).toHaveBeenLastCalledWith(PropostaModalComponent, { propostaId: 3 });
     expect(fixture.debugElement.queryAll(By.css('.acao-excluir'))).toHaveLength(2);
   });
 

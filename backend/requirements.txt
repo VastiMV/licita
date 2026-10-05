@@ -27,6 +27,10 @@ httpx==0.28.1
 # planilha de proposta do Cotador (apps/cotador/planilha.py).
 openpyxl==3.1.5
 
+# A proposta comercial em Word a partir do modelo do cliente
+# (apps/propostas/documento.py). Traz o python-docx junto.
+docxtpl==0.20.2
+
 # Exigida pelo openpyxl para embutir imagem numa planilha — é o logo no
 # cabeçalho da proposta exportada pelo Cotador. Sem ela o openpyxl levanta
 # ImportError na hora de inserir a imagem (não é opcional nesse caminho).

@@ -187,7 +187,12 @@ def _cartao(salva: OportunidadeSalva, etapa: str, hoje: dt.date) -> dict:
         proposta = _proposta_de(salva)
         gerada = timezone.localtime(proposta.gerada_em)
         alerta = Alerta("ok", f"proposta gerada em {gerada:%d/%m}")
-        faltas = ["enviar a proposta na plataforma"]
+        gerado = any(a.origem == "gerado" for a in proposta.arquivos.all())
+        faltas = [
+            *([] if proposta.empresa_id else ["escolher a empresa (CNPJ) da proposta"]),
+            *([] if gerado else ["gerar a proposta comercial (Word)"]),
+            "enviar a proposta na plataforma",
+        ]
         valor_cotado = float(proposta.valor)
         pendencias = None
     else:
@@ -210,6 +215,7 @@ def _cartao(salva: OportunidadeSalva, etapa: str, hoje: dt.date) -> dict:
             float(salva.valor_total_estimado) if salva.valor_total_estimado is not None else None
         ),
         "cotacao_id": cotacao.pk if cotacao else None,
+        "proposta_id": proposta.pk if (proposta := _proposta_de(salva)) else None,
         # Na etapa Oportunidade o cartão abre o visualizador da salva, que
         # precisa do registro inteiro (o snapshot do edital). Com cotação, o
         # Cotador carrega a dele pelo id.
@@ -230,7 +236,7 @@ def montar_quadro(hoje: dt.date | None = None) -> dict:
     salvas = (
         OportunidadeSalva.objects.ativas()
         .select_related("cotacao", "proposta")
-        .prefetch_related("cotacao__itens__ofertas")
+        .prefetch_related("cotacao__itens__ofertas", "proposta__arquivos")
     )
 
     por_etapa: dict[str, list[dict]] = {chave: [] for chave, _ in ETAPAS}

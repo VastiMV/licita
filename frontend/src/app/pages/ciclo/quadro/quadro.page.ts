@@ -6,6 +6,11 @@ import {
   NivelAlertaCiclo,
   QuadroCiclo,
 } from '../../../contracts/licitacoes/ciclo.contracts';
+import {
+  PropostaModalComponent,
+  PropostaModalData,
+  PropostaModalResultado,
+} from '../propostas/proposta-modal/proposta-modal.component';
 import { PropostasService } from '../../../services/propostas/propostas.service';
 import { CotadorService } from '../../../services/cotador/cotador.service';
 import { CicloService } from '../../../services/licitacoes/ciclo.service';
@@ -199,17 +204,14 @@ export class QuadroPage implements OnInit {
       return;
     }
     if (cartao.etapa === 'cotacao') this.cotar(cartao);
-    // A tela de Propostas ainda não existe: o cartão mostra a cotação que
-    // gerou a proposta, só para leitura.
-    if (cartao.etapa === 'proposta') {
+    if (cartao.etapa === 'proposta' && cartao.proposta_id !== null) {
       this.modal
-        .abrir<unknown, CotadorModalData>(CotadorModalComponent, {
-          titulo: normalizarTitulo(cartao.objeto),
-          itens: [],
-          oportunidadeId: cartao.id,
-          somenteLeitura: true,
+        .abrir<PropostaModalResultado, PropostaModalData>(PropostaModalComponent, {
+          propostaId: cartao.proposta_id,
         })
-        .subscribe();
+        .subscribe((mudou) => {
+          if (mudou) this.carregar();
+        });
     }
   }
 
