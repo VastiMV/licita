@@ -357,14 +357,13 @@ class HistoricoTests(APITestCase):
         self.assertEqual(tipos, ["salva", "removida"])
         self.assertIn("Gustavo", historico.data["eventos"][-1]["descricao"])
 
-    def test_historico_guarda_espaco_para_o_que_ainda_nao_existe(self):
-        """O módulo de propostas não existe, mas o log já sabe registrar uma
-        (com o link para abrir) — é o formato que a tela de histórico vai
-        ler, sem migração nova quando a funcionalidade chegar."""
+    def test_historico_registra_a_proposta_com_o_link(self):
+        """O evento de proposta leva o id em `dados` — é o link que a tela
+        de histórico usa para abrir a proposta."""
 
         salva_id = self.client.post("/api/licitacoes/salvas/", payload(), format="json").data["id"]
         OportunidadeSalva.objects.get(pk=salva_id).registrar(
-            EventoOportunidadeSalva.Tipo.PROPOSTA_GERADA,
+            EventoOportunidadeSalva.Tipo.PROPOSTA,
             autor=self.user,
             descricao="Proposta gerada por Gustavo.",
             dados={"proposta_id": 7},
@@ -372,6 +371,6 @@ class HistoricoTests(APITestCase):
 
         eventos = self.client.get(f"/api/licitacoes/salvas/{salva_id}/eventos/").data["eventos"]
 
-        self.assertEqual(eventos[-1]["tipo"], "proposta_gerada")
+        self.assertEqual(eventos[-1]["tipo"], "proposta")
         self.assertEqual(eventos[-1]["tipo_label"], "Proposta gerada")
         self.assertEqual(eventos[-1]["dados"], {"proposta_id": 7})

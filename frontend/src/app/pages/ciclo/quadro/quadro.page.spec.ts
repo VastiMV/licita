@@ -5,6 +5,7 @@ import { Subject, of, throwError } from 'rxjs';
 
 import { CartaoCiclo, QuadroCiclo } from '../../../contracts/licitacoes/ciclo.contracts';
 import { CotadorService } from '../../../services/cotador/cotador.service';
+import { PropostasService } from '../../../services/propostas/propostas.service';
 import { CicloService } from '../../../services/licitacoes/ciclo.service';
 import { OportunidadesSalvasService } from '../../../services/licitacoes/oportunidades-salvas.service';
 import { ToastService } from '../../../shared/ui/toast/toast.service';
@@ -52,6 +53,15 @@ const EM_COTACAO: CartaoCiclo = {
   salva: null,
 };
 
+const EM_PROPOSTA: CartaoCiclo = {
+  ...EM_COTACAO,
+  id: 11,
+  etapa: 'proposta',
+  objeto: 'Toner',
+  alerta: { nivel: 'ok', texto: 'proposta gerada em 26/09' },
+  faltas: ['enviar a proposta na plataforma'],
+};
+
 function quadro(): QuadroCiclo {
   return {
     hoje: '2026-09-26',
@@ -76,7 +86,13 @@ function quadro(): QuadroCiclo {
         total_estimado: 131900,
         cartoes: [EM_COTACAO],
       },
-      { etapa: 'proposta', rotulo: 'Proposta', disponivel: false, total_estimado: 0, cartoes: [] },
+      {
+        etapa: 'proposta',
+        rotulo: 'Proposta',
+        disponivel: true,
+        total_estimado: 0,
+        cartoes: [EM_PROPOSTA],
+      },
       { etapa: 'disputa', rotulo: 'Disputa', disponivel: false, total_estimado: 0, cartoes: [] },
       { etapa: 'empenho', rotulo: 'Empenho', disponivel: false, total_estimado: 0, cartoes: [] },
     ],
@@ -91,6 +107,7 @@ describe('QuadroPage', () => {
   let modal: { abrir: ReturnType<typeof vi.fn>; confirmar: ReturnType<typeof vi.fn> };
   let salvas: { remover: ReturnType<typeof vi.fn> };
   let cotador: { remover: ReturnType<typeof vi.fn> };
+  let propostas: { gerar: ReturnType<typeof vi.fn> };
   let fechou: Subject<unknown>;
 
   beforeEach(() => {
@@ -99,6 +116,7 @@ describe('QuadroPage', () => {
     modal = { abrir: vi.fn(() => fechou), confirmar: vi.fn(() => of(true)) };
     salvas = { remover: vi.fn(() => of(undefined)) };
     cotador = { remover: vi.fn(() => of(undefined)) };
+    propostas = { gerar: vi.fn(() => of({})) };
     TestBed.configureTestingModule({
       imports: [QuadroPage],
       providers: [
@@ -107,6 +125,7 @@ describe('QuadroPage', () => {
         { provide: ModalService, useValue: modal },
         { provide: OportunidadesSalvasService, useValue: salvas },
         { provide: CotadorService, useValue: cotador },
+        { provide: PropostasService, useValue: propostas },
         { provide: ToastService, useValue: { sucesso: vi.fn(), erro: vi.fn() } },
       ],
     });
@@ -124,14 +143,14 @@ describe('QuadroPage', () => {
       .map((n) => n.nativeElement.textContent.trim());
     expect(nomes).toEqual(['Oportunidade', 'Cotação', 'Proposta', 'Disputa', 'Empenho']);
 
-    expect(cartoes()).toHaveLength(2);
+    expect(cartoes()).toHaveLength(3);
     expect(texto()).toContain('UASG 985412 · Araraquara/SP');
     expect(texto()).toContain('salva há 3 dias, sem cotação');
     expect(texto()).toContain('iniciar a cotação para saber se dá');
   });
 
   it('etapa sem tela aparece vazia, avisando que ainda não está disponível', () => {
-    expect(fixture.debugElement.queryAll(By.css('.coluna.indisponivel'))).toHaveLength(3);
+    expect(fixture.debugElement.queryAll(By.css('.coluna.indisponivel'))).toHaveLength(2);
     expect(texto()).toContain('Ainda não disponível.');
   });
 
@@ -185,10 +204,24 @@ describe('QuadroPage', () => {
     );
   });
 
-  it('"Gerar proposta" aparece na Cotação, desabilitado até a tela existir', () => {
+  it('"Gerar proposta" na Cotação gera a proposta e recarrega o quadro', () => {
     const gerar = acoes()[1];
     expect(gerar.nativeElement.textContent).toContain('Gerar proposta');
-    expect(gerar.nativeElement.disabled).toBe(true);
+
+    gerar.nativeElement.click();
+
+    expect(propostas.gerar).toHaveBeenCalledWith(9);
+    expect(ciclo.quadro).toHaveBeenCalledTimes(2);
+  });
+
+  it('cartão em Proposta abre a cotação só para leitura e não tem excluir', () => {
+    cartoes()[2].nativeElement.click();
+
+    expect(modal.abrir).toHaveBeenLastCalledWith(
+      CotadorModalComponent,
+      expect.objectContaining({ oportunidadeId: 11, somenteLeitura: true }),
+    );
+    expect(fixture.debugElement.queryAll(By.css('.acao-excluir'))).toHaveLength(2);
   });
 
   it('cartão em Oportunidade abre o visualizador da oportunidade salva, não o Cotador', () => {

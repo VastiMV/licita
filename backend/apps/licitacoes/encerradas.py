@@ -45,13 +45,14 @@ def encerradas(hoje: dt.date | None = None) -> OportunidadeSalvaQuerySet:
     prazo = "data_encerramento_proposta"
     removida_no_dia = TruncDate("removida_em")
     # O prazo venceu antes de (ou sem) a remoção: encerrou pelo prazo.
-    venceu_antes = Q(**{f"{prazo}__lt": hoje}) & (
+    # Com proposta gerada, o prazo vencer é o caminho normal, não perda.
+    venceu_antes = Q(**{f"{prazo}__lt": hoje}, proposta__isnull=True) & (
         Q(removida_em__isnull=True) | Q(**{f"{prazo}__lt": removida_no_dia})
     )
 
     return (
         OportunidadeSalva.objects.filter(
-            Q(removida_em__isnull=False) | Q(**{f"{prazo}__lt": hoje})
+            Q(removida_em__isnull=False) | Q(**{f"{prazo}__lt": hoje}, proposta__isnull=True)
         )
         .annotate(
             tem_cotacao=Exists(Cotacao.objects.filter(oportunidade=OuterRef("pk"))),
@@ -127,6 +128,13 @@ def montar_processo(salva: OportunidadeSalva, hoje: dt.date | None = None) -> di
                 "tipo": "cotacao_criada" if criada else "cotacao_atualizada",
                 "texto": "Cotação criada" if criada else "Cotação atualizada",
                 "valor": _valor_do_evento(evento),
+            }
+        elif evento.tipo == Tipo.PROPOSTA:
+            etapa = "proposta"
+            item |= {
+                "tipo": "proposta_gerada",
+                "texto": "Proposta gerada",
+                "valor": evento.dados.get("valor"),
             }
         elif evento.tipo == Tipo.SALVA:
             item |= {"tipo": "oportunidade_salva", "texto": "Oportunidade salva"}

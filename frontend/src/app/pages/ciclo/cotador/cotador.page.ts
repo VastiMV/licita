@@ -3,6 +3,7 @@ import { Component, OnInit, inject, signal } from '@angular/core';
 import { EmCotacaoResponse, SeloCotacao } from '../../../contracts/licitacoes/em-cotacao.contracts';
 import { CotadorService } from '../../../services/cotador/cotador.service';
 import { EmCotacaoService } from '../../../services/licitacoes/em-cotacao.service';
+import { PropostasService } from '../../../services/propostas/propostas.service';
 import { ModalService } from '../../../shared/overlay/modal.service';
 import { DataTableComponent } from '../../../shared/ui/data-table/data-table.component';
 import {
@@ -26,10 +27,6 @@ import {
   formatarMoeda,
   normalizarTitulo,
 } from '../../oportunidades/edital-card/edital-card.utils';
-import {
-  ProcessoModalComponent,
-  ProcessoModalResultado,
-} from '../encerradas/processo-modal/processo-modal.component';
 
 const TOM_DO_SELO: Record<SeloCotacao['nivel'], TomCelula | null> = {
   ok: 'sucesso',
@@ -106,6 +103,7 @@ const COLUNAS: readonly ColunaTabela<EmCotacaoResponse>[] = [
 export class CotadorPage implements OnInit {
   private readonly service = inject(EmCotacaoService);
   private readonly cotador = inject(CotadorService);
+  private readonly propostas = inject(PropostasService);
   private readonly modal = inject(ModalService);
   private readonly toast = inject(ToastService);
 
@@ -134,8 +132,13 @@ export class CotadorPage implements OnInit {
   protected acoesDe(linha: EmCotacaoResponse): readonly ItemMenu[] {
     return [
       { rotulo: 'Abrir cotação', icone: 'calculadora', executar: () => this.abrirCotacao(linha) },
-      { rotulo: 'Ver processo', icone: 'eye', executar: () => this.verProcesso(linha) },
-      { rotulo: 'Excluir cotação', icone: 'trash', tom: 'perigo', executar: () => this.excluir(linha) },
+      { rotulo: 'Gerar proposta', icone: 'proposta', executar: () => this.gerarProposta(linha) },
+      {
+        rotulo: 'Excluir cotação',
+        icone: 'trash',
+        tom: 'perigo',
+        executar: () => this.excluir(linha),
+      },
     ];
   }
 
@@ -151,11 +154,32 @@ export class CotadorPage implements OnInit {
       });
   }
 
-  protected verProcesso(linha: EmCotacaoResponse): void {
+  /** Gerar a proposta leva a licitação para a etapa Proposta: sai daqui e
+   * aparece na coluna Proposta do quadro. O sistema avisa o que falta na
+   * cotação, mas não trava. */
+  protected gerarProposta(linha: EmCotacaoResponse): void {
+    const aviso =
+      linha.selo.nivel === 'ok' ? '' : ` Atenção: ${linha.selo.faltas[0] ?? linha.selo.texto}.`;
     this.modal
-      .abrir<ProcessoModalResultado, EmCotacaoResponse>(ProcessoModalComponent, linha)
-      .subscribe((resultado) => {
-        if (resultado === 'cotacao') this.abrirCotacao(linha);
+      .confirmar({
+        titulo: 'Gerar proposta',
+        mensagem:
+          `A proposta de "${this.resumo(linha)}" será gerada com o valor cotado de ` +
+          `${formatarMoeda(linha.valor_cotado)}, e a licitação passa para a etapa Proposta.` +
+          aviso,
+        confirmarLabel: 'Gerar proposta',
+      })
+      .subscribe((confirmou) => {
+        if (!confirmou) return;
+
+        this.propostas.gerar(linha.id).subscribe({
+          next: () => {
+            this.toast.sucesso('Proposta gerada — a licitação passou para Proposta.');
+            this.voltarPaginaSeEsvaziou();
+            this.carregar();
+          },
+          error: () => this.toast.erro('Não foi possível gerar a proposta agora.'),
+        });
       });
   }
 
@@ -180,7 +204,12 @@ export class CotadorPage implements OnInit {
             this.voltarPaginaSeEsvaziou();
             this.carregar();
           },
-          error: () => this.toast.erro('Não foi possível excluir a cotação agora.'),
+          error: (erro: { status?: number }) =>
+            this.toast.erro(
+              erro?.status === 409
+                ? 'A proposta já foi gerada a partir desta cotação.'
+                : 'Não foi possível excluir a cotação agora.',
+            ),
         });
       });
   }

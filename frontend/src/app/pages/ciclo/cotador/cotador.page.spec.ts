@@ -5,10 +5,10 @@ import { of, throwError } from 'rxjs';
 import { EmCotacaoResponse } from '../../../contracts/licitacoes/em-cotacao.contracts';
 import { CotadorService } from '../../../services/cotador/cotador.service';
 import { EmCotacaoService } from '../../../services/licitacoes/em-cotacao.service';
+import { PropostasService } from '../../../services/propostas/propostas.service';
 import { ModalService } from '../../../shared/overlay/modal.service';
 import { ToastService } from '../../../shared/ui/toast/toast.service';
 import { CotadorModalComponent } from '../../oportunidades/cotador-modal/cotador-modal.component';
-import { ProcessoModalComponent } from '../encerradas/processo-modal/processo-modal.component';
 import { CotadorPage } from './cotador.page';
 
 const LINHA: EmCotacaoResponse = {
@@ -47,6 +47,7 @@ describe('CotadorPage', () => {
   let fixture: ComponentFixture<CotadorPage>;
   let service: { listar: ReturnType<typeof vi.fn> };
   let cotador: { remover: ReturnType<typeof vi.fn> };
+  let propostas: { gerar: ReturnType<typeof vi.fn> };
   let modal: { abrir: ReturnType<typeof vi.fn>; confirmar: ReturnType<typeof vi.fn> };
 
   function montar() {
@@ -55,6 +56,7 @@ describe('CotadorPage', () => {
       providers: [
         { provide: EmCotacaoService, useValue: service },
         { provide: CotadorService, useValue: cotador },
+        { provide: PropostasService, useValue: propostas },
         { provide: ModalService, useValue: modal },
         { provide: ToastService, useValue: { sucesso: vi.fn(), erro: vi.fn() } },
       ],
@@ -74,6 +76,7 @@ describe('CotadorPage', () => {
       listar: vi.fn(() => of({ count: 1, next: null, previous: null, results: [LINHA] })),
     };
     cotador = { remover: vi.fn(() => of(undefined)) };
+    propostas = { gerar: vi.fn(() => of({})) };
     modal = { abrir: vi.fn(() => of(undefined)), confirmar: vi.fn(() => of(true)) };
   });
 
@@ -94,14 +97,33 @@ describe('CotadorPage', () => {
     expect(modal.abrir.mock.calls[0][1]).toEqual(expect.objectContaining({ oportunidadeId: 4 }));
   });
 
-  it('ver processo abre o modal do processo; pedir a cotação de lá abre o Cotador', () => {
-    modal.abrir.mockReturnValueOnce(of('cotacao'));
+  it('as ações são abrir cotação, gerar proposta e excluir cotação — sem "ver processo"', () => {
+    montar();
+
+    expect(
+      pagina()
+        .acoesDe(LINHA)
+        .map((a) => a.rotulo),
+    ).toEqual(['Abrir cotação', 'Gerar proposta', 'Excluir cotação']);
+  });
+
+  it('gerar proposta confirmado gera e recarrega a lista', () => {
     montar();
 
     pagina().acoesDe(LINHA)[1].executar();
 
-    expect(modal.abrir.mock.calls[0][0]).toBe(ProcessoModalComponent);
-    expect(modal.abrir.mock.calls[1][0]).toBe(CotadorModalComponent);
+    expect(modal.confirmar.mock.calls[0][0].mensagem).toContain('item 3');
+    expect(propostas.gerar).toHaveBeenCalledWith(4);
+    expect(service.listar).toHaveBeenCalledTimes(2);
+  });
+
+  it('gerar proposta cancelado não gera', () => {
+    modal.confirmar.mockReturnValue(of(false));
+    montar();
+
+    pagina().acoesDe(LINHA)[1].executar();
+
+    expect(propostas.gerar).not.toHaveBeenCalled();
   });
 
   it('excluir confirmado apaga a cotação e recarrega', () => {

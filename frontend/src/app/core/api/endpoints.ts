@@ -83,6 +83,10 @@ export const ENDPOINTS = {
     opcoes: 'fornecedores/opcoes/',
   },
   /** O Cotador (`apps/cotador`). */
+  /** Gerar a proposta de uma licitação em cotação (`apps/propostas`). */
+  propostas: {
+    gerar: 'propostas/',
+  },
   cotador: {
     cotacoes: 'cotador/cotacoes/',
     cotacao: (id: number) => `cotador/cotacoes/${id}/`,

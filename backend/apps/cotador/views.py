@@ -99,6 +99,10 @@ class CotacaoView(APIView):
 
     def delete(self, request: Request, pk: int) -> Response:
         cotacao = get_object_or_404(Cotacao.objects, pk=pk)
+        if hasattr(cotacao.oportunidade, "proposta"):
+            return Response(
+                {"detail": "A proposta já foi gerada a partir desta cotação."}, status=409
+            )
         # Só a cotação: a oportunidade continua salva. Quem quiser tirá-la
         # da lista faz isso no módulo de salvas — apagar as duas juntas
         # descartaria trabalho que ninguém pediu para descartar.

@@ -322,7 +322,8 @@ ORDENACOES_COTADOR = {
 
 class EmCotacaoView(APIView):
     """`GET /api/licitacoes/cotacoes/` — a lista do Cotador: as salvas na
-    etapa Cotação (com cotação, prazo aberto). Gerou proposta, sai daqui;
+    etapa Cotação (com cotação, sem proposta, prazo aberto). Gerou proposta,
+    sai daqui;
     prazo vencido, vai para Encerradas."""
 
     def get(self, request: Request) -> Response:
@@ -336,6 +337,7 @@ class EmCotacaoView(APIView):
         lista = (
             OportunidadeSalva.objects.ativas()
             .filter(cotacao__isnull=False)
+            .sem_proposta()
             .no_prazo()
             .buscar(params.get("busca", ""))
             .select_related("cotacao")

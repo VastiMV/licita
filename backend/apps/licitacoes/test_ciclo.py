@@ -50,14 +50,14 @@ class CicloTests(APITestCase):
     def coluna(self, quadro, etapa):
         return next(c for c in quadro["colunas"] if c["etapa"] == etapa)
 
-    def test_cinco_colunas_na_ordem_e_so_as_duas_primeiras_disponiveis(self):
+    def test_cinco_colunas_na_ordem_e_so_as_tres_primeiras_disponiveis(self):
         colunas = self.quadro()["colunas"]
 
         self.assertEqual(
             [c["etapa"] for c in colunas],
             ["oportunidade", "cotacao", "proposta", "disputa", "empenho"],
         )
-        self.assertEqual([c["disponivel"] for c in colunas], [True, True, False, False, False])
+        self.assertEqual([c["disponivel"] for c in colunas], [True, True, True, False, False])
 
     def test_salvar_a_cotacao_move_o_cartao_de_coluna(self):
         salva = self.salva("1")

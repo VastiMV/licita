@@ -48,6 +48,11 @@ class OportunidadeSalvaQuerySet(models.QuerySet):
 
         return self.filter(cotacao__isnull=True)
 
+    def sem_proposta(self) -> "OportunidadeSalvaQuerySet":
+        """Ainda não chegaram à etapa Proposta (ver `apps.propostas`)."""
+
+        return self.filter(proposta__isnull=True)
+
     def expiradas(self, hoje: dt.date | None = None) -> "OportunidadeSalvaQuerySet":
         """Prazo de proposta já vencido. Sem data de encerramento = não expira
         (o PNCP nem sempre publica a data; sem ela não dá pra afirmar que
@@ -216,7 +221,10 @@ class OportunidadeSalva(models.Model):
         return objeto[:117] + "…" if len(objeto) > 118 else objeto or "sem objeto informado"
 
     def expirada(self, hoje: dt.date | None = None) -> bool:
-        if not self.data_encerramento_proposta:
+        """Prazo de proposta vencido sem proposta gerada — o que tira a
+        licitação do ciclo. Com proposta, o prazo vencer é o caminho normal."""
+
+        if not self.data_encerramento_proposta or hasattr(self, "proposta"):
             return False
         return self.data_encerramento_proposta < (hoje or timezone.localdate())
 
@@ -267,6 +275,7 @@ def registrar_prazos_vencidos(hoje: dt.date | None = None) -> int:
 
     vencidas = (
         OportunidadeSalva.objects.ativas()
+        .sem_proposta()
         .expiradas(hoje)
         .exclude(eventos__tipo=EventoOportunidadeSalva.Tipo.PRAZO_VENCIDO)
     )
@@ -307,9 +316,11 @@ class EventoOportunidadeSalva(models.Model):
         SALVA = "salva", "Oportunidade salva"
         PRAZO_VENCIDO = "prazo_vencido", "Prazo de proposta encerrado"
         REMOVIDA = "removida", "Removida da lista"
-        # Ainda não produzido por ninguém — o módulo de propostas não existe.
-        # Fica declarado porque o histórico já é escrito no formato final.
-        PROPOSTA_GERADA = "proposta_gerada", "Proposta gerada"
+        # Nome histórico: é o salvar da cotação (o valor gravado não muda,
+        # o histórico já está escrito com ele).
+        PROPOSTA_GERADA = "proposta_gerada", "Cotação salva"
+        # Gerar proposta no Cotador (`apps.propostas`).
+        PROPOSTA = "proposta", "Proposta gerada"
 
     oportunidade = models.ForeignKey(
         OportunidadeSalva,
