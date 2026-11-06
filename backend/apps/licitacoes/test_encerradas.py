@@ -73,15 +73,22 @@ class EncerradasTests(Base):
 
         linhas = self.por_sequencial(self.listar())
 
-        self.assertEqual(sorted(linhas), ["3", "4", "5"])
+        # Descartada não é encerrada: a equipe tirou da lista, sumiu.
+        self.assertEqual(sorted(linhas), ["3", "4"])
         self.assertEqual(linhas["3"]["motivo"], "prazo_oportunidade")
         self.assertIsNone(linhas["3"]["cotacao_id"])
         self.assertEqual(linhas["4"]["motivo"], "prazo_cotacao")
         self.assertEqual(linhas["4"]["motivo_label"], "Prazo perdido na cotação")
         self.assertIsNotNone(linhas["4"]["cotacao_id"])
-        self.assertEqual(linhas["5"]["motivo"], "descartada")
-        self.assertEqual(linhas["5"]["removida_por"], "Vasti")
-        self.assertEqual(linhas["5"]["encerrada_em"], str(self.hoje))
+
+    def test_descartada_antes_do_prazo_nao_aparece_nem_cotada(self):
+        cotada = self.salva("1", 5)
+        self.cotar(cotada)
+        cotada.remover(por=self.user)
+        self.salva("2", 5).remover(por=self.user)
+
+        self.assertEqual(self.listar()["count"], 0)
+        self.assertEqual(self.listar(motivo="descartada")["count"], 0)
 
     def test_descartada_depois_do_prazo_encerrou_pelo_prazo(self):
         salva = self.salva("1", -10)
@@ -95,7 +102,8 @@ class EncerradasTests(Base):
     def test_filtra_por_periodo_motivo_uf_e_busca(self):
         self.salva("1", -40)
         self.salva("2", -5, uf="RJ", objeto="Cadeira de rodas")
-        self.salva("3", 5).remover(por=self.user)
+        cotada = self.salva("3", -3)
+        self.cotar(cotada)
 
         periodo = self.listar(data_inicial=str(self.hoje - dt.timedelta(days=10)))
         self.assertEqual(sorted(self.por_sequencial(periodo)), ["2", "3"])
@@ -103,8 +111,8 @@ class EncerradasTests(Base):
         ate = self.listar(data_final=str(self.hoje - dt.timedelta(days=30)))
         self.assertEqual(sorted(self.por_sequencial(ate)), ["1"])
 
-        descartadas = self.listar(motivo="descartada")
-        self.assertEqual(sorted(self.por_sequencial(descartadas)), ["3"])
+        na_cotacao = self.listar(motivo="prazo_cotacao")
+        self.assertEqual(sorted(self.por_sequencial(na_cotacao)), ["3"])
 
         self.assertEqual(sorted(self.por_sequencial(self.listar(uf="rj"))), ["2"])
 

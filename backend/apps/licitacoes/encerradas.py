@@ -1,20 +1,24 @@
 """Encerradas — as licitações que saíram do Ciclo de Licitação.
 
 Como a etapa, o encerramento é **calculado**, nunca gravado: uma salva está
-encerrada quando foi descartada (removida da lista) ou quando o prazo de
-proposta venceu antes de ela virar proposta. O motivo e a data saem da
-mesma regra, num lugar só, para a lista e o quadro não divergirem.
+encerrada quando o prazo de proposta venceu antes de ela virar proposta. O
+motivo e a data saem da mesma regra, num lugar só, para a lista e o quadro
+não divergirem.
 
 Motivos de hoje (perdida na disputa e falha no empenho entram quando essas
 etapas existirem):
 
-- ``descartada`` — alguém tirou da lista antes do prazo vencer;
 - ``prazo_oportunidade`` — o prazo venceu sem a equipe ter cotado;
 - ``prazo_cotacao`` — o prazo venceu com a cotação feita, sem proposta.
 
+**Descartada não é encerrada.** Quem a equipe tirou da lista antes do prazo
+vencer some do ciclo inteiro, Encerradas incluída — para quem opera,
+encerrado é o que não foi cotado a tempo ou o que seguiu o ciclo até o fim,
+e o descarte é só "não me interessa". A remoção continua lógica: o registro
+e o histórico ficam no banco (`ProcessoView` ainda mostra o processo).
+
 Quem foi descartada **depois** do prazo vencer encerrou pelo prazo: a
-remoção foi só limpeza da lista. A data de encerramento é a do que veio
-primeiro.
+remoção foi só limpeza da lista, e ela aparece aqui com o motivo do prazo.
 """
 
 from __future__ import annotations
@@ -22,7 +26,7 @@ from __future__ import annotations
 import datetime as dt
 import re
 
-from django.db.models import Case, CharField, DateField, Exists, OuterRef, Q, Value, When
+from django.db.models import Case, CharField, Exists, F, OuterRef, Q, Value, When
 from django.db.models.functions import TruncDate
 from django.utils import timezone
 
@@ -31,7 +35,6 @@ from apps.cotador.models import Cotacao
 from .models import EventoOportunidadeSalva, OportunidadeSalva, OportunidadeSalvaQuerySet
 
 MOTIVOS = {
-    "descartada": "Descartada",
     "prazo_oportunidade": "Prazo perdido sem cotação",
     "prazo_cotacao": "Prazo perdido na cotação",
 }
@@ -39,7 +42,8 @@ MOTIVOS = {
 
 def encerradas(hoje: dt.date | None = None) -> OportunidadeSalvaQuerySet:
     """As encerradas, anotadas com ``encerrada_em``, ``motivo`` e
-    ``tem_cotacao``."""
+    ``tem_cotacao``. Descartadas antes do prazo ficam de fora (ver a
+    docstring do módulo)."""
 
     hoje = hoje or timezone.localdate()
     prazo = "data_encerramento_proposta"
@@ -51,22 +55,15 @@ def encerradas(hoje: dt.date | None = None) -> OportunidadeSalvaQuerySet:
     )
 
     return (
-        OportunidadeSalva.objects.filter(
-            Q(removida_em__isnull=False) | Q(**{f"{prazo}__lt": hoje}, proposta__isnull=True)
-        )
+        OportunidadeSalva.objects.filter(venceu_antes)
         .annotate(
             tem_cotacao=Exists(Cotacao.objects.filter(oportunidade=OuterRef("pk"))),
         )
         .annotate(
-            encerrada_em=Case(
-                When(venceu_antes, then=prazo),
-                default=removida_no_dia,
-                output_field=DateField(),
-            ),
+            encerrada_em=F(prazo),
             motivo=Case(
-                When(venceu_antes & Q(tem_cotacao=True), then=Value("prazo_cotacao")),
-                When(venceu_antes, then=Value("prazo_oportunidade")),
-                default=Value("descartada"),
+                When(tem_cotacao=True, then=Value("prazo_cotacao")),
+                default=Value("prazo_oportunidade"),
                 output_field=CharField(),
             ),
         )
@@ -148,6 +145,11 @@ def montar_processo(salva: OportunidadeSalva, hoje: dt.date | None = None) -> di
         eventos.append({**item, "etapa": etapa})
 
     encerrada = encerradas(hoje).filter(pk=salva.pk).first()
+    if encerrada is None and salva.removida_em:
+        # Descartada não está em Encerradas, mas a história dela continua
+        # contando quem tirou da lista e quando.
+        salva.motivo = "descartada"
+        encerrada = salva
     return {
         "id": salva.pk,
         "etapa": etapa,
