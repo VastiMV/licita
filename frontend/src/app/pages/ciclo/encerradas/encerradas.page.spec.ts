@@ -43,15 +43,15 @@ const COTADA: EncerradaResponse = {
   removida_por: null,
 };
 
-const DESCARTADA: EncerradaResponse = {
+const SEM_COTACAO: EncerradaResponse = {
   ...COTADA,
   id: 7,
   chave: 'x-2026-1',
-  motivo: 'descartada',
-  motivo_label: 'Descartada',
+  motivo: 'prazo_oportunidade',
+  motivo_label: 'Prazo perdido sem cotação',
   cotacao_id: null,
   valor_cotado: null,
-  removida_por: 'Vasti',
+  removida_por: null,
 };
 
 describe('EncerradasPage', () => {
@@ -82,7 +82,7 @@ describe('EncerradasPage', () => {
   beforeEach(() => {
     service = {
       listar: vi.fn(() =>
-        of({ count: 2, next: null, previous: null, results: [COTADA, DESCARTADA] }),
+        of({ count: 2, next: null, previous: null, results: [COTADA, SEM_COTACAO] }),
       ),
     };
     modal = { abrir: vi.fn(() => of(undefined)) };
@@ -100,11 +100,11 @@ describe('EncerradasPage', () => {
 
   it('pesquisar manda os filtros e volta para a primeira página', () => {
     montar();
-    pagina().filtros.patchValue({ motivo: 'descartada', uf: 'PR' });
+    pagina().filtros.patchValue({ motivo: 'prazo_cotacao', uf: 'PR' });
     pagina().pesquisar();
 
     expect(service.listar).toHaveBeenLastCalledWith(
-      expect.objectContaining({ motivo: 'descartada', uf: 'PR', page: 1 }),
+      expect.objectContaining({ motivo: 'prazo_cotacao', uf: 'PR', page: 1 }),
     );
   });
 
@@ -118,7 +118,7 @@ describe('EncerradasPage', () => {
     ).toEqual(['Ver processo', 'Ver cotação']);
     expect(
       pagina()
-        .acoesDe(DESCARTADA)
+        .acoesDe(SEM_COTACAO)
         .map((a) => a.rotulo),
     ).toEqual(['Ver processo']);
   });

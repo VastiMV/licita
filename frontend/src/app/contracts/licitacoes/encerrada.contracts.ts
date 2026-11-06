@@ -6,10 +6,10 @@
 
 import { OportunidadeSalvaResponse } from './oportunidade-salva.contracts';
 
-export type MotivoEncerramento = 'descartada' | 'prazo_oportunidade' | 'prazo_cotacao';
+/** Descartada não entra: some do ciclo inteiro (ver `encerradas.py`). */
+export type MotivoEncerramento = 'prazo_oportunidade' | 'prazo_cotacao';
 
 export const MOTIVOS_ENCERRAMENTO: readonly { value: MotivoEncerramento; label: string }[] = [
-  { value: 'descartada', label: 'Descartada' },
   { value: 'prazo_oportunidade', label: 'Prazo perdido sem cotação' },
   { value: 'prazo_cotacao', label: 'Prazo perdido na cotação' },
 ];
@@ -54,10 +54,17 @@ export interface EncerradasParams {
 
 export type EtapaCiclo = 'oportunidade' | 'cotacao' | 'proposta' | 'disputa' | 'empenho';
 
-/** Os desfechos de hoje são os motivos de Encerradas; desclassificada,
- * perdida na disputa, falha no empenho e concluído entram com as etapas. */
+/** Os desfechos de hoje são os motivos de Encerradas mais o descarte (que
+ * não aparece em Encerradas, mas o processo de uma descartada ainda conta
+ * quem tirou da lista); desclassificada, perdida na disputa, falha no
+ * empenho e concluído entram com as etapas. */
 export type TipoDesfecho =
-  MotivoEncerramento | 'desclassificada' | 'perdido_disputa' | 'falhou_empenho' | 'concluido';
+  | MotivoEncerramento
+  | 'descartada'
+  | 'desclassificada'
+  | 'perdido_disputa'
+  | 'falhou_empenho'
+  | 'concluido';
 
 export interface EventoDoProcesso {
   readonly id: number;

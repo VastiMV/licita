@@ -42,7 +42,6 @@ import {
 const JANELA_PADRAO_DIAS = 90;
 
 const TOM_DO_MOTIVO: Record<EncerradaResponse['motivo'], TomCelula> = {
-  descartada: 'alerta',
   prazo_oportunidade: 'perigo',
   prazo_cotacao: 'perigo',
 };
@@ -95,8 +94,8 @@ const COLUNAS: readonly ColunaTabela<EncerradaResponse>[] = [
 ];
 
 /**
- * "Ciclo de Licitação / Encerradas" — o que saiu do ciclo: descartadas e as
- * que perderam o prazo de proposta, com ou sem cotação. Nada aqui é apagado:
+ * "Ciclo de Licitação / Encerradas" — o que saiu do ciclo: as que perderam
+ * o prazo de proposta, com ou sem cotação. Descartadas não aparecem. Nada aqui é apagado:
  * a cotação continua consultável e o processo guarda o histórico inteiro.
  */
 @Component({
