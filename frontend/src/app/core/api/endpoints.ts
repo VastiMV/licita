@@ -40,6 +40,9 @@ export const ENDPOINTS = {
     modelosOpcoes: 'produtos/modelos/opcoes/',
     modelo: (id: number) => `produtos/modelos/${id}/`,
     precoSugerido: 'produtos/precos/sugerido/',
+    /** O que cada fornecedor me cobra — lista, busca e registrar. */
+    precos: 'produtos/precos/',
+    preco: (id: number) => `produtos/precos/${id}/`,
   },
   /** Onde os arquivos ficam (`apps/armazenamento`) — driver escolhido e
    * configurado pelo cliente, só por administrador. */

@@ -22,7 +22,7 @@ from django.db import transaction
 from rest_framework import serializers
 
 from apps.fornecedores.models import Fornecedor
-from apps.produtos.models import Fabricante, Marca, Modelo, PrecoFornecedor
+from apps.produtos.models import Fabricante, Marca, Modelo, OrigemPreco, PrecoFornecedor
 
 from .formulas import calcular_item, totalizar
 from .models import Cotacao, ItemCotacao, OfertaFornecedor
@@ -382,6 +382,7 @@ def _aprender(cotacao: Cotacao, oferta: dict) -> None:
         modelo=modelo,
         custo=custo,
         cotacao=cotacao,
+        origem=OrigemPreco.COTADOR,
         registrado_por=cotacao.atualizada_por,
     )
 

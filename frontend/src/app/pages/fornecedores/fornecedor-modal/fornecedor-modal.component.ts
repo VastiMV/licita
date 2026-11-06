@@ -19,7 +19,9 @@ import {
   TIPOS_FORNECEDOR,
 } from '../../../contracts/fornecedores/fornecedor.contracts';
 import { UFS } from '../../../contracts/localidades/uf';
+import { FornecedorResumo } from '../../../contracts/produtos/produto.contracts';
 import { FornecedoresService } from '../../../services/fornecedores/fornecedores.service';
+import { PrecosTabelaComponent } from '../../produtos/precos-tabela/precos-tabela.component';
 import { ModalShellComponent } from '../../../shared/overlay/modal-shell/modal-shell.component';
 import { ButtonComponent } from '../../../shared/ui/button/button.component';
 import { InputTextComponent } from '../../../shared/ui/input-text/input-text.component';
@@ -85,6 +87,7 @@ function validarDocumento(controle: AbstractControl): ValidationErrors | null {
     ButtonComponent,
     InputTextComponent,
     SelectComponent,
+    PrecosTabelaComponent,
   ],
   templateUrl: './fornecedor-modal.component.html',
   styleUrl: './fornecedor-modal.component.scss',
@@ -96,6 +99,11 @@ export class FornecedorModalComponent {
 
   /** `null` = cadastrar; um registro = editar. */
   protected readonly fornecedor = inject<FornecedorResponse | null>(DIALOG_DATA);
+
+  /** Para a tabela "Produtos e preços" — só existe depois de cadastrado. */
+  protected readonly resumo: FornecedorResumo | null = this.fornecedor
+    ? { id: this.fornecedor.id, nome: this.fornecedor.nome, fantasia: this.fornecedor.fantasia }
+    : null;
 
   protected readonly tipos = TIPOS_FORNECEDOR;
   protected readonly categorias = CATEGORIAS_FORNECEDOR;

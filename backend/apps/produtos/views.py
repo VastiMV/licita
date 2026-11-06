@@ -26,6 +26,8 @@ from .serializers import (
     MarcaSerializer,
     ModeloSerializer,
     OpcaoSerializer,
+    PrecoCriarSerializer,
+    PrecoListaSerializer,
     PrecoSerializer,
 )
 
@@ -225,3 +227,50 @@ class PrecoSugeridoView(APIView):
             modelo=request.query_params.get("modelo") or 0,
         ).first()
         return Response(PrecoSerializer(preco).data if preco else None)
+
+
+ORDENACOES_PRECO = {"custo": "custo", "registrado_em": "registrado_em", "produto": "descricao"}
+
+
+class PrecosView(APIView):
+    """`GET ?busca=&fornecedor=&historico=` — "onde eu tenho preço de…".
+
+    Sem `historico`, uma linha por oferta (a mais recente — ver
+    `PrecoFornecedorQuerySet.atuais`). Com busca, o mais barato vem
+    primeiro: é a pergunta de quem procura. `POST` registra um preço novo;
+    mudar o preço é registrar de novo, e o antigo vira histórico."""
+
+    def get(self, request: Request) -> Response:
+        params = request.query_params
+        precos = PrecoFornecedor.objects.select_related(
+            "fornecedor", "modelo__marca__fabricante"
+        )
+        if params.get("historico") not in ("1", "true"):
+            precos = precos.atuais()
+        if fornecedor := params.get("fornecedor"):
+            precos = precos.filter(fornecedor=fornecedor)
+        busca = params.get("busca", "")
+        precos = precos.buscar(busca)
+
+        pedida = (params.get("ordering") or "").strip()
+        campo = ORDENACOES_PRECO.get(pedida.lstrip("-"))
+        if campo:
+            precos = precos.order_by(f"-{campo}" if pedida.startswith("-") else campo, "-id")
+        elif busca.strip():
+            precos = precos.order_by("custo", "-registrado_em")
+
+        paginacao = ProdutosPaginacao()
+        pagina = paginacao.paginate_queryset(precos, request, view=self)
+        return paginacao.get_paginated_response(PrecoListaSerializer(pagina, many=True).data)
+
+    def post(self, request: Request) -> Response:
+        serializer = PrecoCriarSerializer(data=request.data)
+        serializer.is_valid(raise_exception=True)
+        preco = serializer.save(registrado_por=_usuario(request))
+        return Response(PrecoListaSerializer(preco).data, status=status.HTTP_201_CREATED)
+
+
+class PrecoView(APIView):
+    def delete(self, request: Request, pk: int) -> Response:
+        get_object_or_404(PrecoFornecedor, pk=pk).delete()
+        return Response(status=204)

@@ -16,5 +16,7 @@ urlpatterns = [
     path("modelos/", views.ModelosView.as_view(), name="produtos-modelos"),
     path("modelos/opcoes/", views.ModelosOpcoesView.as_view(), name="produtos-modelos-opcoes"),
     path("modelos/<int:pk>/", views.ModeloView.as_view(), name="produtos-modelo"),
+    path("precos/", views.PrecosView.as_view(), name="produtos-precos"),
+    path("precos/<int:pk>/", views.PrecoView.as_view(), name="produtos-preco"),
     path("precos/sugerido/", views.PrecoSugeridoView.as_view(), name="produtos-preco-sugerido"),
 ]

@@ -3,6 +3,32 @@ h1 {
   margin-bottom: var(--space-1);
 }
 
+// Mesmo desenho das abas do card de edital: sublinhado na ativa.
+.abas {
+  display: flex;
+  gap: var(--space-6);
+  margin: var(--space-4) 0 var(--space-5);
+  border-bottom: 1px solid var(--color-border);
+}
+
+.aba {
+  padding: var(--space-3) 2px;
+  font-weight: 600;
+  font-size: var(--font-size-sm);
+  color: var(--color-muted);
+  background: none;
+  border: none;
+  border-bottom: 3px solid transparent;
+  margin-bottom: -1px;
+  cursor: pointer;
+
+  &.aba-ativa {
+    font-weight: 700;
+    color: var(--color-navy);
+    border-bottom-color: var(--color-blue);
+  }
+}
+
 // Título à esquerda, "Adicionar fabricante" à direita — o botão primário da
 // tela não pode disputar espaço com o texto introdutório.
 .pagina-topo {

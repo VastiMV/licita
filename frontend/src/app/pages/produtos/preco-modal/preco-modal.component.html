@@ -1,0 +1,84 @@
+<app-modal-shell [titulo]="base ? 'Atualizar preço' : 'Adicionar preço'" (fechar)="fechar()">
+  <p class="explica">
+    O preço que o fornecedor <strong>me cobra</strong>, do jeito que ele falou: a embalagem e o
+    preço dela. O sistema calcula quanto sai cada unidade.
+  </p>
+
+  <form [formGroup]="form" (ngSubmit)="salvar()" novalidate class="formulario">
+    @if (fornecedorFixo) {
+      <div class="fornecedor-fixo">
+        <span class="rotulo">Fornecedor</span>
+        <strong>{{ fornecedor()?.fantasia || fornecedor()?.nome }}</strong>
+      </div>
+    } @else {
+      <div class="campo-fornecedor">
+        <span class="rotulo">Fornecedor *</span>
+        <app-combobox
+          rotulo="Fornecedor *"
+          placeholder="Escolha o fornecedor…"
+          [selecionado]="opcaoFornecedor()"
+          [buscar]="buscarFornecedor"
+          (escolheu)="escolherFornecedor($event)"
+        />
+        @if (erroFornecedor(); as erro) {
+          <small class="erro">{{ erro }}</small>
+        }
+      </div>
+    }
+
+    <app-input-text
+      label="Produto *"
+      formControlName="descricao"
+      placeholder="Ex.: Caneta esferográfica azul"
+      [error]="erroDe('descricao')"
+    />
+
+    <div class="linha-embalagem">
+      <app-input-text label="Embalagem" formControlName="embalagem" placeholder="Caixa, pacote…" />
+      <app-input-number
+        label="Unidades dentro *"
+        formControlName="quantidade_embalagem"
+        placeholder="10"
+        [error]="erroDe('quantidade_embalagem')"
+      />
+    </div>
+
+    <div class="linha-preco">
+      <app-input-number
+        label="Preço da embalagem *"
+        prefixo="R$"
+        formControlName="preco_embalagem"
+        placeholder="34,00"
+        [error]="erroDe('preco_embalagem')"
+      />
+      <p class="resultado" [class.vazio]="!unitario()" aria-live="polite">
+        @if (unitario(); as valor) {
+          = <strong>{{ valor }}</strong> por unidade
+        } @else {
+          O valor por unidade aparece aqui.
+        }
+      </p>
+    </div>
+
+    @if (precoAnterior) {
+      <p class="anterior">Preço atual: {{ precoAnterior }}. O antigo fica guardado no histórico.</p>
+    }
+
+    <app-input-text
+      label="Observações"
+      formControlName="observacoes"
+      placeholder="Ex.: falei com João por telefone; frete grátis acima de 10 caixas"
+    />
+
+    @if (erroGeral(); as mensagem) {
+      <p class="erro">{{ mensagem }}</p>
+    }
+  </form>
+
+  <app-button modalFooter variant="ghost" [disabled]="salvando()" (click)="fechar()">
+    Cancelar
+  </app-button>
+  <app-button modalFooter [disabled]="salvando()" (click)="salvar()">
+    {{ salvando() ? 'Salvando…' : 'Salvar preço' }}
+  </app-button>
+</app-modal-shell>

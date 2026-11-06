@@ -165,6 +165,18 @@
     }
   </form>
 
+  <section class="produtos-precos">
+    <h3>Produtos e preços</h3>
+    @if (resumo; as fornecedorResumo) {
+      <app-precos-tabela [fornecedor]="fornecedorResumo" />
+    } @else {
+      <p class="muted">
+        Cadastre o fornecedor primeiro. Depois, abra de novo para registrar os produtos e os preços
+        que ele vende.
+      </p>
+    }
+  </section>
+
   <span modalFooter class="obrigatorios">Campos com <em>*</em> são obrigatórios</span>
   <app-button modalFooter variant="ghost" [disabled]="salvando()" (click)="fechar()">
     Cancelar

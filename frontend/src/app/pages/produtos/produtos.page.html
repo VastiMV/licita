@@ -1,34 +1,58 @@
-<div class="pagina-topo">
-  <div>
-    <h1>Produtos</h1>
+<h1>Produtos</h1>
+
+<nav class="abas" aria-label="Seções de produtos">
+  <button
+    type="button"
+    class="aba"
+    [class.aba-ativa]="aba() === 'precos'"
+    [attr.aria-pressed]="aba() === 'precos'"
+    (click)="mudarAba('precos')"
+  >
+    Preços de fornecedores
+  </button>
+  <button
+    type="button"
+    class="aba"
+    [class.aba-ativa]="aba() === 'fabricantes'"
+    [attr.aria-pressed]="aba() === 'fabricantes'"
+    (click)="mudarAba('fabricantes')"
+  >
+    Fabricantes e marcas
+  </button>
+</nav>
+
+@if (aba() === 'precos') {
+  <app-precos-tabela />
+} @else {
+  <div class="pagina-topo">
     <p class="muted">
       Fabricante › Marca › Modelo — o produto cotado é o modelo. Aqui também se diz quais
       fornecedores vendem cada fabricante; o Cotador usa isso para sugerir e aprende ao salvar.
     </p>
+    <app-button (click)="abrir(null)">
+      <app-icon name="plus" />
+      Adicionar fabricante
+    </app-button>
   </div>
-  <app-button (click)="abrir(null)">
-    <app-icon name="plus" />
-    Adicionar fabricante
-  </app-button>
-</div>
 
-@if (erro()) {
-  <p class="erro">Não foi possível carregar os produtos agora.</p>
+  @if (erro()) {
+    <p class="erro">Não foi possível carregar os produtos agora.</p>
+  }
+
+  <app-data-table
+    [colunas]="colunas"
+    [linhas]="linhas()"
+    [total]="total()"
+    [estado]="estado()"
+    [carregando]="carregando()"
+    [chaveDe]="chaveDe"
+    rotuloBusca="Buscar"
+    placeholderBusca="Busca por fabricante, marca, modelo ou fornecedor…"
+    mensagemVazia="Nenhum fabricante cadastrado. Adicione aqui ou crie direto no Cotador."
+    (estadoMudou)="aoMudarEstado($event)"
+  >
+    <ng-template appTabelaAcoes let-fabricante>
+      <app-menu [itens]="acoesDe(fabricante)" [descricao]="'Ações de ' + fabricante.nome" />
+    </ng-template>
+  </app-data-table>
 }
-
-<app-data-table
-  [colunas]="colunas"
-  [linhas]="linhas()"
-  [total]="total()"
-  [estado]="estado()"
-  [carregando]="carregando()"
-  [chaveDe]="chaveDe"
-  rotuloBusca="Buscar"
-  placeholderBusca="Busca por fabricante, marca, modelo ou fornecedor…"
-  mensagemVazia="Nenhum fabricante cadastrado. Adicione aqui ou crie direto no Cotador."
-  (estadoMudou)="aoMudarEstado($event)"
->
-  <ng-template appTabelaAcoes let-fabricante>
-    <app-menu [itens]="acoesDe(fabricante)" [descricao]="'Ações de ' + fabricante.nome" />
-  </ng-template>
-</app-data-table>

@@ -9,7 +9,11 @@ import {
   MarcaResponse,
   ModeloResponse,
   OpcaoProduto,
+  PrecoRequest,
+  PrecoResponse,
   PrecoSugerido,
+  PrecosPagina,
+  PrecosParams,
 } from '../../contracts/produtos/produto.contracts';
 import { ApiClient } from '../../core/api/api-client';
 import { ENDPOINTS } from '../../core/api/endpoints';
@@ -84,5 +88,19 @@ export class ProdutosService {
   /** Último custo desse fornecedor para esse modelo; `null` se nunca cotado. */
   precoSugerido(fornecedor: number, modelo: number): Observable<PrecoSugerido | null> {
     return this.api.get<PrecoSugerido | null>(this.rotas.precoSugerido, { fornecedor, modelo });
+  }
+
+  /** "Onde eu tenho preço de…" — com busca, o mais barato primeiro. */
+  precos(params: PrecosParams = {}): Observable<PrecosPagina> {
+    return this.api.get<PrecosPagina>(this.rotas.precos, { ...params });
+  }
+
+  /** Mudar um preço é registrar de novo — o antigo vira histórico. */
+  registrarPreco(dados: PrecoRequest): Observable<PrecoResponse> {
+    return this.api.post<PrecoResponse, PrecoRequest>(this.rotas.precos, dados);
+  }
+
+  removerPreco(id: number): Observable<void> {
+    return this.api.delete<void>(this.rotas.preco(id));
   }
 }

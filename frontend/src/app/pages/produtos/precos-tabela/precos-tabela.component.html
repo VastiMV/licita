@@ -1,0 +1,40 @@
+<div class="topo">
+  <p class="muted">
+    @if (fornecedor()) {
+      O que este fornecedor me vende e por quanto. Mudou o preço? Use "Atualizar preço": o antigo
+      fica no histórico.
+    } @else {
+      Digite um produto (ex.: <em>caneta</em>) para ver quem vende e por quanto. O mais barato
+      aparece primeiro.
+    }
+  </p>
+  <app-button (click)="abrir(null)">
+    <app-icon name="plus" />
+    Adicionar preço
+  </app-button>
+</div>
+
+@if (erro()) {
+  <p class="erro">Não foi possível carregar os preços agora.</p>
+}
+
+<app-data-table
+  [colunas]="colunas()"
+  [linhas]="linhas()"
+  [total]="total()"
+  [estado]="estado()"
+  [carregando]="carregando()"
+  [chaveDe]="chaveDe"
+  rotuloBusca="Onde tenho preço de…"
+  placeholderBusca="Ex.: caneta, lápis, papel A4…"
+  [mensagemVazia]="
+    estado().busca
+      ? 'Nenhum preço encontrado para “' + estado().busca + '”.'
+      : 'Nenhum preço registrado ainda. Clique em “Adicionar preço”.'
+  "
+  (estadoMudou)="aoMudarEstado($event)"
+>
+  <ng-template appTabelaAcoes let-preco>
+    <app-menu [itens]="acoesDe(preco)" [descricao]="'Ações de ' + preco.produto" />
+  </ng-template>
+</app-data-table>

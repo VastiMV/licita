@@ -21,6 +21,9 @@ import {
   FabricanteModalResultado,
   resumoFornecedores,
 } from './fabricante-modal/fabricante-modal.component';
+import { PrecosTabelaComponent } from './precos-tabela/precos-tabela.component';
+
+type AbaProdutos = 'precos' | 'fabricantes';
 
 const COLUNAS: readonly ColunaTabela<FabricanteResponse>[] = [
   {
@@ -46,8 +49,12 @@ const COLUNAS: readonly ColunaTabela<FabricanteResponse>[] = [
 ];
 
 /**
- * "Cadastros / Produtos" — Fabricante › Marca › Modelo e quem vende cada
- * fabricante. Uma linha por fabricante; o modal abre a árvore inteira.
+ * "Cadastros / Produtos" — duas abas:
+ *
+ * - **Preços de fornecedores** (abre nela): quem me vende o quê e por
+ *   quanto, com a busca "onde tenho preço de caneta?";
+ * - **Fabricantes e marcas**: Fabricante › Marca › Modelo e quem vende cada
+ *   fabricante. Uma linha por fabricante; o modal abre a árvore inteira.
  */
 @Component({
   selector: 'app-produtos-page',
@@ -57,6 +64,7 @@ const COLUNAS: readonly ColunaTabela<FabricanteResponse>[] = [
     MenuComponent,
     ButtonComponent,
     IconComponent,
+    PrecosTabelaComponent,
   ],
   templateUrl: './produtos.page.html',
   styleUrl: './produtos.page.scss',
@@ -66,6 +74,7 @@ export class ProdutosPage implements OnInit {
   private readonly modal = inject(ModalService);
   private readonly toast = inject(ToastService);
 
+  protected readonly aba = signal<AbaProdutos>('precos');
   protected readonly colunas = COLUNAS;
   protected readonly estado = signal<EstadoTabela>(
     estadoInicialTabela({ ordenarPor: 'nome', direcao: 'asc' }),
@@ -79,6 +88,10 @@ export class ProdutosPage implements OnInit {
 
   ngOnInit(): void {
     this.carregar();
+  }
+
+  protected mudarAba(aba: AbaProdutos): void {
+    this.aba.set(aba);
   }
 
   protected aoMudarEstado(estado: EstadoTabela): void {
